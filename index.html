@@ -55,37 +55,29 @@
         </div>
     </div>
 
-    <script>
-        // ======= [!! 关键配置区域 !!] =======
-        const SB_URL = "https://qfplpzosjcvvyhcotodz.supabase.co"; 
-        const SB_KEY = "sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB"; 
-
-        let supabase;
-        let userProfile = { id: 'User_' + Math.floor(Math.random()*9000+1000), nickname: '新玩家', highScore: 0 };
-
-        async function initSystem() {
+    async function initSystem() {
             const statusLabel = document.getElementById('status-text');
-            
             try {
-                // 1. 检查 SDK 是否加载
-                statusLabel.innerText = "Step 1: 检查 SDK...";
+                // 1. 检查 SDK 是否加载成功
+                statusLabel.innerText = "自检：检查 SDK...";
                 if (!window.supabase) {
-                    alert("致命错误：Supabase SDK 没能加载！可能是网络拦截了 CDN。");
+                    alert("报错：库文件 supabase.js 加载失败！请检查仓库里是否有这个文件。");
                     return;
                 }
 
-                // 2. 初始化 Client
-                statusLabel.innerText = "Step 2: 连接 Client...";
+                // 2. 初始化客户端
+                statusLabel.innerText = "自检：连接云端...";
+                // 确保这里的 URL 和 Key 是你新加坡新项目的！
                 supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
                 // 3. 读取本地数据
-                statusLabel.innerText = "Step 3: 读取本地存储...";
+                statusLabel.innerText = "自检：读取本地...";
                 const local = localStorage.getItem('my_game_center_profile');
                 if (local) userProfile = JSON.parse(local);
                 updateUI();
 
-                // 4. 云端查询
-                statusLabel.innerText = "Step 4: 正在拉取云端数据...";
+                // 4. 请求云端
+                statusLabel.innerText = "自检：正在握手...";
                 const { data, error } = await supabase
                     .from('profiles')
                     .select('*')
@@ -94,111 +86,27 @@
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        statusLabel.innerText = "Step 5: 创建云端新档案...";
+                        statusLabel.innerText = "同步：创建新档案...";
                         await supabase.from('profiles').insert([
                             { id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highScore }
                         ]);
-                        setStatus(true, "云端连接成功(新玩家)");
+                        setStatus(true, "云端连接成功");
                     } else {
-                        alert("云端报错：\nCode: " + error.code + "\nMsg: " + error.message);
-                        setStatus(false, "连接失败: " + error.code);
+                        // 如果这里报错，通常是 RLS 没关或者表名写错
+                        alert("云端报错代码: " + error.code + "\n信息: " + error.message);
+                        setStatus(false, "连接报错");
                     }
-                } else if (data) {
-                    statusLabel.innerText = "Step 5: 数据整合中...";
+                } else {
+                    statusLabel.innerText = "同步：同步数据...";
                     userProfile.highScore = Math.max(userProfile.highScore, data.high_score);
-                    userProfile.nickname = data.nickname;
                     localStorage.setItem('my_game_center_profile', JSON.stringify(userProfile));
-                    setStatus(true, "云端连接成功(老玩家)");
+                    setStatus(true, "云端同步完成");
                 }
                 updateUI();
 
             } catch (err) {
-                alert("系统崩溃：\n" + err.message);
-                setStatus(false, "系统崩溃");
+                alert("系统崩溃报错: " + err.message);
             }
         }
-
-        function setStatus(online, text) {
-            document.getElementById('cloud-status').className = online ? "status-dot online" : "status-dot offline";
-            document.getElementById('status-text').innerText = text;
-        }
-
-        function updateUI() {
-            document.getElementById('display-nickname').innerHTML = `欢迎回来, <span style="color:#4CAF50">${userProfile.nickname}</span><br><small>(${userProfile.id})</small>`;
-            document.getElementById('display-record').innerText = userProfile.highScore;
-            document.getElementById('game-record').innerText = "纪录: " + userProfile.highScore;
-        }
-
-        // ======= 游戏逻辑部分 =======
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const gridSize = 20;
-        let score = 0, snake = [], dx = gridSize, dy = 0, foodX, foodY, gameLoop;
-
-        function showGame() {
-            document.getElementById("menu-screen").style.display = "none";
-            document.getElementById("game-screen").style.display = "flex";
-            canvas.width = Math.floor((window.innerWidth*0.9)/gridSize)*gridSize;
-            canvas.height = Math.floor((window.innerHeight*0.4)/gridSize)*gridSize;
-            resetGame();
-        }
-
-        function showMenu() {
-            clearInterval(gameLoop);
-            document.getElementById("menu-screen").style.display = "flex";
-            document.getElementById("game-screen").style.display = "none";
-            updateUI();
-        }
-
-        function resetGame() {
-            score = 0;
-            document.getElementById("scoreVal").innerText = "得分: 0";
-            snake = [{x: 80, y: 80}, {x: 60, y: 80}];
-            dx = gridSize; dy = 0;
-            createFood();
-            gameLoop = setInterval(draw, 150);
-        }
-
-        function createFood() {
-            foodX = Math.floor(Math.random()*(canvas.width/gridSize))*gridSize;
-            foodY = Math.floor(Math.random()*(canvas.height/gridSize))*gridSize;
-        }
-
-        function draw() {
-            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-            if (head.x<0 || head.x>=canvas.width || head.y<0 || head.y>=canvas.height) return gameOver();
-            for(let p of snake) if(head.x===p.x && head.y===p.y) return gameOver();
-            
-            snake.unshift(head);
-            if (head.x===foodX && head.y===foodY) {
-                score += 10; document.getElementById("scoreVal").innerText = "得分: " + score;
-                createFood();
-            } else { snake.pop(); }
-
-            ctx.fillStyle = "#ff5252"; ctx.fillRect(foodX, foodY, gridSize-2, gridSize-2);
-            snake.forEach((p,i) => { ctx.fillStyle = i===0?"#4CAF50":"#81C784"; ctx.fillRect(p.x, p.y, gridSize-2, gridSize-2); });
-        }
-
-        async function gameOver() {
-            clearInterval(gameLoop);
-            if (score > userProfile.highScore) {
-                userProfile.highScore = score;
-                localStorage.setItem('my_game_center_profile', JSON.stringify(userProfile));
-                await supabase.from('profiles').upsert({ id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highScore });
-                alert("🎉 新纪录！已同步云端。");
-            } else { alert("游戏结束！分数: " + score); }
-            showMenu();
-        }
-
-        function handleDir(dir) {
-            if (dir==='UP' && dy===0) { dx=0; dy=-gridSize; }
-            if (dir==='DOWN' && dy===0) { dx=0; dy=gridSize; }
-            if (dir==='LEFT' && dx===0) { dx=-gridSize; dy=0; }
-            if (dir==='RIGHT' && dx===0) { dx=gridSize; dy=0; }
-        }
-
-        window.onload = initSystem;
-    </script>
 </body>
 </html>
