@@ -206,7 +206,7 @@
                     if (error.code === 'PGRST116') {
                         statusLabel.innerText = "同步：创建云端档案...";
                         await supabase.from('profiles').insert([
-                            { id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highScore }
+                            { id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highscore }
                         ]);
                         setCloudStatus(true, "云端已就绪");
                     } else {
