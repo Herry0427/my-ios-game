@@ -30,33 +30,41 @@
         #menu-screen {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
             text-align: center;
             width: 100%;
             padding: 20px;
         }
 
-        h1 { font-size: 2rem; margin-bottom: 20px; color: var(--primary-color); }
+        .user-info {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .user-id { color: var(--primary-color); font-weight: bold; }
+        .high-score-label { font-size: 0.9rem; color: #888; margin-top: 5px; }
+
+        h1 { font-size: 1.8rem; margin: 0; color: #fff; }
 
         .menu-btn {
             background: var(--btn-bg);
             border: 2px solid var(--primary-color);
             color: white;
             padding: 15px 30px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             border-radius: 15px;
             cursor: pointer;
-            transition: 0.2s;
             -webkit-tap-highlight-color: transparent;
         }
 
         .menu-btn:active { transform: scale(0.95); background: var(--primary-color); }
 
-        .disabled-btn { border-color: #666; color: #888; opacity: 0.6; }
-
         /* 游戏界面 */
         #game-screen {
-            display: none; /* 初始隐藏 */
+            display: none;
             flex-direction: column;
             align-items: center;
             width: 100%;
@@ -66,7 +74,6 @@
         #gameCanvas {
             border: 3px solid #444;
             background: #000;
-            margin-top: 20px;
             border-radius: 10px;
         }
 
@@ -74,39 +81,38 @@
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 15px 20px;
+            padding: 20px;
             box-sizing: border-box;
             align-items: center;
         }
 
-        /* 方向控制按钮 */
+        /* 控制盘 */
         .d-pad {
             display: grid;
             grid-template-areas: 
                 ". up ."
                 "left down right";
-            gap: 10px;
+            gap: 12px;
             margin-top: 30px;
         }
 
         .ctrl-btn {
-            width: 70px;
-            height: 70px;
+            width: 75px;
+            height: 75px;
             background: #333;
             border: none;
-            border-radius: 15px;
+            border-radius: 18px;
             color: white;
             font-size: 1.5rem;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px #000;
+            box-shadow: 0 5px #000;
         }
 
         .ctrl-btn:active {
-            transform: translateY(2px);
+            transform: translateY(3px);
             box-shadow: 0 2px #000;
-            background: #444;
         }
 
         .up { grid-area: up; }
@@ -115,11 +121,11 @@
         .right { grid-area: right; }
 
         .back-btn {
-            background: transparent;
-            border: 1px solid #888;
-            color: #888;
-            padding: 5px 10px;
-            border-radius: 5px;
+            background: #444;
+            border: none;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -127,23 +133,25 @@
 
     <!-- 主菜单界面 -->
     <div id="menu-screen">
+        <div class="user-info">
+            <div id="display-nickname">加载中...</div>
+            <div class="high-score-label">我的最高纪录: <span id="display-record">0</span></div>
+        </div>
         <h1>游戏中心</h1>
-        <button class="menu-btn" onclick="showGame()">经典贪吃蛇</button>
-        <button class="menu-btn disabled-btn">即将上线...</button>
-        <button class="menu-btn disabled-btn">待开发功能</button>
+        <button class="menu-btn" onclick="showGame()">开始 经典贪吃蛇</button>
+        <button class="menu-btn" style="opacity: 0.5">即将解锁新游戏</button>
     </div>
 
     <!-- 游戏界面 -->
     <div id="game-screen">
         <div class="header">
-            <button class="back-btn" onclick="showMenu()">返回菜单</button>
-            <div id="scoreVal" style="font-size: 1.5rem; font-weight: bold;">分数: 0</div>
-            <div style="width: 60px;"></div> <!-- 占位平衡 -->
+            <button class="back-btn" onclick="showMenu()">退出</button>
+            <div id="scoreVal" style="font-size: 1.4rem; font-weight: bold;">得分: 0</div>
+            <div id="game-record" style="font-size: 0.8rem; color: #888;">纪录: 0</div>
         </div>
 
         <canvas id="gameCanvas"></canvas>
 
-        <!-- 游戏控制盘 -->
         <div class="d-pad">
             <button class="ctrl-btn up" onclick="changeDir('UP')">▲</button>
             <button class="ctrl-btn left" onclick="changeDir('LEFT')">◀</button>
@@ -153,6 +161,36 @@
     </div>
 
     <script>
+        // --- 用户系统逻辑 ---
+        let userProfile = {
+            id: 'User_' + Math.floor(Math.random() * 9000 + 1000),
+            nickname: '新玩家',
+            highScore: 0
+        };
+
+        // 初始化加载数据
+        function initUser() {
+            const savedData = localStorage.getItem('my_game_center_profile');
+            if (savedData) {
+                userProfile = JSON.parse(savedData);
+            } else {
+                saveUserData(); // 第一次进入，保存初始数据
+            }
+            updateMenuUI();
+        }
+
+        function saveUserData() {
+            localStorage.setItem('my_game_center_profile', JSON.stringify(userProfile));
+            updateMenuUI();
+        }
+
+        function updateMenuUI() {
+            document.getElementById('display-nickname').innerHTML = `欢迎回来, <span class="user-id">${userProfile.nickname} (${userProfile.id})</span>`;
+            document.getElementById('display-record').innerText = userProfile.highScore;
+            document.getElementById('game-record').innerText = "纪录: " + userProfile.highScore;
+        }
+
+        // --- 游戏逻辑 ---
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const scoreElement = document.getElementById("scoreVal");
@@ -164,15 +202,12 @@
         let dy = 0;
         let foodX, foodY;
         let gameLoop;
-        let isPaused = false;
 
-        // 适配屏幕
         function initCanvasSize() {
             canvas.width = Math.floor((window.innerWidth * 0.9) / gridSize) * gridSize;
-            canvas.height = Math.floor((window.innerHeight * 0.45) / gridSize) * gridSize;
+            canvas.height = Math.floor((window.innerHeight * 0.4) / gridSize) * gridSize;
         }
 
-        // 界面切换逻辑
         function showGame() {
             document.getElementById("menu-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "flex";
@@ -184,16 +219,15 @@
             clearInterval(gameLoop);
             document.getElementById("menu-screen").style.display = "flex";
             document.getElementById("game-screen").style.display = "none";
+            updateMenuUI();
         }
 
-        // 游戏核心逻辑
         function resetGame() {
             clearInterval(gameLoop);
             score = 0;
-            scoreElement.innerText = "分数: 0";
+            scoreElement.innerText = "得分: 0";
             snake = [{x: 80, y: 80}, {x: 60, y: 80}, {x: 40, y: 80}];
-            dx = gridSize;
-            dy = 0;
+            dx = gridSize; dy = 0;
             createFood();
             gameLoop = setInterval(drawLoop, 150);
         }
@@ -204,15 +238,11 @@
         }
 
         function drawLoop() {
-            clearCanvas();
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFood();
             moveSnake();
             drawSnake();
-        }
-
-        function clearCanvas() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         function drawSnake() {
@@ -225,24 +255,22 @@
         function moveSnake() {
             const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
-            // 撞墙检测 (核心改动: 撞墙即死)
             if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
-                gameOver();
-                return;
+                return gameOver();
             }
 
-            // 撞身体检测
             for (let i = 0; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) {
-                    gameOver();
-                    return;
-                }
+                if (head.x === snake[i].x && head.y === snake[i].y) return gameOver();
             }
 
             snake.unshift(head);
             if (head.x === foodX && head.y === foodY) {
                 score += 10;
-                scoreElement.innerText = "分数: " + score;
+                scoreElement.innerText = "得分: " + score;
+                // 实时破纪录提醒
+                if (score > userProfile.highScore) {
+                    scoreElement.style.color = "#FFD700"; // 变成金色
+                }
                 createFood();
             } else {
                 snake.pop();
@@ -256,11 +284,20 @@
 
         function gameOver() {
             clearInterval(gameLoop);
-            alert("游戏结束！得分: " + score);
+            
+            // 检查最高分逻辑
+            let isNewRecord = false;
+            if (score > userProfile.highScore) {
+                userProfile.highScore = score;
+                saveUserData();
+                isNewRecord = true;
+            }
+
+            const msg = isNewRecord ? `🎉 史诗级新纪录: ${score}!` : `游戏结束! 得分: ${score}`;
+            alert(msg);
             resetGame();
         }
 
-        // 方向控制
         function changeDir(dir) {
             if (dir === 'UP' && dy === 0) { dx = 0; dy = -gridSize; }
             if (dir === 'DOWN' && dy === 0) { dx = 0; dy = gridSize; }
@@ -268,25 +305,8 @@
             if (dir === 'RIGHT' && dx === 0) { dx = gridSize; dy = 0; }
         }
 
-        // 同时也保留触摸滑动支持 (防止有的用户习惯滑屏)
-        let startX, startY;
-        document.addEventListener('touchstart', e => {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
-
-        document.addEventListener('touchmove', e => {
-            if (!startX || !startY) return;
-            const diffX = startX - e.touches[0].clientX;
-            const diffY = startY - e.touches[0].clientY;
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0) changeDir('LEFT'); else changeDir('RIGHT');
-            } else {
-                if (diffY > 0) changeDir('UP'); else changeDir('DOWN');
-            }
-            startX = startY = null;
-        }, {passive: false});
-
+        // 启动系统
+        initUser();
     </script>
 </body>
 </html>
