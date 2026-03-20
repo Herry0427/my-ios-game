@@ -1,68 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- PWA 全屏核心设置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>我的私人游戏中心(云端版)</title>
+    <title>我的私人游戏中心</title>
+    
     <!-- 引入 Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
-        :root { --primary-color: #4CAF50; --bg-color: #1a1a1a; --btn-bg: #333; }
-        body { margin: 0; padding: 0; background: var(--bg-color); color: white; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #menu-screen { display: flex; flex-direction: column; gap: 15px; text-align: center; width: 100%; padding: 20px; }
-        .user-info { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid #333; }
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #1a1a1a;
+            --btn-bg: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 菜单界面 */
+        #menu-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .status-bar { font-size: 0.75rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .online { background: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+        .offline { background: #ff5252; box-shadow: 0 0 8px #ff5252; }
+
         .user-id { color: var(--primary-color); font-weight: bold; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background: #4CAF50; box-shadow: 0 0 5px #4CAF50; }
-        .offline { background: #ff5252; }
-        h1 { font-size: 1.8rem; margin: 0; }
-        .menu-btn { background: var(--btn-bg); border: 2px solid var(--primary-color); color: white; padding: 15px; font-size: 1.1rem; border-radius: 15px; }
-        #game-screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; }
-        #gameCanvas { border: 3px solid #444; background: #000; border-radius: 10px; }
-        .header { width: 100%; display: flex; justify-content: space-between; padding: 20px; box-sizing: border-box; }
-        .d-pad { display: grid; grid-template-areas: ". up ." "left down right"; gap: 12px; margin-top: 30px; }
-        .ctrl-btn { width: 75px; height: 75px; background: #333; border: none; border-radius: 18px; color: white; font-size: 1.5rem; box-shadow: 0 5px #000; }
+        h1 { font-size: 2rem; margin: 10px 0; color: #fff; }
+
+        .menu-btn {
+            background: var(--btn-bg);
+            border: 2px solid var(--primary-color);
+            color: white;
+            padding: 18px;
+            font-size: 1.2rem;
+            border-radius: 18px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .menu-btn:active { background: var(--primary-color); transform: scale(0.98); }
+
+        /* 游戏界面 */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 25px;
+            box-sizing: border-box;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            border: 3px solid #444;
+            background: #000;
+            border-radius: 12px;
+        }
+
+        /* 方向控制盘 */
+        .d-pad {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left down right";
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .ctrl-btn {
+            width: 75px;
+            height: 75px;
+            background: #333;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px #000;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         .ctrl-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
-        .up { grid-area: up; } .down { grid-area: down; } .left { grid-area: left; } .right { grid-area: right; }
+
+        .up { grid-area: up; }
+        .down { grid-area: down; }
+        .left { grid-area: left; }
+        .right { grid-area: right; }
+
+        .back-btn { background: #444; border: none; color: #fff; padding: 8px 15px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
+    <!-- 主菜单 -->
     <div id="menu-screen">
         <div class="user-info">
-            <div style="font-size: 0.8rem; margin-bottom: 5px;">
+            <div class="status-bar">
                 <span id="cloud-status" class="status-dot offline"></span>
-                <span id="status-text">正在连接云端...</span>
+                <span id="status-text">正在初始化...</span>
             </div>
-            <div id="display-nickname">加载中...</div>
-            <div style="font-size: 0.9rem; color: #888; margin-top: 5px;">最高纪录: <span id="display-record">0</span></div>
+            <div id="display-nickname">玩家加载中...</div>
+            <div style="font-size: 0.9rem; color: #888; margin-top: 5px;">云端纪录: <span id="display-record">0</span></div>
         </div>
         <h1>游戏中心</h1>
-        <button class="menu-btn" onclick="showGame()">开始 经典贪吃蛇</button>
+        <button class="menu-btn" onclick="showGame()">🎮 开始经典贪吃蛇</button>
+        <p style="color:#555; font-size:0.8rem;">V1.0 云端同步版</p>
     </div>
 
+    <!-- 游戏界面 -->
     <div id="game-screen">
         <div class="header">
-            <button onclick="showMenu()" style="background:#444; border:none; color:#fff; padding:8px 15px; border-radius:8px;">退出</button>
+            <button class="back-btn" onclick="showMenu()">退出</button>
             <div id="scoreVal" style="font-size: 1.4rem; font-weight: bold;">得分: 0</div>
             <div id="game-record" style="font-size: 0.8rem; color: #888;">纪录: 0</div>
         </div>
+
         <canvas id="gameCanvas"></canvas>
+
         <div class="d-pad">
-            <button class="ctrl-btn up" onclick="changeDir('UP')">▲</button>
-            <button class="ctrl-btn left" onclick="changeDir('LEFT')">◀</button>
-            <button class="ctrl-btn down" onclick="changeDir('DOWN')">▼</button>
-            <button class="ctrl-btn right" onclick="changeDir('RIGHT')">▶</button>
+            <button class="ctrl-btn up" onclick="handleInput('UP')">▲</button>
+            <button class="ctrl-btn left" onclick="handleInput('LEFT')">◀</button>
+            <button class="ctrl-btn down" onclick="handleInput('DOWN')">▼</button>
+            <button class="ctrl-btn right" onclick="handleInput('RIGHT')">▶</button>
         </div>
     </div>
 
     <script>
-        // ======= Supabase 配置 =======
+        // ======= [核心配置] 请填入你的 Supabase 信息 =======
         const SB_URL = "https://ktsbaeesbcogomoohnnu.supabase.co"; 
-        const SB_KEY = "sb_publishable_ukPy4KeUi9rTdbhpq-GsWg_AU2Xeh85";
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+        const SB_KEY = "sb_publishable_ukPy4KeUi9rTdbhpq-GsWg_AU2Xeh85"; 
+        
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SB_URL, SB_KEY);
+        } catch(e) {
+            alert("SDK 初始化失败，请检查 URL 和 Key 是否正确");
+        }
 
         let userProfile = {
             id: 'User_' + Math.floor(Math.random() * 9000 + 1000),
@@ -70,14 +182,19 @@
             highScore: 0
         };
 
-        // ======= 系统启动逻辑 =======
+        // ======= [1] 初始化系统 =======
         async function initSystem() {
-            // 1. 先从本地读取，保证秒开
+            // A. 读取本地缓存
             const localData = localStorage.getItem('my_game_center_profile');
-            if (localData) userProfile = JSON.parse(localData);
+            if (localData) {
+                userProfile = JSON.parse(localData);
+            } else {
+                localStorage.setItem('my_game_center_profile', JSON.stringify(userProfile));
+            }
             updateUI();
 
-            // 2. 尝试从云端同步
+            // B. 同步云端
+            if (!supabase) return;
             try {
                 const { data, error } = await supabase
                     .from('profiles')
@@ -85,37 +202,43 @@
                     .eq('id', userProfile.id)
                     .single();
 
-                if (error && error.code === 'PGRST116') {
-                    // 云端没数据，新建一个
-                    await supabase.from('profiles').insert([
-                        { id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highScore }
-                    ]);
-                    setOnlineStatus(true, "已同步到云端");
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        // 云端没数据，新建一条
+                        await supabase.from('profiles').insert([
+                            { id: userProfile.id, nickname: userProfile.nickname, high_score: userProfile.highScore }
+                        ]);
+                        setStatus(true, "云端已建立档案");
+                    } else {
+                        // 其他报错提示
+                        console.error(error);
+                        setStatus(false, "云端报错: " + error.code);
+                    }
                 } else if (data) {
-                    // 云端有数据，取最高值同步
+                    // 云端有数据，取最大值
                     userProfile.highScore = Math.max(userProfile.highScore, data.high_score);
                     userProfile.nickname = data.nickname;
-                    saveToLocal();
-                    setOnlineStatus(true, "云端同步完成");
+                    saveLocal();
+                    setStatus(true, "云端同步成功");
                 }
             } catch (err) {
-                setOnlineStatus(false, "云端连接失败");
+                setStatus(false, "连接超时");
             }
         }
 
-        function setOnlineStatus(online, text) {
-            const dot = document.getElementById('cloud-status');
-            dot.className = online ? "status-dot online" : "status-dot offline";
+        function setStatus(online, text) {
+            document.getElementById('cloud-status').className = online ? "status-dot online" : "status-dot offline";
             document.getElementById('status-text').innerText = text;
         }
 
-        function saveToLocal() {
+        function saveLocal() {
             localStorage.setItem('my_game_center_profile', JSON.stringify(userProfile));
             updateUI();
         }
 
-        async function syncToCloud() {
-            setOnlineStatus(false, "正在同步...");
+        async function syncCloud() {
+            if (!supabase) return;
+            setStatus(false, "同步中...");
             const { error } = await supabase
                 .from('profiles')
                 .upsert({ 
@@ -123,8 +246,7 @@
                     nickname: userProfile.nickname, 
                     high_score: userProfile.highScore 
                 });
-            
-            if (!error) setOnlineStatus(true, "云端纪录已更新");
+            if (!error) setStatus(true, "纪录已同步");
         }
 
         function updateUI() {
@@ -133,21 +255,23 @@
             document.getElementById('game-record').innerText = "纪录: " + userProfile.highScore;
         }
 
-        // ======= 游戏逻辑 (保持之前的一致) =======
+        // ======= [2] 贪吃蛇逻辑 =======
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const gridSize = 20;
         let score = 0, snake = [], dx = gridSize, dy = 0, foodX, foodY, gameLoop;
 
-        function initCanvasSize() {
-            canvas.width = Math.floor((window.innerWidth * 0.9) / gridSize) * gridSize;
-            canvas.height = Math.floor((window.innerHeight * 0.4) / gridSize) * gridSize;
+        function initCanvas() {
+            const w = Math.floor((window.innerWidth * 0.9) / gridSize) * gridSize;
+            const h = Math.floor((window.innerHeight * 0.42) / gridSize) * gridSize;
+            canvas.width = w;
+            canvas.height = h;
         }
 
         function showGame() {
             document.getElementById("menu-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "flex";
-            initCanvasSize();
+            initCanvas();
             resetGame();
         }
 
@@ -166,31 +290,7 @@
             snake = [{x: 80, y: 80}, {x: 60, y: 80}, {x: 40, y: 80}];
             dx = gridSize; dy = 0;
             createFood();
-            gameLoop = setInterval(drawLoop, 150);
-        }
-
-        function drawLoop() {
-            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#FF5252"; ctx.fillRect(foodX, foodY, gridSize-2, gridSize-2);
-            moveSnake();
-            snake.forEach((part, index) => {
-                ctx.fillStyle = index === 0 ? "#4CAF50" : "#81C784";
-                ctx.fillRect(part.x, part.y, gridSize-2, gridSize-2);
-            });
-        }
-
-        function moveSnake() {
-            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return gameOver();
-            for (let i = 0; i < snake.length; i++) if (head.x === snake[i].x && head.y === snake[i].y) return gameOver();
-            
-            snake.unshift(head);
-            if (head.x === foodX && head.y === foodY) {
-                score += 10;
-                document.getElementById("scoreVal").innerText = "得分: " + score;
-                if (score > userProfile.highScore) document.getElementById("scoreVal").style.color = "#FFD700";
-                createFood();
-            } else { snake.pop(); }
+            gameLoop = setInterval(draw, 160);
         }
 
         function createFood() {
@@ -198,27 +298,62 @@
             foodY = Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize;
         }
 
+        function draw() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 移动
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            
+            // 撞墙检测
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return gameOver();
+            // 撞身体检测
+            for (let i = 0; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) return gameOver();
+            }
+
+            snake.unshift(head);
+            if (head.x === foodX && head.y === foodY) {
+                score += 10;
+                document.getElementById("scoreVal").innerText = "得分: " + score;
+                if (score > userProfile.highScore) document.getElementById("scoreVal").style.color = "#FFD700";
+                createFood();
+            } else {
+                snake.pop();
+            }
+
+            // 画食物
+            ctx.fillStyle = "#FF5252";
+            ctx.fillRect(foodX, foodY, gridSize-2, gridSize-2);
+            // 画蛇
+            snake.forEach((p, i) => {
+                ctx.fillStyle = i === 0 ? "#4CAF50" : "#81C784";
+                ctx.fillRect(p.x, p.y, gridSize-2, gridSize-2);
+            });
+        }
+
         async function gameOver() {
             clearInterval(gameLoop);
+            let isNew = false;
             if (score > userProfile.highScore) {
                 userProfile.highScore = score;
-                saveToLocal();
-                await syncToCloud(); // 破纪录后同步云端
-                alert(`🎉 新纪录: ${score}! 已同步云端。`);
-            } else {
-                alert(`游戏结束! 得分: ${score}`);
+                saveLocal();
+                await syncCloud();
+                isNew = true;
             }
+            alert(isNew ? `🔥 破纪录了! ${score}` : `游戏结束! 得分: ${score}`);
             resetGame();
         }
 
-        function changeDir(dir) {
+        function handleInput(dir) {
             if (dir === 'UP' && dy === 0) { dx = 0; dy = -gridSize; }
             if (dir === 'DOWN' && dy === 0) { dx = 0; dy = gridSize; }
             if (dir === 'LEFT' && dx === 0) { dx = -gridSize; dy = 0; }
             if (dir === 'RIGHT' && dx === 0) { dx = gridSize; dy = 0; }
         }
 
-        initSystem(); // 启动
+        // 启动系统
+        initSystem();
     </script>
 </body>
 </html>
