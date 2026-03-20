@@ -1,95 +1,78 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>诊断版 V2.1</title>
-    <script src="supabase.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>原子诊断 V2.2</title>
     <style>
-        :root { --primary-color: #4CAF50; --bg-color: #1a1a1a; }
-        body { margin: 0; background: var(--bg-color); color: white; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #menu-screen { display: flex; flex-direction: column; gap: 15px; text-align: center; width: 100%; padding: 20px; }
-        .user-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; border: 1px solid #333; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .online { background: #4CAF50; box-shadow: 0 0 10px #4CAF50; }
-        .offline { background: #ff5252; }
-        .menu-btn { background: #333; border: 2px solid var(--primary-color); color: white; padding: 20px; font-size: 1.2rem; border-radius: 18px; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .box { border: 1px solid #4CAF50; padding: 20px; margin: 20px; border-radius: 15px; }
+        button { background: #4CAF50; color: white; border: none; padding: 15px; border-radius: 10px; width: 80%; font-size: 1.1rem; }
     </style>
 </head>
 <body>
-
-    <div id="menu-screen">
-        <div class="user-card">
-            <div style="font-size: 0.75rem; margin-bottom: 10px;">
-                <span id="cloud-status" class="status-dot offline"></span>
-                <span id="status-text">自检准备中...</span>
-            </div>
-            <div id="user-display" style="font-size:1.2rem; font-weight:bold; color:#4CAF50;">诊断加载中...</div>
-            <div style="font-size: 0.9rem; color: #888; margin-top: 5px;">云端最高纪录: <span id="record-display">0</span></div>
-        </div>
-        <h1>诊断中心 V2.1</h1>
-        <button class="menu-btn" onclick="location.reload()">重新诊断</button>
-        <p style="font-size:0.7rem; color:#444;">如果卡住请反馈弹窗数字</p>
+    <h1>原子诊断 V2.2</h1>
+    
+    <div class="box">
+        <div id="step-msg">正在等待脚本启动...</div>
     </div>
 
+    <button onclick="location.reload()">强制刷新页面</button>
+
+    <!-- 注意：我把库引用移到了最后，防止它卡住页面 -->
+    <script src="supabase.js"></script>
+
     <script>
-        const SB_URL = "https://qfplpzosjcvvyhcotodz.supabase.co"; 
-        const SB_KEY = "sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB"; 
+        // 【紧急通知】脚本已进入！
+        alert("【弹窗 A】JS 脚本已启动！");
 
-        let supabase;
-        let userProfile = { id: 'User_' + Math.floor(Math.random() * 9000 + 1000), nickname: '新玩家', highScore: 0 };
+        const msg = document.getElementById('step-msg');
+        msg.innerText = "脚本已启动，正在检查环境...";
 
-        async function initSystem() {
-            const statusLabel = document.getElementById('status-text');
-            alert("【诊断1】开始运行 initSystem");
+        // 填入你的信息
+        const URL = "https://qfplpzosjcvvyhcotodz.supabase.co";
+        const KEY = "sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB";
+
+        async function runTest() {
+            alert("【弹窗 B】开始环境自检");
             
+            // 1. 测试本地存储
             try {
-                // 第一步：读取本地
-                statusLabel.innerText = "读取本地数据...";
-                const local = localStorage.getItem('my_game_center_data');
-                if (local) userProfile = JSON.parse(local);
+                localStorage.setItem('test_js', 'ok');
+                alert("【弹窗 C】本地存储正常");
+            } catch(e) {
+                alert("【报错】本地存储被禁用！");
+            }
+
+            // 2. 检查 Supabase 库
+            if (typeof window.supabase === 'undefined') {
+                alert("【错误】找不到 Supabase 库！\n请检查：\n1. 仓库里有没有 supabase.js\n2. 文件名是否全小写\n3. 文件内容是否复制完整");
+                msg.innerText = "错误：找不到库文件";
+                return;
+            }
+            alert("【弹窗 D】库文件加载成功");
+
+            // 3. 尝试初始化
+            try {
+                const client = window.supabase.createClient(URL, KEY);
+                alert("【弹窗 E】客户端创建成功");
                 
-                document.getElementById('user-display').innerText = `${userProfile.nickname} (${userProfile.id})`;
-                document.getElementById('record-display').innerText = userProfile.highScore;
-                alert("【诊断2】本地数据读取成功");
-
-                // 第二步：检查 SDK
-                if (!window.supabase) {
-                    alert("【致命报错】window.supabase 找不到！这说明你的 supabase.js 文件内容是错的，或者文件不存在。");
-                    return;
-                }
-                alert("【诊断3】SDK 库加载正常");
-
-                // 第三步：连接云端
-                supabase = window.supabase.createClient(SB_URL, SB_KEY);
-                alert("【诊断4】云端客户端创建成功");
-
-                statusLabel.innerText = "正在查询新加坡云端...";
-                // 第四步：查询
-                const { data, error } = await supabase.from('profiles').select('*').eq('id', userProfile.id).single();
-
+                msg.innerText = "正在尝试握手新加坡服务器...";
+                const { data, error } = await client.from('profiles').select('count').limit(1);
+                
                 if (error) {
-                    alert("【诊断5】云端有反馈，但报错了：" + error.message);
-                    if (error.code === 'PGRST116') {
-                        statusLabel.innerText = "创建新档案...";
-                        await supabase.from('profiles').insert([{ id: userProfile.id, nickname: userProfile.nickname, highScore: userProfile.highScore }]);
-                        alert("【诊断6】新档案创建成功");
-                    }
+                    alert("【弹窗 F】连上了，但数据库报错：\n" + error.message);
                 } else {
-                    alert("【诊断7】全线跑通！收到云端分数：" + data.highScore);
+                    alert("【终极成功】恭喜！云端连接完全正常！");
+                    msg.innerText = "所有系统正常，可以恢复游戏了！";
                 }
-                
-                document.getElementById('cloud-status').className = "status-dot online";
-                statusLabel.innerText = "连接成功";
-
-            } catch (err) {
-                alert("【崩溃报错】" + err.message);
+            } catch(e) {
+                alert("【崩溃】连接过程触发异常：" + e.message);
             }
         }
 
-        window.onload = initSystem;
+        // 直接运行
+        runTest();
     </script>
 </body>
 </html>
