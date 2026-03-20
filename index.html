@@ -1,69 +1,218 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="apple-touch-icon" href="icon.png">
     <meta charset="UTF-8">
-    <!-- PWA 全屏关键标签 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>我的私人贪吃蛇</title>
+    <title>我的私人游戏中心</title>
     <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #1a1a1a;
+            --btn-bg: #333;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background: #1a1a1a;
+            background: var(--bg-color);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
             overflow: hidden;
-            font-family: sans-serif;
         }
-        canvas {
-            border: 2px solid #555;
-            background: #000;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 95vw;
-            max-height: 70vh;
+
+        /* 菜单界面 */
+        #menu-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+            width: 100%;
+            padding: 20px;
         }
-        .score {
+
+        h1 { font-size: 2rem; margin-bottom: 20px; color: var(--primary-color); }
+
+        .menu-btn {
+            background: var(--btn-bg);
+            border: 2px solid var(--primary-color);
             color: white;
-            font-size: 24px;
-            margin-bottom: 10px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
-        .controls {
+
+        .menu-btn:active { transform: scale(0.95); background: var(--primary-color); }
+
+        .disabled-btn { border-color: #666; color: #888; opacity: 0.6; }
+
+        /* 游戏界面 */
+        #game-screen {
+            display: none; /* 初始隐藏 */
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        #gameCanvas {
+            border: 3px solid #444;
+            background: #000;
             margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            align-items: center;
+        }
+
+        /* 方向控制按钮 */
+        .d-pad {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left down right";
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .ctrl-btn {
+            width: 70px;
+            height: 70px;
+            background: #333;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px #000;
+        }
+
+        .ctrl-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #000;
+            background: #444;
+        }
+
+        .up { grid-area: up; }
+        .down { grid-area: down; }
+        .left { grid-area: left; }
+        .right { grid-area: right; }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid #888;
             color: #888;
-            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="score">分数: <span id="scoreVal">0</span></div>
-    <canvas id="gameCanvas"></canvas>
-    <div class="controls">滑动屏幕控制方向</div>
+
+    <!-- 主菜单界面 -->
+    <div id="menu-screen">
+        <h1>游戏中心</h1>
+        <button class="menu-btn" onclick="showGame()">经典贪吃蛇</button>
+        <button class="menu-btn disabled-btn">即将上线...</button>
+        <button class="menu-btn disabled-btn">待开发功能</button>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-screen">
+        <div class="header">
+            <button class="back-btn" onclick="showMenu()">返回菜单</button>
+            <div id="scoreVal" style="font-size: 1.5rem; font-weight: bold;">分数: 0</div>
+            <div style="width: 60px;"></div> <!-- 占位平衡 -->
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- 游戏控制盘 -->
+        <div class="d-pad">
+            <button class="ctrl-btn up" onclick="changeDir('UP')">▲</button>
+            <button class="ctrl-btn left" onclick="changeDir('LEFT')">◀</button>
+            <button class="ctrl-btn down" onclick="changeDir('DOWN')">▼</button>
+            <button class="ctrl-btn right" onclick="changeDir('RIGHT')">▶</button>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const scoreElement = document.getElementById("scoreVal");
-
-        // 适配屏幕大小
+        
         const gridSize = 20;
-        canvas.width = Math.floor((window.innerWidth * 0.9) / gridSize) * gridSize;
-        canvas.height = Math.floor((window.innerHeight * 0.6) / gridSize) * gridSize;
-
         let score = 0;
-        let snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}];
+        let snake = [];
         let dx = gridSize;
         let dy = 0;
         let foodX, foodY;
+        let gameLoop;
+        let isPaused = false;
+
+        // 适配屏幕
+        function initCanvasSize() {
+            canvas.width = Math.floor((window.innerWidth * 0.9) / gridSize) * gridSize;
+            canvas.height = Math.floor((window.innerHeight * 0.45) / gridSize) * gridSize;
+        }
+
+        // 界面切换逻辑
+        function showGame() {
+            document.getElementById("menu-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "flex";
+            initCanvasSize();
+            resetGame();
+        }
+
+        function showMenu() {
+            clearInterval(gameLoop);
+            document.getElementById("menu-screen").style.display = "flex";
+            document.getElementById("game-screen").style.display = "none";
+        }
+
+        // 游戏核心逻辑
+        function resetGame() {
+            clearInterval(gameLoop);
+            score = 0;
+            scoreElement.innerText = "分数: 0";
+            snake = [{x: 80, y: 80}, {x: 60, y: 80}, {x: 40, y: 80}];
+            dx = gridSize;
+            dy = 0;
+            createFood();
+            gameLoop = setInterval(drawLoop, 150);
+        }
 
         function createFood() {
             foodX = Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize;
             foodY = Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize;
+        }
+
+        function drawLoop() {
+            clearCanvas();
+            drawFood();
+            moveSnake();
+            drawSnake();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         function drawSnake() {
@@ -75,29 +224,29 @@
 
         function moveSnake() {
             const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-            
-            // 穿墙逻辑 (iPhone 屏幕小，穿墙比较好玩)
-            if (head.x < 0) head.x = canvas.width - gridSize;
-            if (head.x >= canvas.width) head.x = 0;
-            if (head.y < 0) head.y = canvas.height - gridSize;
-            if (head.y >= canvas.height) head.y = 0;
+
+            // 撞墙检测 (核心改动: 撞墙即死)
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                gameOver();
+                return;
+            }
+
+            // 撞身体检测
+            for (let i = 0; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
 
             snake.unshift(head);
-
             if (head.x === foodX && head.y === foodY) {
                 score += 10;
-                scoreElement.innerText = score;
+                scoreElement.innerText = "分数: " + score;
                 createFood();
             } else {
                 snake.pop();
             }
-        }
-
-        function checkGameOver() {
-            for (let i = 4; i < snake.length; i++) {
-                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
-            }
-            return false;
         }
 
         function drawFood() {
@@ -105,58 +254,39 @@
             ctx.fillRect(foodX, foodY, gridSize-2, gridSize-2);
         }
 
-        function clearCanvas() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function gameOver() {
+            clearInterval(gameLoop);
+            alert("游戏结束！得分: " + score);
+            resetGame();
         }
 
-        function main() {
-            if (checkGameOver()) {
-                alert("游戏结束！得分: " + score);
-                location.reload();
-                return;
-            }
-
-            setTimeout(function() {
-                clearCanvas();
-                drawFood();
-                moveSnake();
-                drawSnake();
-                main();
-            }, 100);
+        // 方向控制
+        function changeDir(dir) {
+            if (dir === 'UP' && dy === 0) { dx = 0; dy = -gridSize; }
+            if (dir === 'DOWN' && dy === 0) { dx = 0; dy = gridSize; }
+            if (dir === 'LEFT' && dx === 0) { dx = -gridSize; dy = 0; }
+            if (dir === 'RIGHT' && dx === 0) { dx = gridSize; dy = 0; }
         }
 
-        // 触摸控制逻辑 (适配 iPhone)
-        let touchStartX = 0;
-        let touchStartY = 0;
-
+        // 同时也保留触摸滑动支持 (防止有的用户习惯滑屏)
+        let startX, startY;
         document.addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, false);
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
 
         document.addEventListener('touchmove', e => {
-            if (!touchStartX || !touchStartY) return;
-            e.preventDefault(); // 防止滚动页面
-
-            let touchEndX = e.touches[0].clientX;
-            let touchEndY = e.touches[0].clientY;
-
-            let diffX = touchStartX - touchEndX;
-            let diffY = touchStartY - touchEndY;
-
+            if (!startX || !startY) return;
+            const diffX = startX - e.touches[0].clientX;
+            const diffY = startY - e.touches[0].clientY;
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0 && dx === 0) { dx = -gridSize; dy = 0; } // 左
-                else if (diffX < 0 && dx === 0) { dx = gridSize; dy = 0; } // 右
+                if (diffX > 0) changeDir('LEFT'); else changeDir('RIGHT');
             } else {
-                if (diffY > 0 && dy === 0) { dx = 0; dy = -gridSize; } // 上
-                else if (diffY < 0 && dy === 0) { dx = 0; dy = gridSize; } // 下
+                if (diffY > 0) changeDir('UP'); else changeDir('DOWN');
             }
-            touchStartX = 0; touchStartY = 0;
+            startX = startY = null;
         }, {passive: false});
 
-        createFood();
-        main();
     </script>
 </body>
 </html>
