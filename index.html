@@ -569,19 +569,29 @@ async function sbUpsert(id, nickname, highScore) {
 // ═══════════════════════════════════
 //  NICKNAME LOGIC
 // ═══════════════════════════════════
-const LS_KEY = 'arcadeNick';
-let playerNick = localStorage.getItem(LS_KEY) || '';
+const LS_NICK = 'arcadeNick';
+
+// 昵称即 id，存在 localStorage；清缓存后用昵称去云端查回来
+let playerNick = localStorage.getItem(LS_NICK) || '';
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-if (playerNick) {
-  document.getElementById('topbar-nick').textContent = playerNick;
-} else {
+async function initPlayer() {
+  if (playerNick) {
+    // 本地有昵称，直接用，顺便拉一次云端最高分
+    document.getElementById('topbar-nick').textContent = playerNick;
+    const p = await sbGet(playerNick);
+    if (p) { cloudBest = p.highScore || 0; localBest = cloudBest; }
+    return;
+  }
+  // 本地没有昵称 → 弹输入框
   document.getElementById('nick-modal').classList.add('open');
 }
+
+initPlayer();
 
 document.getElementById('confirm-nick-btn').addEventListener('click', () => {
   const val = document.getElementById('nick-input').value.trim();
