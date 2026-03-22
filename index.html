@@ -420,6 +420,7 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
       <button class="modal-btn yes" id="modal-yes">✔ 确认</button>
       <button class="modal-btn no"  id="modal-no">✘ 重填</button>
     </div>
+    <div id="modal-status" style="font-size:13px;color:var(--dim);letter-spacing:1px;min-height:16px;text-align:center;"></div>
   </div>
 </div>
 
@@ -568,11 +569,12 @@ async function sbUpsert(id, nickname, highScore) {
   try {
     const r = await fetchWithTimeout(`${SB_URL}/rest/v1/profiles`, {
       method: 'POST',
-      headers: { ...SB_H, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      headers: { ...SB_H, 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({ id, nickname, highScore })
     });
-    return r.ok;
-  } catch { return false; }
+    // 201=created, 200=ok, 204=no content — all success
+    return r.status === 200 || r.status === 201 || r.status === 204;
+  } catch(e) { return false; }
 }
 
 // ═══════════════════════════════════
@@ -611,14 +613,35 @@ document.getElementById('confirm-nick-btn').addEventListener('click', () => {
   document.getElementById('confirm-modal').classList.add('open');
 });
 
-document.getElementById('modal-yes').addEventListener('click', () => {
+document.getElementById('modal-yes').addEventListener('click', async () => {
   const val = document.getElementById('nick-input').value.trim();
   if (!val) return;
+  const yesBtn = document.getElementById('modal-yes');
+  const noBtn  = document.getElementById('modal-no');
+  const status = document.getElementById('modal-status');
+
+  yesBtn.disabled = true;
+  noBtn.disabled  = true;
+  yesBtn.textContent = '...';
+  status.style.color = 'var(--dim)';
+  status.textContent = '正在注册...';
+
   playerNick = val;
   localStorage.setItem(LS_NICK, playerNick);
-  document.getElementById('confirm-modal').classList.remove('open');
-  document.getElementById('topbar-nick').textContent = playerNick;
-  sbUpsert(playerNick, playerNick, 0);
+  const ok = await sbUpsert(playerNick, playerNick, 0);
+
+  if (ok) {
+    status.textContent = '';
+    document.getElementById('confirm-modal').classList.remove('open');
+    document.getElementById('topbar-nick').textContent = playerNick;
+  } else {
+    // 失败：提示用户，允许重试
+    status.style.color = 'var(--red)';
+    status.textContent = '网络失败，点确认重试';
+    yesBtn.textContent = '✔ 重试';
+    yesBtn.disabled = false;
+    noBtn.disabled  = false;
+  }
 });
 
 document.getElementById('modal-no').addEventListener('click', () => {
