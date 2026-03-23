@@ -380,8 +380,8 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
         <input type="text" id="aud-name" placeholder="输入姓名..." maxlength="10" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
       <div>
-        <div class="form-label" style="margin-bottom:8px;">图鉴 · 所有品种完全体预览</div>
-        <div style="font-size:13px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;">领养时随机抽取品种，1级是神秘蛋🥚</div>
+        <div class="form-label" style="margin-bottom:6px;">👑 王者图鉴 · 期待你的宠物进化成这样</div>
+        <div style="font-size:13px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;">领养随机抽取 · 喂食升到1级才能看见真实形态</div>
         <div class="species-grid" id="species-grid"></div>
       </div>
       <button class="pix-btn full" id="adopt-btn">🎲 随机领养</button>
@@ -489,7 +489,7 @@ const SNACKS = [
 ];
 
 const XP_PER_LEVEL = 100;
-const STAGE_LEVELS  = [1, 2, 5, 10]; // 幼年/成长/精英/王者
+const STAGE_LEVELS  = [0, 1, 2, 5, 10]; // 0=神秘蛋/1=幼年/2=成长/5=精英/10=王者
 
 function getStageIdx(level) {
   let idx = 0;
@@ -501,21 +501,25 @@ function getStageIdx(level) {
 function getSpecies(id) { return SPECIES.find(s => s.id === id) || SPECIES[0]; }
 function getStageStyle(stageIdx) {
   const styles = [
-    // 0: 幼年 — 正常小
-    { scale:0.85, glow:'', ring:'' },
-    // 1: 成长 — 正常，绿光
-    { scale:1.0,  glow:'drop-shadow(0 0 5px rgba(100,220,100,0.6))', ring:'' },
-    // 2: 精英 — 大，蓝色光环
-    { scale:1.25, glow:'drop-shadow(0 0 8px rgba(68,170,255,0.9)) drop-shadow(0 0 18px rgba(68,170,255,0.4))', ring:'ring-blue' },
-    // 3: 王者 — 最大，金光+旋转金环
-    { scale:1.55, glow:'drop-shadow(0 0 12px rgba(255,200,0,1)) drop-shadow(0 0 28px rgba(255,150,0,0.8))', ring:'ring-gold' },
+    // 0: 神秘蛋 — 暗淡小
+    { scale:0.8,  glow:'grayscale(20%)', ring:'' },
+    // 1: 幼年 — 正常
+    { scale:0.9,  glow:'', ring:'' },
+    // 2: 成长 — 绿光
+    { scale:1.05, glow:'drop-shadow(0 0 5px rgba(100,220,100,0.6))', ring:'' },
+    // 3: 精英 — 蓝光+旋转环
+    { scale:1.3,  glow:'drop-shadow(0 0 8px rgba(68,170,255,0.9)) drop-shadow(0 0 18px rgba(68,170,255,0.4))', ring:'ring-blue' },
+    // 4: 王者 — 金光+金环
+    { scale:1.6,  glow:'drop-shadow(0 0 12px rgba(255,200,0,1)) drop-shadow(0 0 28px rgba(255,150,0,0.8))', ring:'ring-gold' },
   ];
   return styles[stageIdx] || styles[0];
 }
 function getPetEmoji(student) {
   const sp  = getSpecies(student.species);
   const idx = getStageIdx(student.level);
-  return (sp.stages && sp.stages[idx]) || sp.stages[0];
+  if (idx === 0) return '🥚'; // 0级永远是神秘蛋
+  // stages[0]是幼年，idx-1对应
+  return (sp.stages && sp.stages[idx - 1]) || '🥚';
 }
 function getPetStageDesc(student) {
   const sp  = getSpecies(student.species);
@@ -523,7 +527,7 @@ function getPetStageDesc(student) {
   return (sp.stageDesc || [])[idx] || '神秘蛋';
 }
 function getStageName(stageIdx) {
-  return ['幼年态','成长态','精英态','王者态'][stageIdx] || '幼年态';
+  return ['神秘蛋','幼年态','成长态','精英态','王者态'][stageIdx] || '神秘蛋';
 }
 
 const BUBBLE_TEXTS = [
@@ -802,22 +806,27 @@ document.getElementById('adopt-btn').addEventListener('click', async () => {
   preEmoji.style.filter = '';
   preName.textContent  = picked.name;
   preStage.textContent = picked.stageDesc[0];
+  // 先显示神秘蛋（品种保密）
+  preEmoji.textContent = '🥚';
+  preEmoji.style.filter = '';
+  preName.textContent  = '神秘蛋';
+  preStage.textContent = '喂食升到1级才能看见真实形态';
   status.style.color   = 'var(--yellow)';
-  status.textContent   = `✨ ${name} 抽到了 ${picked.name}！`;
+  status.textContent   = `✨ ${name} 获得了一枚神秘蛋！`;
 
-  await new Promise(r => setTimeout(r, 800));
+  await new Promise(r => setTimeout(r, 900));
 
   status.style.color = 'var(--dim)';
   status.textContent = '正在领养...';
 
   const id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
-  const ok = await sbPost('students', { id, name, species: picked.id, level:1, xp:0, stage:1, snacks_received:0 });
+  const ok = await sbPost('students', { id, name, species: picked.id, level:0, xp:0, stage:0, snacks_received:0 });
 
   if (ok) {
     status.style.color  = 'var(--green)';
-    status.textContent  = `🎉 领养成功！喂食让 ${picked.name} 成长吧`;
+    status.textContent  = `🎉 领养成功！去农场喂食，解锁神秘形态吧`;
     document.getElementById('aud-name').value = '';
-    showToast(`🎉 ${name} 的 ${picked.name} 加入农场！`);
+    showToast(`🥚 ${name} 的神秘蛋加入农场！`);
   } else {
     status.style.color  = 'var(--red)';
     status.textContent  = '领养失败，请重试';
@@ -963,7 +972,7 @@ function openPetModal(st) {
   pmEmojiEl.style.transform = `scale(${Math.min(_pss.scale, 1.4)})`;
   document.getElementById('pm-name').textContent     = `${st.name}  ·  ${sp.name}`;
   document.getElementById('pm-stage').textContent    = getPetStageDesc(st);
-  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--blue)','var(--purple)','var(--yellow)'][stageIdx];
+  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--dim)','var(--green)','var(--blue)','var(--yellow)'][stageIdx];
   document.getElementById('pm-meta').textContent     = `Lv.${st.level}  ·  零食×${st.snacks_received}`;
   document.getElementById('pm-xpbar').style.width    = xpPct + '%';
   document.getElementById('pm-xptext').textContent   = `XP: ${st.xp % xpNeed} / ${xpNeed}`;
