@@ -131,8 +131,31 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 .screen-title{font-family:'Press Start 2P',monospace;font-size:clamp(9px,2.2vw,12px);color:var(--green);}
 
 /* 农场地图 */
-.farm-map{position:relative;width:100%;flex:1;background:linear-gradient(135deg,#0a1a0a 0%,#0d1a10 50%,#0a0f1a 100%);border:1px solid #1a2a1a;border-radius:4px;overflow:hidden;min-height:300px;}
+.farm-map{position:relative;width:100%;flex:1;overflow:hidden;min-height:300px;border-radius:6px;border:1px solid #1a3a1a;}
 .farm-map-wrap{flex:1;width:100%;padding:8px;display:flex;flex-direction:column;min-height:0;}
+
+/* 地图背景层 */
+.farm-bg{position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 40% at 50% 100%, #0a2010 0%, transparent 70%),
+  radial-gradient(ellipse 60% 30% at 20% 80%, #0d1f0d 0%, transparent 60%),
+  radial-gradient(ellipse 60% 30% at 80% 70%, #0a1a0f 0%, transparent 60%),
+  linear-gradient(180deg, #071510 0%, #0c1e0e 40%, #0a1a0c 70%, #071208 100%);
+  z-index:0;}
+
+/* 网格地面纹理 */
+.farm-ground{position:absolute;bottom:0;left:0;right:0;height:35%;
+  background: repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,80,20,.08) 40px, rgba(0,80,20,.08) 41px),
+              repeating-linear-gradient(0deg,  transparent, transparent 20px, rgba(0,80,20,.06) 20px, rgba(0,80,20,.06) 21px),
+              linear-gradient(180deg, transparent 0%, rgba(0,40,10,.3) 100%);
+  z-index:1;}
+
+/* 装饰元素 */
+.farm-deco{position:absolute;z-index:2;pointer-events:none;font-size:clamp(16px,3vw,24px);opacity:.7;user-select:none;}
+.farm-stat-bar{position:absolute;top:8px;left:8px;right:8px;z-index:10;display:flex;gap:8px;pointer-events:none;}
+.farm-stat{background:rgba(7,7,14,.7);border:1px solid rgba(0,255,136,.2);border-radius:3px;padding:4px 10px;font-size:13px;color:var(--green);letter-spacing:1px;backdrop-filter:blur(4px);}
+
+/* 天空星星 */
+.farm-stars{position:absolute;inset:0;z-index:1;pointer-events:none;}
 
 /* 宠物精灵 */
 .pet-sprite{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:none;user-select:none;-webkit-user-select:none;}
@@ -303,7 +326,34 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
   </div>
   <div class="farm-map-wrap">
     <div class="farm-map" id="farm-map">
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px;letter-spacing:2px;" id="farm-empty">暂无宠物，去动物选秀领养吧</div>
+      <!-- 背景层 -->
+      <div class="farm-bg"></div>
+      <canvas class="farm-stars" id="farm-stars"></canvas>
+      <div class="farm-ground"></div>
+      <!-- 装饰：固定植物/建筑 -->
+      <div class="farm-deco" style="bottom:8%;left:3%">🌳</div>
+      <div class="farm-deco" style="bottom:6%;left:12%">🌿</div>
+      <div class="farm-deco" style="bottom:10%;right:4%">🌲</div>
+      <div class="farm-deco" style="bottom:5%;right:14%">🍀</div>
+      <div class="farm-deco" style="bottom:8%;left:45%">🌾</div>
+      <div class="farm-deco" style="top:8%;left:5%;font-size:18px;opacity:.4">⭐</div>
+      <div class="farm-deco" style="top:15%;right:8%;font-size:14px;opacity:.3">✨</div>
+      <div class="farm-deco" style="top:5%;left:40%;font-size:12px;opacity:.25">🌙</div>
+      <div class="farm-deco" style="bottom:20%;left:25%;opacity:.35">🌸</div>
+      <div class="farm-deco" style="bottom:18%;right:28%;opacity:.4">🍄</div>
+      <div class="farm-deco" style="bottom:12%;left:60%;opacity:.5">🪨</div>
+      <!-- 小屋 -->
+      <div class="farm-deco" style="bottom:6%;right:2%;font-size:clamp(22px,4vw,32px);opacity:.8">🏡</div>
+      <!-- 状态栏 -->
+      <div class="farm-stat-bar">
+        <div class="farm-stat">🐾 <span id="farm-stat-count">0</span> 只宠物</div>
+        <div class="farm-stat" id="farm-stat-time">🌙 夜晚</div>
+      </div>
+      <!-- 空状态 -->
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);font-size:16px;letter-spacing:2px;z-index:5;gap:12px;" id="farm-empty">
+        <div style="font-size:40px">🥚</div>
+        <div>暂无宠物，去动物选秀领养吧</div>
+      </div>
     </div>
   </div>
 </div>
@@ -322,11 +372,12 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
         <input type="text" id="aud-name" placeholder="输入姓名..." maxlength="10" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
       <div>
-        <div class="form-label">选择品种</div>
+        <div class="form-label" style="margin-bottom:8px;">图鉴 · 所有品种完全体预览</div>
+        <div style="font-size:13px;color:var(--dim);letter-spacing:1px;margin-bottom:10px;">领养时随机抽取品种，1级是神秘蛋🥚</div>
         <div class="species-grid" id="species-grid"></div>
       </div>
-      <button class="pix-btn full" id="adopt-btn">🎉 领养宠物</button>
-      <div id="adopt-status" style="font-size:14px;color:var(--dim);text-align:center;min-height:16px;letter-spacing:1px;"></div>
+      <button class="pix-btn full" id="adopt-btn">🎲 随机领养</button>
+      <div id="adopt-status" style="font-size:16px;color:var(--dim);text-align:center;min-height:20px;letter-spacing:1px;"></div>
     </div>
   </div>
 </div>
@@ -393,26 +444,26 @@ async function sbPatch(table, query, body) {
 //  ANIMAL DATA
 // ══════════════════════════════════════
 const SPECIES = [
-  { id:'trex',    name:'霸王龙',    stages:['🥚','🦎','🦖','🐉'] },
-  { id:'duck',    name:'鸭鸭',      stages:['🥚','🐣','🦆','🦅'] },
-  { id:'alien',   name:'代码外星人', stages:['🥚','👾','🤖','👽'] },
-  { id:'shark',   name:'机械鲨鱼',  stages:['🥚','🐟','🦈','🤖'] },
-  { id:'cybercat',name:'赛博猫',    stages:['🥚','🐱','😺','🦁'] },
-  { id:'seahorse',name:'海马',      stages:['🥚','🌊','🐠','🦄'] },
-  { id:'panda',   name:'功夫熊猫',  stages:['🥚','🐼','🐻','🥋'] },
-  { id:'phoenix', name:'凤凰',      stages:['🥚','🐦','🦜','🔥'] },
-  { id:'slime',   name:'史莱姆',    stages:['🥚','💧','🫧','✨'] },
-  { id:'mushroom',name:'蘑菇怪',    stages:['🥚','🍄','🧙','🌋'] },
-  { id:'crab',    name:'螃蟹将军',  stages:['🥚','🦀','⚔️','👑'] },
-  { id:'bunny',   name:'魔法兔',    stages:['🥚','🐇','🎩','🌙'] },
-  { id:'penguin', name:'企鹅侦探',  stages:['🥚','🐧','🕵️','🧊'] },
-  { id:'crystal', name:'水晶龙',    stages:['🥚','💎','🌀','🐲'] },
-  { id:'fox',     name:'狐狸忍者',  stages:['🥚','🦊','🥷','⚡'] },
-  { id:'octopus', name:'章鱼博士',  stages:['🥚','🐙','🔬','🌐'] },
-  { id:'wolf',    name:'星狼',      stages:['🥚','🐺','🌟','🌌'] },
-  { id:'bee',     name:'蜜蜂工程师',stages:['🥚','🐝','🔧','🏆'] },
-  { id:'frog',    name:'雨蛙魔导士',stages:['🥚','🐸','🪄','⚗️'] },
-  { id:'hamster', name:'仓鼠骑士',  stages:['🥚','🐹','🛡️','⚔️'] },
+  { id:'trex',    name:'霸王龙',    stages:['🦎','🦖','🐲','🐉'] },
+  { id:'duck',    name:'鸭鸭',      stages:['🐣','🐥','🦆','🦅'] },
+  { id:'alien',   name:'代码外星人', stages:['👾','🤖','🛸','👽'] },
+  { id:'shark',   name:'机械鲨鱼',  stages:['🐟','🐠','🦈','🤖'] },
+  { id:'cybercat',name:'赛博猫',    stages:['🐱','😸','😺','🦁'] },
+  { id:'seahorse',name:'海马',      stages:['🐚','🐠','🦄','🌈'] },
+  { id:'panda',   name:'功夫熊猫',  stages:['🐼','🐻','🥋','👊'] },
+  { id:'phoenix', name:'凤凰',      stages:['🐦','🦜','🔥','🌟'] },
+  { id:'slime',   name:'史莱姆',    stages:['💧','🫧','🌀','✨'] },
+  { id:'mushroom',name:'蘑菇怪',    stages:['🍄','🌿','🧙','🌋'] },
+  { id:'crab',    name:'螃蟹将军',  stages:['🦀','🛡️','⚔️','👑'] },
+  { id:'bunny',   name:'魔法兔',    stages:['🐇','🐰','🎩','🌙'] },
+  { id:'penguin', name:'企鹅侦探',  stages:['🐧','🕶️','🕵️','🧊'] },
+  { id:'crystal', name:'水晶龙',    stages:['💠','💎','🌀','🐲'] },
+  { id:'fox',     name:'狐狸忍者',  stages:['🦊','🥷','⚡','🌪️'] },
+  { id:'octopus', name:'章鱼博士',  stages:['🐙','🔬','🌐','🧬'] },
+  { id:'wolf',    name:'星狼',      stages:['🐺','🌕','🌟','🌌'] },
+  { id:'bee',     name:'蜜蜂工程师',stages:['🐝','🔧','⚙️','🏆'] },
+  { id:'frog',    name:'雨蛙魔导士',stages:['🐸','🪄','⚗️','🌊'] },
+  { id:'hamster', name:'仓鼠骑士',  stages:['🐹','🛡️','⚔️','🏰'] },
 ];
 
 const SNACKS = [
@@ -423,7 +474,7 @@ const SNACKS = [
 ];
 
 const XP_PER_LEVEL = 100;
-const STAGE_LEVELS  = [1, 5, 10, 20]; // 每个 stage 需要的最低 level
+const STAGE_LEVELS  = [1, 2, 5, 10, 20]; // egg/baby/teen/adult/myth
 
 function getStageIdx(level) {
   let idx = 0;
@@ -438,7 +489,7 @@ function getPetEmoji(student) {
   return sp.stages[getStageIdx(student.level)];
 }
 function getStageName(stageIdx) {
-  return ['幼年态','进阶态','完全体','神话体'][stageIdx] || '幼年态';
+  return ['神秘蛋','幼年态','进阶态','完全体','神话体'][stageIdx] || '神秘蛋';
 }
 
 const BUBBLE_TEXTS = [
@@ -661,19 +712,15 @@ window.addEventListener('resize',()=>{if(document.getElementById('game-screen').
 // ══════════════════════════════════════
 //  AUDITION  (领养宠物)
 // ══════════════════════════════════════
-let selectedSpecies = SPECIES[0].id;
 function renderSpeciesGrid() {
   const grid = document.getElementById('species-grid');
   grid.innerHTML = '';
   SPECIES.forEach(sp => {
     const el = document.createElement('div');
-    el.className = 'species-opt' + (sp.id === selectedSpecies ? ' selected' : '');
-    el.innerHTML = `<div class="species-emoji">${sp.stages[0]}</div><div class="species-name">${sp.name}</div>`;
-    el.addEventListener('click', () => {
-      selectedSpecies = sp.id;
-      document.querySelectorAll('.species-opt').forEach(o => o.classList.remove('selected'));
-      el.classList.add('selected');
-    });
+    el.className = 'species-opt';
+    // 展示完全体（index 3）
+    el.innerHTML = `<div class="species-emoji">${sp.stages[3]}</div><div class="species-name">${sp.name}</div>`;
+    el.style.cursor = 'default';
     grid.appendChild(el);
   });
 }
@@ -683,14 +730,20 @@ document.getElementById('adopt-btn').addEventListener('click', async () => {
   if (!name) { document.getElementById('aud-name').focus(); return; }
   const status = document.getElementById('adopt-status');
   const btn    = document.getElementById('adopt-btn');
-  btn.disabled = true; status.style.color='var(--dim)'; status.textContent='领养中...';
+  btn.disabled = true;
+  // 随机抽取品种
+  const picked = SPECIES[Math.floor(Math.random() * SPECIES.length)];
+  status.style.color = 'var(--dim)';
+  status.textContent = '🎲 抽取中...';
+  await new Promise(r => setTimeout(r, 600)); // 短暂停顿增加仪式感
+  status.textContent = `✨ 抽到了！正在领养...`;
   const id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
-  const ok = await sbPost('students', { id, name, species: selectedSpecies, level:1, xp:0, stage:1, snacks_received:0 });
+  const ok = await sbPost('students', { id, name, species: picked.id, level:1, xp:0, stage:1, snacks_received:0 });
   if (ok) {
     status.style.color = 'var(--green)';
-    status.textContent = `🎉 ${name} 已领养！`;
+    status.textContent = `🥚 ${name} 领到了神秘蛋！喂食解锁真实形态`;
     document.getElementById('aud-name').value = '';
-    showToast(`🎉 ${name} 加入农场！`);
+    showToast(`🥚 ${name} 的神秘蛋已孵化中！`);
   } else {
     status.style.color = 'var(--red)';
     status.textContent = '领养失败，请重试';
@@ -709,7 +762,16 @@ async function loadFarm() {
   const data = await sbGet('students', 'select=*&order=created_at.asc');
   farmStudents = data || [];
   document.getElementById('farm-count').textContent = farmStudents.length + ' pets';
+  document.getElementById('farm-stat-count').textContent = farmStudents.length;
   document.getElementById('farm-empty').style.display = farmStudents.length ? 'none' : 'flex';
+  // 时间显示
+  const h = new Date().getHours();
+  const timeEl = document.getElementById('farm-stat-time');
+  if (h >= 6 && h < 12)       timeEl.textContent = '🌅 早晨';
+  else if (h >= 12 && h < 17) timeEl.textContent = '☀️ 下午';
+  else if (h >= 17 && h < 20) timeEl.textContent = '🌆 傍晚';
+  else                         timeEl.textContent = '🌙 夜晚';
+  initFarmStars();
   renderFarm();
 }
 
@@ -728,6 +790,7 @@ function renderFarm() {
     el.style.left = (20 + Math.random() * (W - 80)) + 'px';
     el.style.top  = (20 + Math.random() * (H - 80)) + 'px';
     el.addEventListener('click', () => openPetModal(st));
+    el.style.zIndex = '5';
     map.appendChild(el);
 
     const sprite = {
@@ -739,6 +802,27 @@ function renderFarm() {
     farmSprites.push(sprite);
   });
   startFarmLoop();
+}
+
+function initFarmStars() {
+  const sc = document.getElementById('farm-stars');
+  const map = document.getElementById('farm-map');
+  sc.width  = map.clientWidth;
+  sc.height = map.clientHeight;
+  const sctx = sc.getContext('2d');
+  sctx.clearRect(0, 0, sc.width, sc.height);
+  const h = new Date().getHours();
+  if (h >= 20 || h < 6) { // 夜晚才画星星
+    for (let i = 0; i < 40; i++) {
+      const x = Math.random() * sc.width;
+      const y = Math.random() * sc.height * 0.5;
+      const r = Math.random() * 1.2 + 0.3;
+      sctx.beginPath();
+      sctx.arc(x, y, r, 0, Math.PI*2);
+      sctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random()*0.5})`;
+      sctx.fill();
+    }
+  }
 }
 
 function startFarmLoop() {
@@ -795,7 +879,7 @@ function openPetModal(st) {
   document.getElementById('pm-emoji').textContent    = getPetEmoji(st);
   document.getElementById('pm-name').textContent     = `${st.name}  ·  ${sp.name}`;
   document.getElementById('pm-stage').textContent    = getStageName(stageIdx);
-  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--blue)','var(--purple)','var(--yellow)'][stageIdx];
+  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--green)','var(--blue)','var(--purple)','var(--yellow)'][stageIdx];
   document.getElementById('pm-meta').textContent     = `Lv.${st.level}  ·  零食×${st.snacks_received}`;
   document.getElementById('pm-xpbar').style.width    = xpPct + '%';
   document.getElementById('pm-xptext').textContent   = `XP: ${st.xp % xpNeed} / ${xpNeed}`;
