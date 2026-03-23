@@ -159,7 +159,13 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 
 /* 宠物精灵 */
 .pet-sprite{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:none;user-select:none;-webkit-user-select:none;}
-.pet-emoji{font-size:clamp(24px,5vw,36px);line-height:1;filter:drop-shadow(0 0 6px rgba(0,255,136,.3));transition:transform .15s;}
+.pet-emoji-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;}
+.pet-emoji{font-size:clamp(28px,5vw,42px);line-height:1;transition:filter .4s,transform .4s;display:block;}
+.ring-blue::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(68,170,255,0.7);animation:ring-spin 3s linear infinite;box-shadow:0 0 12px rgba(68,170,255,0.5);}
+.ring-gold::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:3px solid rgba(255,200,0,0.9);animation:ring-spin 2s linear infinite;box-shadow:0 0 20px rgba(255,180,0,0.7),inset 0 0 10px rgba(255,200,0,0.2);}
+.ring-gold::after{content:'⭐';position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:12px;animation:star-bounce 1s ease-in-out infinite;}
+@keyframes ring-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes star-bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-3px);}}
 .pet-sprite:active .pet-emoji{transform:scale(1.3);}
 .pet-name{font-size:11px;color:var(--text);letter-spacing:1px;text-shadow:0 1px 3px #000;white-space:nowrap;margin-top:2px;}
 .pet-lvl{font-size:10px;color:var(--yellow);letter-spacing:1px;}
@@ -169,7 +175,7 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 /* 学生列表 */
 .student-list{display:flex;flex-direction:column;gap:10px;}
 .student-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px;display:flex;align-items:center;gap:14px;}
-.student-card-emoji{font-size:36px;line-height:1;flex-shrink:0;}
+.student-card-emoji{font-size:36px;line-height:1;flex-shrink:0;transition:filter .3s,transform .3s;display:block;transform-origin:center;}
 .student-card-info{flex:1;min-width:0;}
 .student-card-name{font-size:22px;color:var(--text);letter-spacing:1px;}
 .student-card-meta{font-size:14px;color:var(--dim);letter-spacing:1px;}
@@ -190,7 +196,7 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 .species-opt{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all .15s;}
 .species-opt.selected{border-color:var(--green);}
 .species-opt:active{transform:scale(.93);}
-.species-emoji{font-size:26px;line-height:1;}
+.species-emoji{font-size:36px;line-height:1;}
 .species-name{font-size:10px;color:var(--dim);letter-spacing:1px;text-align:center;}
 .species-opt.selected .species-name{color:var(--green);}
 
@@ -484,9 +490,31 @@ function getStageIdx(level) {
   return idx;
 }
 function getSpecies(id) { return SPECIES.find(s => s.id === id) || SPECIES[0]; }
+function getStageStyle(stageIdx) {
+  // 返回 CSS filter + transform + 额外class，随阶段增强
+  const styles = [
+    // 0: 蛋 — 正常
+    { filter:'none', scale:1.0, glow:'', ring:'' },
+    // 1: 幼崽 — 小且暗
+    { filter:'grayscale(30%) brightness(0.85)', scale:0.75, glow:'', ring:'' },
+    // 2: 少年 — 正常大小，有轻微色彩
+    { filter:'brightness(1.0)', scale:1.0, glow:'drop-shadow(0 0 4px rgba(100,220,100,0.5))', ring:'' },
+    // 3: 成体 — 更大，蓝色辉光
+    { filter:'brightness(1.15) saturate(1.3)', scale:1.3, glow:'drop-shadow(0 0 8px rgba(68,170,255,0.8)) drop-shadow(0 0 16px rgba(68,170,255,0.4))', ring:'ring-blue' },
+    // 4: 传说 — 最大，金色光环
+    { filter:'brightness(1.3) saturate(1.5)', scale:1.65, glow:'drop-shadow(0 0 10px rgba(255,200,0,1)) drop-shadow(0 0 24px rgba(255,150,0,0.7))', ring:'ring-gold' },
+  ];
+  return styles[stageIdx] || styles[0];
+}
 function getPetEmoji(student) {
-  const sp = getSpecies(student.species);
-  return sp.stages[getStageIdx(student.level)];
+  const sp  = getSpecies(student.species);
+  const idx = getStageIdx(student.level);
+  return idx === 0 ? '🥚' : sp.emoji;
+}
+function getPetStageDesc(student) {
+  const sp  = getSpecies(student.species);
+  const idx = getStageIdx(student.level);
+  return (sp.stageDesc || [])[idx] || '神秘蛋';
 }
 function getStageName(stageIdx) {
   return ['神秘蛋','幼年态','进阶态','完全体','神话体'][stageIdx] || '神秘蛋';
@@ -715,12 +743,15 @@ window.addEventListener('resize',()=>{if(document.getElementById('game-screen').
 function renderSpeciesGrid() {
   const grid = document.getElementById('species-grid');
   grid.innerHTML = '';
+  const adultStyle = getStageStyle(3);
   SPECIES.forEach(sp => {
     const el = document.createElement('div');
     el.className = 'species-opt';
-    // 展示完全体（index 3）
-    el.innerHTML = `<div class="species-emoji">${sp.stages[3]}</div><div class="species-name">${sp.name}</div>`;
     el.style.cursor = 'default';
+    el.innerHTML = `
+      <div class="species-emoji" style="filter:${adultStyle.glow};-webkit-filter:${adultStyle.glow};">${sp.emoji}</div>
+      <div class="species-name">${sp.name}</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:2px;">完全体预览</div>`;
     grid.appendChild(el);
   });
 }
@@ -786,7 +817,10 @@ function renderFarm() {
   farmStudents.forEach(st => {
     const el = document.createElement('div');
     el.className = 'pet-sprite';
-    el.innerHTML = `<div class="pet-emoji">${getPetEmoji(st)}</div><div class="pet-name">${st.name}</div><div class="pet-lvl">Lv.${st.level}</div><div class="pet-bubble" id="bubble-${st.id}"></div>`;
+    const _si = getStageIdx(st.level);
+    const _ss = getStageStyle(_si);
+    const _em = getPetEmoji(st);
+    el.innerHTML = `<div class="pet-emoji-wrap ${_ss.ring}"><div class="pet-emoji" style="transform:scale(${_ss.scale});filter:${_ss.glow};-webkit-filter:${_ss.glow};">${_em}</div></div><div class="pet-name">${st.name}</div><div class="pet-lvl">Lv.${st.level}</div><div class="pet-bubble" id="bubble-${st.id}"></div>`;
     el.style.left = (20 + Math.random() * (W - 80)) + 'px';
     el.style.top  = (20 + Math.random() * (H - 80)) + 'px';
     el.addEventListener('click', () => openPetModal(st));
@@ -876,9 +910,15 @@ function openPetModal(st) {
   const stageIdx= getStageIdx(st.level);
   const xpNeed  = XP_PER_LEVEL;
   const xpPct   = Math.min(100, Math.round((st.xp % xpNeed) / xpNeed * 100));
-  document.getElementById('pm-emoji').textContent    = getPetEmoji(st);
+  const _psi = getStageIdx(st.level);
+  const _pss = getStageStyle(_psi);
+  const pmEmojiEl = document.getElementById('pm-emoji');
+  pmEmojiEl.textContent = getPetEmoji(st);
+  pmEmojiEl.style.filter = _pss.glow;
+  pmEmojiEl.style.webkitFilter = _pss.glow;
+  pmEmojiEl.style.transform = `scale(${Math.min(_pss.scale, 1.4)})`;
   document.getElementById('pm-name').textContent     = `${st.name}  ·  ${sp.name}`;
-  document.getElementById('pm-stage').textContent    = getStageName(stageIdx);
+  document.getElementById('pm-stage').textContent    = getPetStageDesc(st);
   document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--green)','var(--blue)','var(--purple)','var(--yellow)'][stageIdx];
   document.getElementById('pm-meta').textContent     = `Lv.${st.level}  ·  零食×${st.snacks_received}`;
   document.getElementById('pm-xpbar').style.width    = xpPct + '%';
@@ -918,8 +958,16 @@ async function feedSnack(st, snack) {
   const sprite = farmSprites.find(s => s.student.id === st.id);
   if (sprite) {
     sprite.student = st;
-    sprite.el.querySelector('.pet-emoji').textContent = getPetEmoji(st);
-    sprite.el.querySelector('.pet-lvl').textContent   = 'Lv.' + st.level;
+    const _nsi = getStageIdx(st.level);
+    const _nss = getStageStyle(_nsi);
+    const emojiEl = sprite.el.querySelector('.pet-emoji');
+    emojiEl.textContent = getPetEmoji(st);
+    emojiEl.style.transform = `scale(${_nss.scale})`;
+    emojiEl.style.filter = _nss.glow;
+    emojiEl.style.webkitFilter = _nss.glow;
+    const wrap = sprite.el.querySelector('.pet-emoji-wrap');
+    wrap.className = 'pet-emoji-wrap ' + _nss.ring;
+    sprite.el.querySelector('.pet-lvl').textContent = 'Lv.' + st.level;
   }
 
   showToast(`${snack.emoji} 喂食成功！+${snack.xp}XP` + (levelsUp ? `  升级→Lv.${newLevel}🎉` : ''));
@@ -946,8 +994,10 @@ async function loadManage() {
     const xpPct   = Math.min(100, Math.round((st.xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100));
     const card    = document.createElement('div');
     card.className = 'student-card';
+    const _rsi = getStageIdx(st.level);
+    const _rss = getStageStyle(_rsi);
     card.innerHTML = `
-      <div class="student-card-emoji">${getPetEmoji(st)}</div>
+      <div class="student-card-emoji" style="filter:${_rss.glow};-webkit-filter:${_rss.glow};transform:scale(${Math.min(_rss.scale,1.2)});transform-origin:center;">${getPetEmoji(st)}</div>
       <div class="student-card-info">
         <div class="student-card-name">${st.name}</div>
         <div class="student-card-meta">${sp.name} · Lv.${st.level} · 零食×${st.snacks_received}</div>
@@ -969,8 +1019,14 @@ async function loadManage() {
         const newData = await sbGet('students', `id=eq.${st.id}&select=*`);
         if (newData && newData[0]) {
           Object.assign(st, newData[0]);
-          card.querySelector('.student-card-meta').textContent = `${sp.name} · Lv.${st.level} · 零食×${st.snacks_received}`;
-          card.querySelector('.student-card-emoji').textContent = getPetEmoji(st);
+          card.querySelector('.student-card-meta').textContent = `${sp.name} · ${getPetStageDesc(st)} · Lv.${st.level} · 零食×${st.snacks_received}`;
+          const _msi = getStageIdx(st.level);
+        const _mss = getStageStyle(_msi);
+        const _mel = card.querySelector('.student-card-emoji');
+        _mel.textContent = getPetEmoji(st);
+        _mel.style.filter = _mss.glow;
+        _mel.style.webkitFilter = _mss.glow;
+        _mel.style.transform = `scale(${Math.min(_mss.scale,1.2)})`;
         }
         btn.disabled = false;
       });
