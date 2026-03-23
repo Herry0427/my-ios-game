@@ -126,7 +126,7 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 #farm-screen,#audition-screen,#manage-screen{justify-content:flex-start;}
 
 /* 通用内容区 */
-.screen-body{flex:1;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px max(14px,env(safe-area-inset-bottom));}
+.screen-body{flex:1;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px max(14px,env(safe-area-inset-bottom));min-height:0;}
 .screen-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 16px 10px;flex-shrink:0;border-bottom:1px solid var(--border);}
 .screen-title{font-family:'Press Start 2P',monospace;font-size:clamp(9px,2.2vw,12px);color:var(--green);}
 
@@ -194,8 +194,8 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 /* 选秀 */
 .audition-form{display:flex;flex-direction:column;gap:12px;max-width:400px;width:100%;}
 .form-label{font-size:14px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;}
-.species-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.species-opt{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all .15s;}
+.species-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.species-opt{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;}
 .species-opt.selected{border-color:var(--green);}
 .species-opt:active{transform:scale(.93);}
 .species-emoji{font-size:36px;line-height:1;}
@@ -752,16 +752,19 @@ window.addEventListener('resize',()=>{if(document.getElementById('game-screen').
 // ══════════════════════════════════════
 function renderSpeciesGrid() {
   const grid = document.getElementById('species-grid');
+  if (!grid) return;
   grid.innerHTML = '';
-  const kingStyle = getStageStyle(3);
+  // 王者态 = stages 最后一个
   SPECIES.forEach(sp => {
+    const kingEmoji = sp.stages[sp.stages.length - 1];
+    const kingDesc  = sp.stageDesc[sp.stageDesc.length - 1];
     const el = document.createElement('div');
     el.className = 'species-opt';
     el.style.cursor = 'default';
     el.innerHTML = `
-      <div class="species-emoji" style="filter:${kingStyle.glow};-webkit-filter:${kingStyle.glow};">${sp.stages[3]}</div>
+      <div style="font-size:32px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,200,0,0.8));">${kingEmoji}</div>
       <div class="species-name">${sp.name}</div>
-      <div style="font-size:10px;color:var(--yellow);margin-top:2px;">${sp.stageDesc[3]}</div>`;
+      <div style="font-size:10px;color:var(--yellow);margin-top:2px;letter-spacing:0;">${kingDesc}</div>`;
     grid.appendChild(el);
   });
 }
@@ -1112,6 +1115,8 @@ async function loadManage() {
 //  INIT
 // ══════════════════════════════════════
 initPlayer();
+// 预渲染图鉴（不依赖页面跳转）
+setTimeout(renderSpeciesGrid, 300);
 </script>
 </body>
 </html>
