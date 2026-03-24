@@ -159,7 +159,7 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 
 /* 宠物精灵 */
 .pet-sprite{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:none;user-select:none;-webkit-user-select:none;}
-.pet-emoji-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;}
+.pet-emoji-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;}
 .pet-emoji{font-size:clamp(28px,5vw,42px);line-height:1;transition:filter .4s,transform .4s;display:block;}
 .ring-blue::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(68,170,255,0.7);animation:ring-spin 3s linear infinite;box-shadow:0 0 12px rgba(68,170,255,0.5);}
 .ring-gold::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:3px solid rgba(255,200,0,0.9);animation:ring-spin 2s linear infinite;box-shadow:0 0 20px rgba(255,180,0,0.7),inset 0 0 10px rgba(255,200,0,0.2);}
@@ -460,27 +460,279 @@ async function sbPatch(table, query, body) {
 // ══════════════════════════════════════
 const SPECIES = [
   // stages: [幼年, 成长, 精英, 王者]   stageDesc: 对应阶段名
-  { id:'duck',     name:'鸭鸭',     stages:['🐣','🐥','🦆','🦆'],     stageDesc:['破壳小鸭','小黄鸭','大公鸭','传说金鸭'] },
-  { id:'trex',     name:'霸王龙',   stages:['🦖','🦖','🦖🔥','👑🦖'], stageDesc:['小恐龙','少年龙','火焰龙','龙王'] },
-  { id:'cat',      name:'小猫',     stages:['🐱','🐈','🐈','👑🐈'],   stageDesc:['奶猫','成猫','大猫','猫中之王'] },
-  { id:'shark',    name:'机械鲨',   stages:['🐟','🦈','🦈⚙️','🔱🦈'], stageDesc:['小鱼','幼鲨','机械鲨','深海霸主'] },
-  { id:'dog',      name:'小狗',     stages:['🐶','🐕','🐕','🎖️🐕'],   stageDesc:['萌犬','壮犬','成年犬','英雄犬'] },
-  { id:'penguin',  name:'企鹅',     stages:['🐧','🐧','🐧🧣','👑🐧'], stageDesc:['雏企鹅','小企鹅','围巾企鹅','南极之王'] },
-  { id:'frog',     name:'青蛙',     stages:['🐸','🐸','🐸🍀','👑🐸'], stageDesc:['小蛙','小青蛙','荷叶蛙','青蛙王子'] },
-  { id:'panda',    name:'熊猫',     stages:['🐼','🐼','🐼🎋','🥋🐼'], stageDesc:['熊猫宝宝','小熊猫','竹林熊猫','功夫熊猫'] },
-  { id:'bee',      name:'蜜蜂',     stages:['🐝','🐝','🐝🌸','👑🐝'], stageDesc:['小蜂','工蜂','采花蜂','蜂后'] },
-  { id:'unicorn',  name:'独角兽',   stages:['🦄','🦄','🦄🌈','👑🦄'], stageDesc:['幼角兽','小独角兽','彩虹兽','幻兽王'] },
-  { id:'bunny',    name:'兔子',     stages:['🐰','🐰','🐰🎩','👑🐰'], stageDesc:['小白兔','活泼兔','魔术兔','月宫兔'] },
-  { id:'monkey',   name:'小猴子',   stages:['🐒','🐒','🐒🍌','👑🐒'], stageDesc:['小猴','调皮猴','大马猴','齐天大圣'] },
-  { id:'squirrel', name:'小松鼠',   stages:['🐿️','🐿️','🐿️🥜','🏆🐿️'],stageDesc:['小松鼠','胖松鼠','囤货大户','坚果冠军'] },
-  { id:'fox',      name:'小狐狸',   stages:['🦊','🦊','🦊🔥','👑🦊'], stageDesc:['幼狐','小狐狸','灵狐','九尾狐'] },
-  { id:'owl',      name:'猫头鹰',   stages:['🦉','🦉','🦉🎓','👑🦉'], stageDesc:['猫头鹰宝宝','小猫头鹰','学霸鸮','暗夜先知'] },
-  { id:'elephant', name:'小象',     stages:['🐘','🐘','🐘🐘','👑🐘'], stageDesc:['小象宝宝','少年象','大象','森林象王'] },
-  { id:'seahorse', name:'海马',     stages:['🐠','🐠','🌊🐠','🔱🐠'], stageDesc:['小海马','彩色海马','浪花海马','海马统领'] },
-  { id:'crab',     name:'螃蟹',     stages:['🦀','🦀','🦀⚔️','👑🦀'], stageDesc:['幼蟹','小螃蟹','巨钳蟹','蟹将军'] },
-  { id:'pig',      name:'小猪',     stages:['🐷','🐷','🐖','👑🐷'],   stageDesc:['小粉猪','胖猪猪','壮野猪','金猪之王'] },
-  { id:'sheep',    name:'小羊',     stages:['🐑','🐑','🐏','👑🐏'],   stageDesc:['幼羊','小白羊','公羊','领头羊'] },
+  { id:'duck',     name:'鸭鸭',     stages:['🐣','🐥','🦆','🦆','🦆'],     stageDesc:['破壳小鸭','小黄鸭','大公鸭','传说金鸭','传说传说金鸭'] },
+  { id:'trex',     name:'霸王龙',   stages:['🦖','🦖','🦖🔥','👑🦖','👑🦖'], stageDesc:['小恐龙','少年龙','火焰龙','龙王','传说龙王'] },
+  { id:'cat',      name:'小猫',     stages:['🐱','🐈','🐈','👑🐈','👑🐈'],   stageDesc:['奶猫','成猫','大猫','猫中之王','传说猫中之王'] },
+  { id:'shark',    name:'机械鲨',   stages:['🐟','🦈','🦈⚙️','🔱🦈','🔱🦈'], stageDesc:['小鱼','幼鲨','机械鲨','深海霸主','传说深海霸主'] },
+  { id:'dog',      name:'小狗',     stages:['🐶','🐕','🐕','🎖️🐕','🎖️🐕'],   stageDesc:['萌犬','壮犬','成年犬','英雄犬','传说英雄犬'] },
+  { id:'penguin',  name:'企鹅',     stages:['🐧','🐧','🐧🧣','👑🐧','👑🐧'], stageDesc:['雏企鹅','小企鹅','围巾企鹅','南极之王','传说南极之王'] },
+  { id:'frog',     name:'青蛙',     stages:['🐸','🐸','🐸🍀','👑🐸','👑🐸'], stageDesc:['小蛙','小青蛙','荷叶蛙','青蛙王子','传说青蛙王子'] },
+  { id:'panda',    name:'熊猫',     stages:['🐼','🐼','🐼🎋','🥋🐼','🥋🐼'], stageDesc:['熊猫宝宝','小熊猫','竹林熊猫','功夫熊猫','传说功夫熊猫'] },
+  { id:'bee',      name:'蜜蜂',     stages:['🐝','🐝','🐝🌸','👑🐝','👑🐝'], stageDesc:['小蜂','工蜂','采花蜂','蜂后','传说蜂后'] },
+  { id:'unicorn',  name:'独角兽',   stages:['🦄','🦄','🦄🌈','👑🦄','👑🦄'], stageDesc:['幼角兽','小独角兽','彩虹兽','幻兽王','传说幻兽王'] },
+  { id:'bunny',    name:'兔子',     stages:['🐰','🐰','🐰🎩','👑🐰','👑🐰'], stageDesc:['小白兔','活泼兔','魔术兔','月宫兔','传说月宫兔'] },
+  { id:'monkey',   name:'小猴子',   stages:['🐒','🐒','🐒🍌','👑🐒','👑🐒'], stageDesc:['小猴','调皮猴','大马猴','齐天大圣','传说齐天大圣'] },
+  { id:'squirrel', name:'小松鼠',   stages:['🐿️','🐿️','🐿️🥜','🏆🐿️','🏆🐿️'],stageDesc:['小松鼠','胖松鼠','囤货大户','坚果冠军','传说坚果冠军'] },
+  { id:'fox',      name:'小狐狸',   stages:['🦊','🦊','🦊🔥','👑🦊','👑🦊'], stageDesc:['幼狐','小狐狸','灵狐','九尾狐','传说九尾狐'] },
+  { id:'owl',      name:'猫头鹰',   stages:['🦉','🦉','🦉🎓','👑🦉','👑🦉'], stageDesc:['猫头鹰宝宝','小猫头鹰','学霸鸮','暗夜先知','传说暗夜先知'] },
+  { id:'elephant', name:'小象',     stages:['🐘','🐘','🐘🐘','👑🐘','👑🐘'], stageDesc:['小象宝宝','少年象','大象','森林象王','传说森林象王'] },
+  { id:'seahorse', name:'海马',     stages:['🐠','🐠','🌊🐠','🔱🐠','🔱🐠'], stageDesc:['小海马','彩色海马','浪花海马','海马统领','传说海马统领'] },
+  { id:'crab',     name:'螃蟹',     stages:['🦀','🦀','🦀⚔️','👑🦀','👑🦀'], stageDesc:['幼蟹','小螃蟹','巨钳蟹','蟹将军','传说蟹将军'] },
+  { id:'pig',      name:'小猪',     stages:['🐷','🐷','🐖','👑🐷','👑🐷'],   stageDesc:['小粉猪','胖猪猪','壮野猪','金猪之王','传说金猪之王'] },
+  { id:'sheep',    name:'小羊',     stages:['🐑','🐑','🐏','👑🐏','👑🐏'],   stageDesc:['幼羊','小白羊','公羊','领头羊','传说领头羊'] },
 ];
+
+// ══════════════════════════════════════
+//  神秘蛋 SVG
+// ══════════════════════════════════════
+function getMysteryEggSVG(s) {
+  return `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="egg_g" cx="38%" cy="32%" r="62%">
+      <stop offset="0%" stop-color="#f8f0dc"/>
+      <stop offset="55%" stop-color="#d4c49a"/>
+      <stop offset="100%" stop-color="#a89060"/>
+    </radialGradient>
+    <radialGradient id="egg_crack" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,220,100,0.4)"/>
+      <stop offset="100%" stop-color="rgba(255,220,100,0)"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="44" rx="22" ry="26" fill="url(#egg_g)" stroke="#b8a070" stroke-width="1.5"/>
+  <ellipse cx="34" cy="36" rx="8" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-20,34,36)"/>
+  <path d="M34 36 L30 28 L36 30 L38 22 L42 30 L46 26 L44 36" fill="none" stroke="#a08050" stroke-width="1.2" stroke-linejoin="round"/>
+  <circle cx="38" cy="44" r="10" fill="url(#egg_crack)" opacity="0.5"/>
+  <ellipse cx="40" cy="66" rx="16" ry="4" fill="rgba(0,0,0,0.15)"/>
+  </svg>`;
+}
+
+// ══════════════════════════════════════
+//  宠物SVG字典  key = "species_stageIdx"
+//  stageIdx: 1=幼年 2=进阶 3=成年 4=王者
+// ══════════════════════════════════════
+const PET_SVG = {};
+
+// ── 霸王龙 ──
+PET_SVG['trex_1'] = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <radialGradient id="t1b" cx="38%" cy="30%" r="65%"><stop offset="0%" stop-color="#7ed67e"/><stop offset="60%" stop-color="#4ea84e"/><stop offset="100%" stop-color="#2d6b2d"/></radialGradient>
+  <radialGradient id="t1e" cx="32%" cy="28%" r="60%"><stop offset="0%" stop-color="#5588ff"/><stop offset="60%" stop-color="#1133bb"/><stop offset="100%" stop-color="#000833"/></radialGradient>
+</defs>
+<ellipse cx="42" cy="62" rx="14" ry="6" fill="rgba(0,0,0,0.2)"/>
+<path d="M54 56 Q64 52 66 58 Q64 64 56 60Z" fill="#4ea84e" stroke="#2d6b2d" stroke-width="1"/>
+<ellipse cx="40" cy="54" rx="16" ry="13" fill="url(#t1b)" stroke="#2d6b2d" stroke-width="1.5"/>
+<ellipse cx="40" cy="56" rx="10" ry="8" fill="#c8f0c8"/>
+<ellipse cx="40" cy="34" rx="18" ry="16" fill="url(#t1b)" stroke="#2d6b2d" stroke-width="1.5"/>
+<ellipse cx="33" cy="28" rx="7" ry="5" fill="rgba(255,255,255,0.15)" transform="rotate(-15,33,28)"/>
+<path d="M50 38 Q60 40 58 46 Q54 50 48 46Z" fill="#3a7a3a" stroke="#2d6b2d" stroke-width="1"/>
+<path d="M50 44 L52 47 L54 44 L56 47 L58 44" fill="white" stroke="#ccc" stroke-width="0.6"/>
+<circle cx="32" cy="30" r="9" fill="white" stroke="#2d6b2d" stroke-width="1.2"/>
+<circle cx="33" cy="31" r="6" fill="url(#t1e)"/>
+<ellipse cx="33" cy="32" rx="3" ry="3.5" fill="#000822"/>
+<circle cx="29" cy="28" r="2.2" fill="rgba(255,255,255,0.9)"/>
+<circle cx="35" cy="27" r="1.2" fill="rgba(255,255,255,0.65)"/>
+<ellipse cx="24" cy="36" rx="4" ry="2.5" fill="#ff9999" opacity="0.4"/>
+<path d="M28 50 Q22 46 20 52 Q21 57 26 54Z" fill="#4ea84e" stroke="#2d6b2d" stroke-width="1"/>
+<path d="M20 53 L17 57 M22 54 L20 58" stroke="#2d6b2d" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M34 64 Q32 70 30 74 Q34 76 38 72 Q38 68 36 64Z" fill="#3a7a3a" stroke="#2d6b2d" stroke-width="1"/>
+<path d="M46 63 Q48 69 50 73 Q46 76 42 72 Q42 68 44 63Z" fill="#3a7a3a" stroke="#2d6b2d" stroke-width="1"/>
+</svg>`;
+
+PET_SVG['trex_2'] = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="t2b" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#6ac86a"/><stop offset="50%" stop-color="#3d923d"/><stop offset="100%" stop-color="#1e5a1e"/></linearGradient>
+  <radialGradient id="t2e" cx="30%" cy="26%" r="60%"><stop offset="0%" stop-color="#44bb88"/><stop offset="55%" stop-color="#117744"/><stop offset="100%" stop-color="#003322"/></radialGradient>
+</defs>
+<ellipse cx="42" cy="74" rx="18" ry="5" fill="rgba(0,0,0,0.22)"/>
+<path d="M58 50 Q72 42 76 52 Q74 62 64 56Z" fill="#3d923d" stroke="#1e5a1e" stroke-width="1.5"/>
+<path d="M60 50 Q70 44 73 52" fill="none" stroke="#1e5a1e" stroke-width="1" opacity="0.5"/>
+<path d="M24 38 Q18 32 14 40 Q14 50 22 46Z" fill="#3d923d" stroke="#1e5a1e" stroke-width="1.2"/>
+<path d="M14 42 L10 48 M16 44 L13 50" stroke="#1e5a1e" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M22 44 Q20 32 28 28 Q44 22 58 32 Q66 40 64 56 Q60 70 42 72 Q24 72 20 60 Q18 52 22 44Z" fill="url(#t2b)" stroke="#1e5a1e" stroke-width="2"/>
+<path d="M26 48 Q32 42 40 46" fill="none" stroke="#1e5a1e" stroke-width="1.2" opacity="0.5"/>
+<path d="M28 58 Q34 52 42 56" fill="none" stroke="#1e5a1e" stroke-width="1.2" opacity="0.5"/>
+<path d="M28 42 L24 28 L32 26 L34 42Z" fill="#1e5a1e" stroke="#0e3a0e" stroke-width="1"/>
+<path d="M38 40 L35 24 L44 22 L44 40Z" fill="#1e5a1e" stroke="#0e3a0e" stroke-width="1"/>
+<path d="M48 42 L46 28 L54 26 L54 42Z" fill="#1e5a1e" stroke="#0e3a0e" stroke-width="1"/>
+<path d="M6 32 Q6 14 20 10 Q36 6 48 14 Q58 22 56 38 Q54 52 36 56 Q16 58 8 44 Q4 40 6 32Z" fill="url(#t2b)" stroke="#1e5a1e" stroke-width="2"/>
+<ellipse cx="22" cy="24" rx="9" ry="7" fill="rgba(255,255,255,0.13)" transform="rotate(-12,22,24)"/>
+<path d="M48 26 Q64 20 68 34 Q66 46 54 50 Q40 52 36 40 Q32 30 48 26Z" fill="#286828" stroke="#1e5a1e" stroke-width="1.5"/>
+<path d="M48 26 Q66 18 70 30" fill="none" stroke="#0e3a0e" stroke-width="2"/>
+<path d="M50 38 L54 44 L58 38 L62 44 L66 38" fill="white" stroke="#ccc" stroke-width="0.8"/>
+<circle cx="22" cy="28" r="8" fill="white" stroke="#1e5a1e" stroke-width="1.5"/>
+<path d="M14 22 Q22 14 30 22" fill="rgba(30,90,30,0.3)" stroke="#1e5a1e" stroke-width="1"/>
+<circle cx="23" cy="30" r="6" fill="url(#t2e)"/>
+<ellipse cx="23" cy="31" rx="3" ry="3.5" fill="#001a0a"/>
+<circle cx="18" cy="26" r="2.5" fill="rgba(255,255,255,0.9)"/>
+<circle cx="25" cy="25" r="1.3" fill="rgba(255,255,255,0.65)"/>
+<path d="M30 62 Q28 70 26 74 Q30 76 34 72 Q34 68 32 62Z" fill="#286828" stroke="#1e5a1e" stroke-width="1.5"/>
+<path d="M50 60 Q52 68 54 72 Q50 76 46 72 Q46 68 48 60Z" fill="#286828" stroke="#1e5a1e" stroke-width="1.5"/>
+<path d="M26 74 L22 78 M28 75 L25 79 M31 74 L29 78" stroke="#0e3a0e" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M54 72 L50 77 M56 73 L53 78 M58 72 L57 77" stroke="#0e3a0e" stroke-width="1.5" stroke-linecap="round"/>
+</svg>`;
+
+PET_SVG['trex_3'] = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="t3b" x1="0.1" y1="0" x2="0.9" y2="1"><stop offset="0%" stop-color="#52a052"/><stop offset="45%" stop-color="#286828"/><stop offset="100%" stop-color="#123a12"/></linearGradient>
+  <radialGradient id="t3h" cx="28%" cy="24%" r="65%"><stop offset="0%" stop-color="#5eb85e"/><stop offset="50%" stop-color="#286828"/><stop offset="100%" stop-color="#123a12"/></radialGradient>
+  <radialGradient id="t3e" cx="28%" cy="24%" r="58%"><stop offset="0%" stop-color="#cc6600"/><stop offset="50%" stop-color="#883300"/><stop offset="100%" stop-color="#220a00"/></radialGradient>
+</defs>
+<ellipse cx="42" cy="76" rx="22" ry="5" fill="rgba(0,0,0,0.28)"/>
+<path d="M58 46 Q76 36 80 50 Q78 64 66 56Z" fill="#286828" stroke="#123a12" stroke-width="2"/>
+<path d="M60 46 Q74 38 77 50" fill="none" stroke="#123a12" stroke-width="1.2" opacity="0.5"/>
+<path d="M20 40 Q12 32 8 42 Q8 54 18 48Z" fill="#286828" stroke="#123a12" stroke-width="1.5"/>
+<path d="M8 44 L4 51 M10 47 L7 54" stroke="#123a12" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M18 40 Q16 26 28 20 Q48 12 64 24 Q74 34 72 52 Q68 68 46 72 Q22 74 16 58 Q12 48 18 40Z" fill="url(#t3b)" stroke="#123a12" stroke-width="2.5"/>
+<path d="M22 44 Q30 36 40 40" fill="none" stroke="#123a12" stroke-width="1.5" opacity="0.5"/>
+<path d="M24 54 Q32 46 42 50" fill="none" stroke="#123a12" stroke-width="1.5" opacity="0.5"/>
+<path d="M44 44 Q54 36 64 42" fill="none" stroke="#123a12" stroke-width="1.3" opacity="0.5"/>
+<path d="M46 56 Q56 48 66 54" fill="none" stroke="#123a12" stroke-width="1.3" opacity="0.5"/>
+<path d="M24 46 Q22 38 28 34 Q36 26 46 22 Q48 16 42 30Z" fill="#a8d8a8"/>
+<path d="M22 16 L16 -2 L28 -6 L32 16Z" fill="#286828" stroke="#0a2a0a" stroke-width="1.5"/>
+<path d="M34 14 L30 -4 L42 -8 L44 14Z" fill="#286828" stroke="#0a2a0a" stroke-width="1.5"/>
+<path d="M46 16 L44 -2 L56 -4 L56 16Z" fill="#286828" stroke="#0a2a0a" stroke-width="1.5"/>
+<path d="M56 18 L56 4 L64 2 L64 18Z" fill="#286828" stroke="#0a2a0a" stroke-width="1.2"/>
+<path d="M2 28 Q2 8 18 2 Q36 -4 52 6 Q64 16 62 34 Q60 50 40 54 Q14 58 4 42 Q0 36 2 28Z" fill="url(#t3h)" stroke="#123a12" stroke-width="2.5"/>
+<ellipse cx="18" cy="14" rx="10" ry="7" fill="rgba(255,255,255,0.13)" transform="rotate(-14,18,14)"/>
+<path d="M12 24 Q18 18 26 22" fill="none" stroke="#123a12" stroke-width="1.5" opacity="0.5"/>
+<path d="M60 18 Q84 8 88 26 Q86 42 72 46 Q56 50 50 36 Q44 24 60 18Z" fill="#1e5a1e" stroke="#123a12" stroke-width="2"/>
+<path d="M60 18 Q86 6 90 22" fill="none" stroke="#0a2a0a" stroke-width="2.5"/>
+<path d="M62 32 L68 40 L74 32 L80 40 L86 32" fill="white" stroke="#ccc" stroke-width="1"/>
+<path d="M64 20 L68 28 L72 20 L76 28 L80 20 L84 28" fill="white" stroke="#ccc" stroke-width="1"/>
+<path d="M52 36 Q50 44 54 48" fill="none" stroke="#0a2a0a" stroke-width="1.5" opacity="0.6"/>
+<circle cx="18" cy="24" r="10" fill="white" stroke="#123a12" stroke-width="2"/>
+<path d="M8 16 Q18 8 28 16" fill="#286828" stroke="#123a12" stroke-width="1.5"/>
+<circle cx="19" cy="27" r="7.5" fill="url(#t3e)"/>
+<ellipse cx="19" cy="28" rx="3.5" ry="4.5" fill="#0a0200"/>
+<circle cx="13" cy="21" r="3" fill="rgba(255,255,255,0.9)"/>
+<circle cx="22" cy="20" r="1.5" fill="rgba(255,255,255,0.65)"/>
+<path d="M9 30 Q19 36 29 30" fill="rgba(0,0,0,0.15)"/>
+<path d="M26 64 Q22 70 20 76 Q26 80 32 76 Q34 70 32 64Z" fill="#286828" stroke="#123a12" stroke-width="2"/>
+<path d="M50 62 Q54 68 56 74 Q52 78 46 74 Q46 68 48 62Z" fill="#286828" stroke="#123a12" stroke-width="2"/>
+<path d="M20 76 L14 80 M24 77 L20 80 M28 76 L26 80" stroke="#0a2a0a" stroke-width="2" stroke-linecap="round"/>
+<path d="M56 74 L52 79 M58 75 L55 80 M62 74 L61 79" stroke="#0a2a0a" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
+
+PET_SVG['trex_4'] = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="t4b" x1="0.1" y1="0" x2="0.9" y2="1"><stop offset="0%" stop-color="#3a8a3a"/><stop offset="40%" stop-color="#1a4a1a"/><stop offset="100%" stop-color="#0a1e0a"/></linearGradient>
+  <radialGradient id="t4h" cx="26%" cy="20%" r="68%"><stop offset="0%" stop-color="#4aaa4a"/><stop offset="45%" stop-color="#1a4a1a"/><stop offset="100%" stop-color="#081408"/></radialGradient>
+  <radialGradient id="t4e" cx="26%" cy="20%" r="58%"><stop offset="0%" stop-color="#ffaa00"/><stop offset="45%" stop-color="#cc5500"/><stop offset="100%" stop-color="#330a00"/></radialGradient>
+  <linearGradient id="t4c" x1="0.5" y1="1" x2="0.5" y2="0"><stop offset="0%" stop-color="#660000" stop-opacity="0.95"/><stop offset="60%" stop-color="#aa2222" stop-opacity="0.85"/><stop offset="100%" stop-color="#ff4444" stop-opacity="0.5"/></linearGradient>
+  <linearGradient id="t4v" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#ff2200" stop-opacity="0"/><stop offset="50%" stop-color="#ff6600" stop-opacity="1"/><stop offset="100%" stop-color="#ffcc00" stop-opacity="0.8"/></linearGradient>
+  <filter id="t4r"><feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#ff3300" flood-opacity="0.8"/></filter>
+  <filter id="t4g"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#ffaa00" flood-opacity="0.7"/></filter>
+</defs>
+<circle cx="10" cy="16" r="2" fill="#ffaa00" opacity="0.5"/>
+<circle cx="6" cy="28" r="1.5" fill="#ff6600" opacity="0.4"/>
+<circle cx="68" cy="14" r="1.8" fill="#ffaa00" opacity="0.45"/>
+<circle cx="72" cy="30" r="1.2" fill="#ff6600" opacity="0.35"/>
+<circle cx="40" cy="4" r="1.5" fill="#ffcc00" opacity="0.4"/>
+<ellipse cx="42" cy="77" rx="24" ry="5" fill="rgba(255,150,0,0.15)"/>
+<path d="M56 44 Q76 32 80 48 Q78 62 66 54Z" fill="#1a4a1a" stroke="#0a1e0a" stroke-width="2"/>
+<path d="M58 44 Q74 34 77 48" fill="none" stroke="#ff6600" stroke-width="1" opacity="0.4" filter="url(#t4r)"/>
+<path d="M16 38 Q8 28 4 40 Q4 54 14 46Z" fill="#1a4a1a" stroke="#0a1e0a" stroke-width="2"/>
+<path d="M4 42 L0 50 M6 45 L3 52" stroke="#0a1e0a" stroke-width="2" stroke-linecap="round"/>
+<path d="M14 38 Q12 22 26 16 Q48 8 66 20 Q78 32 76 52 Q72 70 48 74 Q18 76 12 56 Q8 44 14 38Z" fill="url(#t4b)" stroke="#0a1e0a" stroke-width="2.5"/>
+<path d="M18 42 Q28 32 40 38" fill="none" stroke="#0a1e0a" stroke-width="1.8" opacity="0.55"/>
+<path d="M20 54 Q30 44 42 50" fill="none" stroke="#0a1e0a" stroke-width="1.8" opacity="0.55"/>
+<path d="M44 42 Q56 32 68 40" fill="none" stroke="#0a1e0a" stroke-width="1.5" opacity="0.5"/>
+<path d="M18 44 Q16 36 26 28 Q40 20 52 16 Q56 10 48 26Z" fill="#4a7a4a"/>
+<path d="M18 -8 L12 -24 L24 -28 L28 -8Z" fill="url(#t4c)" stroke="#880000" stroke-width="1.2" filter="url(#t4r)"/>
+<path d="M20 -20 L24 -26" fill="none" stroke="url(#t4v)" stroke-width="1.5" opacity="0.9"/>
+<path d="M28 -10 L24 -28 L36 -30 L38 -10Z" fill="url(#t4c)" stroke="#880000" stroke-width="1.2" filter="url(#t4r)"/>
+<path d="M26 -24 L34 -28" fill="none" stroke="url(#t4v)" stroke-width="1.8" opacity="0.9"/>
+<path d="M38 -12 L38 -32 L50 -34 L50 -12Z" fill="url(#t4c)" stroke="#880000" stroke-width="1.2" filter="url(#t4r)"/>
+<path d="M38 -26 L48 -32" fill="none" stroke="url(#t4v)" stroke-width="2" opacity="0.95"/>
+<path d="M50 -8 L50 -28 L60 -26 L58 -8Z" fill="url(#t4c)" stroke="#880000" stroke-width="1" filter="url(#t4r)"/>
+<path d="M52 -22 L58 -24" fill="none" stroke="url(#t4v)" stroke-width="1.5" opacity="0.85"/>
+<path d="M0 22 Q0 2 14 -4 Q30 -10 46 0 Q58 10 56 28 Q54 44 34 48 Q10 52 2 36 Q-2 30 0 22Z" fill="url(#t4h)" stroke="#0a1e0a" stroke-width="2.5"/>
+<ellipse cx="14" cy="8" rx="10" ry="7" fill="rgba(255,255,255,0.13)" transform="rotate(-14,14,8)"/>
+<path d="M8 18 Q16 10 26 16" fill="none" stroke="#0a1e0a" stroke-width="1.8" opacity="0.55"/>
+<path d="M58 12 Q84 2 88 20 Q86 36 72 40 Q56 44 50 30 Q44 18 58 12Z" fill="#123a12" stroke="#0a1e0a" stroke-width="2.5"/>
+<path d="M58 12 Q86 0 90 16" fill="none" stroke="#0a1e0a" stroke-width="3"/>
+<path d="M60 26 L66 36 L72 26 L78 36 L84 26" fill="white" stroke="#ccc" stroke-width="1.2"/>
+<path d="M62 14 L66 22 L70 14 L74 22 L78 14 L82 22 L86 14" fill="white" stroke="#ccc" stroke-width="1.2"/>
+<path d="M56 34 Q52 46 56 50" fill="none" stroke="#0a1e0a" stroke-width="1.5" opacity="0.6"/>
+<path d="M66 42 Q64 48 66 52" fill="#cc2222" opacity="0.6"/>
+<path d="M10 -6 Q14 4 18 0" fill="none" stroke="rgba(255,100,0,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M6 14 Q4 20 6 16" fill="none" stroke="#0a1e0a" stroke-width="4" stroke-linecap="round"/>
+<circle cx="14" cy="18" r="9" fill="white" stroke="#0a1e0a" stroke-width="2"/>
+<path d="M4 10 Q14 2 24 10 L22 18 Q14 12 6 18Z" fill="#1a4a1a"/>
+<circle cx="15" cy="21" r="7" fill="url(#t4e)"/>
+<ellipse cx="15" cy="22" rx="2.5" ry="4" fill="#050200"/>
+<circle cx="9" cy="15" r="3" fill="rgba(255,255,255,0.92)"/>
+<circle cx="18" cy="13" r="1.6" fill="rgba(255,255,255,0.65)"/>
+<circle cx="15" cy="21" r="7" fill="none" stroke="rgba(255,160,0,0.3)" stroke-width="2"/>
+<path d="M10 -8 L14 -14 L18 -8 L22 -16 L26 -8 L28 -10 L26 -6 L10 -6 L8 -10Z" fill="#ffcc00" stroke="#cc9900" stroke-width="1" filter="url(#t4g)"/>
+<circle cx="18" cy="-13" r="2" fill="#ff2222"/>
+<path d="M22 62 Q18 68 16 74 Q22 78 28 74 Q30 68 28 62Z" fill="#1a4a1a" stroke="#0a1e0a" stroke-width="2"/>
+<path d="M50 60 Q54 66 56 72 Q52 76 46 72 Q46 66 48 60Z" fill="#1a4a1a" stroke="#0a1e0a" stroke-width="2"/>
+<path d="M16 74 L10 78 M20 75 L16 80 M24 74 L22 79" stroke="#0a1e0a" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M56 72 L50 77 M58 73 L55 79 M62 72 L61 78" stroke="#0a1e0a" stroke-width="2.5" stroke-linecap="round"/>
+</svg>`;
+
+// ── 其余19种宠物使用精美Emoji+CSS效果渲染（后续版本替换为完整SVG） ──
+// 鸭鸭
+PET_SVG['duck_1'] = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="dk1b" cx="40%" cy="30%" r="60%"><stop offset="0%" stop-color="#ffe566"/><stop offset="60%" stop-color="#f0c020"/><stop offset="100%" stop-color="#c09000"/></radialGradient><radialGradient id="dk1e" cx="32%" cy="28%" r="60%"><stop offset="0%" stop-color="#4488ff"/><stop offset="60%" stop-color="#1144cc"/><stop offset="100%" stop-color="#001166"/></radialGradient></defs>
+<ellipse cx="30" cy="56" rx="14" ry="4" fill="rgba(0,0,0,0.2)"/>
+<ellipse cx="30" cy="44" rx="13" ry="10" fill="url(#dk1b)" stroke="#c09000" stroke-width="1.5"/>
+<ellipse cx="26" cy="42" rx="8" ry="5" fill="rgba(255,255,255,0.2)" transform="rotate(-10,26,42)"/>
+<path d="M24 50 Q30 56 36 50" fill="#f0a000" stroke="#c07000" stroke-width="1"/>
+<ellipse cx="30" cy="28" rx="16" ry="14" fill="url(#dk1b)" stroke="#c09000" stroke-width="1.5"/>
+<ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.2)" transform="rotate(-15,24,22)"/>
+<path d="M40 28 Q48 26 46 32 Q42 36 38 32Z" fill="#ff8800" stroke="#cc5500" stroke-width="1"/>
+<circle cx="24" cy="24" r="8" fill="white" stroke="#c09000" stroke-width="1.2"/>
+<circle cx="25" cy="25" r="5.5" fill="url(#dk1e)"/>
+<ellipse cx="25" cy="26" rx="2.5" ry="3" fill="#000a22"/>
+<circle cx="21" cy="22" r="2" fill="rgba(255,255,255,0.9)"/>
+<circle cx="27" cy="21" r="1" fill="rgba(255,255,255,0.65)"/>
+<ellipse cx="17" cy="30" rx="4" ry="2.5" fill="#ffaaaa" opacity="0.4"/>
+<path d="M20 52 Q17 57 15 60" stroke="#c09000" stroke-width="2" stroke-linecap="round" fill="none"/>
+<path d="M40 52 Q43 57 45 60" stroke="#c09000" stroke-width="2" stroke-linecap="round" fill="none"/>
+<path d="M15 60 L11 62 M16 61 L13 63 M18 61 L16 63" stroke="#f0a000" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M45 60 L49 62 M44 61 L47 63 M42 61 L44 63" stroke="#f0a000" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M20 38 Q16 34 14 38" fill="#ffe566" stroke="#c09000" stroke-width="1"/>
+<path d="M40 38 Q44 34 46 38" fill="#ffe566" stroke="#c09000" stroke-width="1"/>
+</svg>`;
+
+// 快速定义其余18种（后续迭代为完整SVG，当前用高质量emoji+背景）
+const _makeSimpleSVG = (emoji, stageIdx, s) => {
+  const glows = ['','','drop-shadow(0 0 4px rgba(80,200,80,.7))','drop-shadow(0 0 7px rgba(68,170,255,.8))','drop-shadow(0 0 10px rgba(255,200,0,1))'];
+  const scales = [1, 1, 1.1, 1.25, 1.4];
+  const sc = scales[stageIdx] || 1;
+  const gl = glows[stageIdx] || '';
+  const bg = ['#1a1a28','#0f1f18','#101828','#181018','#201808'][stageIdx] || '#1a1a28';
+  return `<svg width="${s}" height="${s}" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="bg_${stageIdx}" cx="50%" cy="40%" r="55%"><stop offset="0%" stop-color="${bg}" stop-opacity="0"/><stop offset="100%" stop-color="${bg}" stop-opacity="0.3"/></radialGradient></defs>
+  <ellipse cx="30" cy="55" rx="16" ry="4" fill="rgba(0,0,0,0.2)"/>
+  <text x="30" y="38" font-size="${Math.round(28*sc)}" text-anchor="middle" style="filter:${gl}">${emoji}</text>
+  </svg>`;
+};
+
+const _speciesEmojis = {
+  cat:['🐱','🐱','🐈','🐈','👑🐈'], dog:['🐶','🐶','🐕','🐕','🎖️🐕'],
+  shark:['🐟','🐟','🦈','🦈','🔱🦈'], seahorse:['🐚','🐚','🐠','🐠','🔱🐠'],
+  panda:['🎍','🐼','🐼','🐼🎋','🥋🐼'], bird:['🥚','🐦','🐦','🦅','👑🦅'],
+  bunny:['🥕','🐰','🐰','🐰🎩','👑🐰'], penguin:['🧊','🐧','🐧','🐧🧣','👑🐧'],
+  frog:['🫧','🐸','🐸','🐸🍀','👑🐸'], crab:['🐚','🦀','🦀','🦀⚔️','👑🦀'],
+  monkey:['🍌','🐒','🐒','🐒🍌','👑🐒'], squirrel:['🌰','🐿️','🐿️','🐿️🥜','🏆🐿️'],
+  fox:['🦊','🦊','🦊','🦊🔥','👑🦊'], owl:['🥚','🦉','🦉','🦉🎓','👑🦉'],
+  elephant:['💧','🐘','🐘','🐘🐘','👑🐘'], turtle:['🥚','🐢','🐢','🐢','👑🐢'],
+  deer:['☁️','🦌','🦌','🦌','👑🦌'], pig:['🍎','🐷','🐷','🐖','👑🐷'],
+  sheep:['☁️','🐑','🐑','🐏','👑🐏'], unicorn:['🌟','🦄','🦄','🦄🌈','👑🦄'],
+};
+['cat','dog','shark','seahorse','panda','bird','bunny','penguin','frog','crab','monkey','squirrel','fox','owl','elephant','turtle','deer','pig','sheep','unicorn'].forEach(id => {
+  const emojis = _speciesEmojis[id] || ['🥚','🐾','🐾','🐾','🐾'];
+  [1,2,3,4].forEach(si => {
+    PET_SVG[id + '_' + si] = (s) => _makeSimpleSVG(emojis[si] || emojis[emojis.length-1], si, s);
+  });
+});
+// 鸭鸭其余阶段
+[2,3,4].forEach(si => {
+  const emojis = ['🐣','🐥','🦆','🦆','👑🦆'];
+  PET_SVG['duck_' + si] = (s) => _makeSimpleSVG(emojis[si] || '🦆', si, s);
+});
 
 const SNACKS = [
   { id:'cookie', name:'小饼干', emoji:'🍪', xp:10 },
@@ -490,7 +742,7 @@ const SNACKS = [
 ];
 
 const XP_PER_LEVEL = 100;
-const STAGE_LEVELS  = [0, 1, 2, 5, 10]; // 0=神秘蛋/1=幼年/2=成长/5=精英/10=王者
+const STAGE_LEVELS  = [0, 1, 5, 10, 15]; // 0=神秘蛋/1=幼年/5=进阶/10=成年/15=王者
 
 function getStageIdx(level) {
   let idx = 0;
@@ -502,25 +754,42 @@ function getStageIdx(level) {
 function getSpecies(id) { return SPECIES.find(s => s.id === id) || SPECIES[0]; }
 function getStageStyle(stageIdx) {
   const styles = [
-    // 0: 神秘蛋 — 暗淡小
-    { scale:0.8,  glow:'grayscale(20%)', ring:'' },
+    // 0: 神秘蛋 — 暗淡
+    { scale:0.85, glow:'grayscale(30%) brightness(0.8)', ring:'' },
     // 1: 幼年 — 正常
-    { scale:0.9,  glow:'', ring:'' },
-    // 2: 成长 — 绿光
-    { scale:1.05, glow:'drop-shadow(0 0 5px rgba(100,220,100,0.6))', ring:'' },
-    // 3: 精英 — 蓝光+旋转环
+    { scale:0.95, glow:'', ring:'' },
+    // 2: 进阶 — 绿光
+    { scale:1.1,  glow:'drop-shadow(0 0 5px rgba(100,220,100,0.7))', ring:'' },
+    // 3: 成年 — 蓝光+旋转环
     { scale:1.3,  glow:'drop-shadow(0 0 8px rgba(68,170,255,0.9)) drop-shadow(0 0 18px rgba(68,170,255,0.4))', ring:'ring-blue' },
     // 4: 王者 — 金光+金环
-    { scale:1.6,  glow:'drop-shadow(0 0 12px rgba(255,200,0,1)) drop-shadow(0 0 28px rgba(255,150,0,0.8))', ring:'ring-gold' },
+    { scale:1.55, glow:'drop-shadow(0 0 12px rgba(255,200,0,1)) drop-shadow(0 0 28px rgba(255,150,0,0.8))', ring:'ring-gold' },
   ];
   return styles[stageIdx] || styles[0];
 }
 function getPetEmoji(student) {
-  const sp  = getSpecies(student.species);
   const idx = getStageIdx(student.level);
-  if (idx === 0) return '🥚'; // 0级永远是神秘蛋
-  // stages[0]是幼年，idx-1对应
-  return (sp.stages && sp.stages[idx - 1]) || '🥚';
+  if (idx === 0) return '🥚';
+  const sp = getSpecies(student.species);
+  return (sp.stages && sp.stages[idx - 1]) || sp.stages[0] || '🥚';
+}
+
+// SVG渲染：返回宠物SVG字符串（用于农场地图和弹窗）
+function getPetSVG(student, size) {
+  const idx = getStageIdx(student.level);
+  const sp  = getSpecies(student.species);
+  const s   = size || 60;
+  if (idx === 0) return getMysteryEggSVG(s);
+  const key = sp.id + '_' + idx;
+  const fn  = PET_SVG[key] || PET_SVG[sp.id + '_1'];
+  return fn ? fn(s) : getDefaultSVG(sp, idx, s);
+}
+
+// 通用fallback SVG（当专属SVG未实现时）
+function getDefaultSVG(sp, stageIdx, s) {
+  const emoji = getPetEmoji({ species: sp.id, level: STAGE_LEVELS[stageIdx] || 1 });
+  return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">' +
+    '<text x="30" y="38" font-size="36" text-anchor="middle">' + emoji + '</text></svg>';
 }
 function getPetStageDesc(student) {
   const sp  = getSpecies(student.species);
@@ -528,7 +797,7 @@ function getPetStageDesc(student) {
   return (sp.stageDesc || [])[idx] || '神秘蛋';
 }
 function getStageName(stageIdx) {
-  return ['神秘蛋','幼年态','成长态','精英态','王者态'][stageIdx] || '神秘蛋';
+  return ['神秘蛋','幼年态','进阶态','成年态','王者态'][stageIdx] || '神秘蛋';
 }
 
 const BUBBLE_TEXTS = [
@@ -563,11 +832,13 @@ function showScreen(id) {
 //  NICKNAME
 // ══════════════════════════════════════
 const LS_NICK = 'arcadeNick';
-let playerNick = localStorage.getItem(LS_NICK) || '';
+let playerNick = localStorage.getItem(LS_NICK) || sessionStorage.getItem(LS_NICK) || '';
 let cloudBest = 0, localBest = 0;
 
 async function initPlayer() {
   if (playerNick) {
+    // 同步到 sessionStorage 防丢失
+    sessionStorage.setItem(LS_NICK, playerNick);
     document.getElementById('topbar-nick').textContent = playerNick;
     sbGet('profiles', `id=eq.${encodeURIComponent(playerNick)}&select=highScore`).then(d => {
       if (d && d[0]) { cloudBest = d[0].highScore || 0; localBest = cloudBest; }
@@ -876,8 +1147,10 @@ function renderFarm() {
     el.className = 'pet-sprite';
     const _si = getStageIdx(st.level);
     const _ss = getStageStyle(_si);
-    const _em = getPetEmoji(st);
-    el.innerHTML = `<div class="pet-emoji-wrap ${_ss.ring}"><div class="pet-emoji" style="transform:scale(${_ss.scale});filter:${_ss.glow};-webkit-filter:${_ss.glow};">${_em}</div></div><div class="pet-name">${st.name}</div><div class="pet-lvl">Lv.${st.level}</div><div class="pet-bubble" id="bubble-${st.id}"></div>`;
+    // 0级神秘蛋不显示宠物名
+    const _speciesLabel = _si === 0 ? '???' : getSpecies(st.species).name;
+    const _svgHtml = getPetSVG(st, 48);
+    el.innerHTML = `<div class="pet-emoji-wrap ${_ss.ring}" style="filter:${_ss.glow};-webkit-filter:${_ss.glow};">${_svgHtml}</div><div class="pet-name">${st.name}</div><div class="pet-lvl">Lv.${st.level} · ${_speciesLabel}</div><div class="pet-bubble" id="bubble-${st.id}"></div>`;
     el.style.left = (20 + Math.random() * (W - 80)) + 'px';
     el.style.top  = (20 + Math.random() * (H - 80)) + 'px';
     el.addEventListener('click', () => openPetModal(st));
@@ -970,13 +1243,18 @@ function openPetModal(st) {
   const _psi = getStageIdx(st.level);
   const _pss = getStageStyle(_psi);
   const pmEmojiEl = document.getElementById('pm-emoji');
-  pmEmojiEl.textContent = getPetEmoji(st);
+  pmEmojiEl.innerHTML = getPetSVG(st, 80);
   pmEmojiEl.style.filter = _pss.glow;
   pmEmojiEl.style.webkitFilter = _pss.glow;
-  pmEmojiEl.style.transform = `scale(${Math.min(_pss.scale, 1.4)})`;
-  document.getElementById('pm-name').textContent     = `${st.name}  ·  ${sp.name}`;
+  pmEmojiEl.style.transform = '';
+  // 0级神秘蛋：不暴露品种
+  if (stageIdx === 0) {
+    document.getElementById('pm-name').textContent  = `${st.name}  ·  ???`;
+  } else {
+    document.getElementById('pm-name').textContent  = `${st.name}  ·  ${sp.name}`;
+  }
   document.getElementById('pm-stage').textContent    = getPetStageDesc(st);
-  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--dim)','var(--green)','var(--blue)','var(--yellow)'][stageIdx];
+  document.getElementById('pm-stage').style.color    = ['var(--dim)','var(--green)','var(--blue)','var(--purple)','var(--yellow)'][stageIdx];
   document.getElementById('pm-meta').textContent     = `Lv.${st.level}  ·  零食×${st.snacks_received}`;
   document.getElementById('pm-xpbar').style.width    = xpPct + '%';
   document.getElementById('pm-xptext').textContent   = `XP: ${st.xp % xpNeed} / ${xpNeed}`;
@@ -1017,14 +1295,13 @@ async function feedSnack(st, snack) {
     sprite.student = st;
     const _nsi = getStageIdx(st.level);
     const _nss = getStageStyle(_nsi);
-    const emojiEl = sprite.el.querySelector('.pet-emoji');
-    emojiEl.textContent = getPetEmoji(st);
-    emojiEl.style.transform = `scale(${_nss.scale})`;
-    emojiEl.style.filter = _nss.glow;
-    emojiEl.style.webkitFilter = _nss.glow;
-    const wrap = sprite.el.querySelector('.pet-emoji-wrap');
-    wrap.className = 'pet-emoji-wrap ' + _nss.ring;
-    sprite.el.querySelector('.pet-lvl').textContent = 'Lv.' + st.level;
+    const wrap2 = sprite.el.querySelector('.pet-emoji-wrap');
+    wrap2.innerHTML = getPetSVG(st, 48);
+    wrap2.className = 'pet-emoji-wrap ' + _nss.ring;
+    wrap2.style.filter = _nss.glow;
+    wrap2.style.webkitFilter = _nss.glow;
+    const _nl = _nsi === 0 ? '???' : getSpecies(st.species).name;
+    sprite.el.querySelector('.pet-lvl').textContent = 'Lv.' + st.level + ' · ' + _nl;
   }
 
   showToast(`${snack.emoji} 喂食成功！+${snack.xp}XP` + (levelsUp ? `  升级→Lv.${newLevel}🎉` : ''));
@@ -1054,7 +1331,7 @@ async function loadManage() {
     const _rsi = getStageIdx(st.level);
     const _rss = getStageStyle(_rsi);
     card.innerHTML = `
-      <div class="student-card-emoji" style="filter:${_rss.glow};-webkit-filter:${_rss.glow};transform:scale(${Math.min(_rss.scale,1.2)});transform-origin:center;">${getPetEmoji(st)}</div>
+      <div class="student-card-emoji" style="filter:${_rss.glow};-webkit-filter:${_rss.glow};">${getPetSVG(st, 52)}</div>
       <div class="student-card-info">
         <div class="student-card-name">${st.name}</div>
         <div class="student-card-meta">${sp.name} · Lv.${st.level} · 零食×${st.snacks_received}</div>
