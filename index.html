@@ -201,6 +201,8 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 .species-emoji{font-size:36px;line-height:1;}
 .species-name{font-size:10px;color:var(--dim);letter-spacing:1px;text-align:center;}
 .species-opt.selected .species-name{color:var(--green);}
+#adopt-preview{position:fixed;inset:0;z-index:450;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:fadeIn .4s ease;pointer-events:none;background:radial-gradient(circle at 50% 45%,rgba(0,0,0,.35),rgba(0,0,0,.68));}
+#preview-emoji{line-height:1;transition:all .3s;filter:drop-shadow(0 0 14px rgba(255,220,120,.45));}
 
 /* 宠物详情弹窗 */
 .pet-detail-emoji{font-size:72px;line-height:1;text-align:center;}
@@ -211,7 +213,15 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
 .toast.show{opacity:1;}
 
 /* SCROLLBAR */
-::-webkit-scrollbar{width:4px;}.:{background:var(--panel);}::-webkit-scrollbar-thumb{background:var(--border);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--panel);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--panel);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+html::-webkit-scrollbar{width:4px;}
+html::-webkit-scrollbar-track{background:var(--panel);}
+html::-webkit-scrollbar-thumb{background:var(--border);}
 </style>
 </head>
 <body>
@@ -387,8 +397,8 @@ canvas{display:block;border:1px solid var(--border);image-rendering:pixelated;ba
       <button class="pix-btn full" id="adopt-btn">🎲 随机领养</button>
 
       <!-- 抽奖预览区 -->
-      <div id="adopt-preview" style="display:none;flex-direction:column;align-items:center;gap:10px;padding:20px 0;animation:fadeIn .4s ease;">
-        <div id="preview-emoji" style="font-size:64px;line-height:1;transition:all .3s;"></div>
+      <div id="adopt-preview">
+        <div id="preview-emoji" style="font-size:64px;"></div>
         <div id="preview-name" style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--green);letter-spacing:2px;"></div>
         <div id="preview-stage" style="font-size:16px;color:var(--dim);letter-spacing:2px;"></div>
       </div>
@@ -593,22 +603,6 @@ const PET_SVG_DATA = {
   'dog_4': `<svg width="60" height="60" viewBox="0 -12 80 92" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="30" fill="rgba(255,200,0,0.18)" opacity="1"/><ellipse cx="40" cy="67.7" rx="17.9" ry="4" fill="rgba(0,0,0,0.22)"/><ellipse cx="26" cy="20" rx="10" ry="7" fill="#996622" stroke="#555555" stroke-width="1.2"/><ellipse cx="54" cy="20" rx="10" ry="7" fill="#996622" stroke="#555555" stroke-width="1.2"/><ellipse cx="40" cy="52" rx="17.9" ry="15.7" fill="#996622" stroke="#555555" stroke-width="1.5"/><ellipse cx="40" cy="54" rx="11.6" ry="10.7" fill="#ffaa44"/><ellipse cx="34.6" cy="47.6" rx="6.8" ry="3.8" fill="rgba(255,255,255,0.16)" transform="rotate(-15,34.6,47.6)"/><circle cx="40" cy="32" r="19.0" fill="#996622" stroke="#555555" stroke-width="1.5"/><ellipse cx="33.3" cy="26.7" rx="7.6" ry="5.0" fill="rgba(255,255,255,0.16)" transform="rotate(-15,33.3,26.7)"/><circle cx="32.384" cy="30.8576" r="7.235200000000001" fill="white" stroke="#555555" stroke-width="1.2"/><circle cx="32.384" cy="30.8576" r="5.2" fill="#cc8800"/><ellipse cx="32.384" cy="31.6" rx="2.53232" ry="3.1834880000000005" fill="#050205"/><circle cx="30.4" cy="28.8" r="2.0" fill="rgba(255,255,255,0.92)"/><circle cx="33.7" cy="28.1" r="1.0" fill="rgba(255,255,255,0.65)"/><ellipse cx="28.6" cy="37.7" rx="3.8" ry="2.3" fill="#ffb3b3" opacity="0.4"/><path d="M32 11 L35 3 L38 11 L40 1 L42 11 L45 3 L48 11 L49 9 L48 14 L32 14 L31 9Z" fill="#ffcc00" stroke="#cc9900" stroke-width="1.2"/><circle cx="40" cy="3" r="2.5" fill="#ff4444"/><circle cx="35" cy="6" r="1.5" fill="#4444ff"/><circle cx="45" cy="6" r="1.5" fill="#44ff44"/><ellipse cx="32.5" cy="70.7" rx="5.4" ry="3.2" fill="#555555" stroke="#555555" stroke-width="1"/><ellipse cx="47.5" cy="70.7" rx="5.4" ry="3.2" fill="#555555" stroke="#555555" stroke-width="1"/></svg>`,
 };
 
-function getPetSVG(student, size) {
-  const idx = getStageIdx(student.level);
-  const sp  = getSpecies(student.species);
-  const s   = size || 60;
-  if (idx === 0) return getMysteryEggSVG(s);
-  const key = sp.id + '_' + idx;
-  const svgStr = PET_SVG_DATA[key];
-  if (!svgStr) {
-    // fallback emoji
-    const em = getPetEmoji(student);
-    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><text x="30" y="40" font-size="34" text-anchor="middle">'+em+'</text></svg>';
-  }
-  // 缩放SVG到指定尺寸
-  return svgStr.replace(/width="60"/, 'width="'+s+'"').replace(/height="60"/, 'height="'+s+'"');
-}
-
 const SNACKS = [
   { id:'cookie', name:'小饼干', emoji:'🍪', xp:10 },
   { id:'star',   name:'星星糖', emoji:'⭐', xp:25 },
@@ -656,8 +650,9 @@ function getPetSVG(student, size) {
   const s   = size || 60;
   if (idx === 0) return getMysteryEggSVG(s);
   const key = sp.id + '_' + idx;
-  const fn  = PET_SVG[key] || PET_SVG[sp.id + '_1'];
-  return fn ? fn(s) : getDefaultSVG(sp, idx, s);
+  const svgStr = PET_SVG_DATA[key] || PET_SVG_DATA[sp.id + '_1'];
+  if (!svgStr) return getDefaultSVG(sp, idx, s);
+  return svgStr.replace(/width="60"/, 'width="'+s+'"').replace(/height="60"/, 'height="'+s+'"');
 }
 
 // 通用fallback SVG（当专属SVG未实现时）
@@ -669,6 +664,7 @@ function getDefaultSVG(sp, stageIdx, s) {
 function getPetStageDesc(student) {
   const sp  = getSpecies(student.species);
   const idx = getStageIdx(student.level);
+  if (idx === 0) return '神秘蛋';
   return (sp.stageDesc || [])[idx] || '神秘蛋';
 }
 function getStageName(stageIdx) {
@@ -901,15 +897,15 @@ function renderSpeciesGrid() {
   const grid = document.getElementById('species-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  // 王者态 = stages 最后一个
+  // 王者态展示改为SVG，和农场/管理页保持一致
   SPECIES.forEach(sp => {
-    const kingEmoji = sp.stages[sp.stages.length - 1];
     const kingDesc  = sp.stageDesc[sp.stageDesc.length - 1];
+    const kingSvg   = getPetSVG({ species: sp.id, level: STAGE_LEVELS[4] }, 46);
     const el = document.createElement('div');
     el.className = 'species-opt';
     el.style.cursor = 'default';
     el.innerHTML = `
-      <div style="font-size:32px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,200,0,0.8));">${kingEmoji}</div>
+      <div style="line-height:1;filter:drop-shadow(0 0 8px rgba(255,200,0,0.8));display:flex;align-items:center;justify-content:center;min-height:46px;">${kingSvg}</div>
       <div class="species-name">${sp.name}</div>
       <div style="font-size:10px;color:var(--yellow);margin-top:2px;letter-spacing:0;">${kingDesc}</div>`;
     grid.appendChild(el);
@@ -937,7 +933,7 @@ document.getElementById('adopt-btn').addEventListener('click', async () => {
   preview.style.display = 'flex';
   const rollTimer = setInterval(() => {
     const rand = SPECIES[Math.floor(Math.random() * SPECIES.length)];
-    preEmoji.textContent = rand.stages[0];
+    preEmoji.innerHTML = getPetSVG({ species: rand.id, level: STAGE_LEVELS[1] }, 64);
     preEmoji.style.animation = 'none';
     preEmoji.offsetHeight; // reflow
     preEmoji.style.animation = 'rollSlot .08s ease';
@@ -952,12 +948,12 @@ document.getElementById('adopt-btn').addEventListener('click', async () => {
 
   // 展示幼年态（stage 0）
   preEmoji.style.animation = 'fadeIn .4s ease';
-  preEmoji.textContent = picked.stages[0];
+  preEmoji.innerHTML = getPetSVG({ species: picked.id, level: STAGE_LEVELS[1] }, 64);
   preEmoji.style.filter = '';
   preName.textContent  = picked.name;
   preStage.textContent = picked.stageDesc[0];
   // 先显示神秘蛋（品种保密）
-  preEmoji.textContent = '🥚';
+  preEmoji.innerHTML = getMysteryEggSVG(64);
   preEmoji.style.filter = '';
   preName.textContent  = '神秘蛋';
   preStage.textContent = '喂食升到1级才能看见真实形态';
@@ -1153,7 +1149,7 @@ async function feedSnack(st, snack) {
   const levelsUp  = Math.floor(newXp / XP_PER_LEVEL);
   const newLevel  = st.level + levelsUp;
   const finalXp   = newXp % XP_PER_LEVEL;
-  const newStage  = getStageIdx(newLevel) + 1;
+  const newStage  = getStageIdx(newLevel);
   const newSnacks = st.snacks_received + 1;
 
   const ok = await sbPatch('students', `id=eq.${st.id}`, {
@@ -1205,11 +1201,12 @@ async function loadManage() {
     card.className = 'student-card';
     const _rsi = getStageIdx(st.level);
     const _rss = getStageStyle(_rsi);
+    const _speciesLabel = _rsi === 0 ? '???' : sp.name;
     card.innerHTML = `
       <div class="student-card-emoji" style="filter:${_rss.glow};-webkit-filter:${_rss.glow};">${getPetSVG(st, 52)}</div>
       <div class="student-card-info">
         <div class="student-card-name">${st.name}</div>
-        <div class="student-card-meta">${sp.name} · Lv.${st.level} · 零食×${st.snacks_received}</div>
+        <div class="student-card-meta">${_speciesLabel} · Lv.${st.level} · 零食×${st.snacks_received}</div>
         <div class="student-card-xp">
           <div style="font-size:12px;color:var(--dim)">XP ${st.xp%XP_PER_LEVEL}/${XP_PER_LEVEL}</div>
           <div class="xp-bar-wrap"><div class="xp-bar" style="width:${xpPct}%"></div></div>
@@ -1228,11 +1225,13 @@ async function loadManage() {
         const newData = await sbGet('students', `id=eq.${st.id}&select=*`);
         if (newData && newData[0]) {
           Object.assign(st, newData[0]);
-          card.querySelector('.student-card-meta').textContent = `${sp.name} · ${getPetStageDesc(st)} · Lv.${st.level} · 零食×${st.snacks_received}`;
+          const _nsi = getStageIdx(st.level);
+          const _nl = _nsi === 0 ? '???' : getSpecies(st.species).name;
+          card.querySelector('.student-card-meta').textContent = `${_nl} · ${getPetStageDesc(st)} · Lv.${st.level} · 零食×${st.snacks_received}`;
           const _msi = getStageIdx(st.level);
         const _mss = getStageStyle(_msi);
         const _mel = card.querySelector('.student-card-emoji');
-        _mel.textContent = getPetEmoji(st);
+        _mel.innerHTML = getPetSVG(st, 52);
         _mel.style.filter = _mss.glow;
         _mel.style.webkitFilter = _mss.glow;
         _mel.style.transform = `scale(${Math.min(_mss.scale,1.2)})`;
