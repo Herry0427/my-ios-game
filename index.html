@@ -2,205 +2,311 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ARCADE HUB FIX</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ARCADE HUB PRO</title>
 
-<!-- ✅ 正确的 Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root {
-    --primary: #00ff88;
-    --bg: #07070e;
-    --panel: #0f0f1a;
-    --border: #252535;
-    --text: #dde0f5;
+:root{
+--primary:#00ff88;
+--gold:#ffcc00;
+--bg:#07070e;
+--panel:#111;
 }
-body { margin:0;background:var(--bg);color:white;font-family:sans-serif;}
-.screen{display:none;height:100vh;}
-.screen.active{display:block;}
-.header{padding:10px;background:#111;display:flex;justify-content:space-between}
-button{padding:6px 12px}
-#loading{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center}
-canvas{background:#000}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+background:var(--bg);
+color:#fff;
+font-family:-apple-system;
+padding-top:env(safe-area-inset-top);
+padding-bottom:env(safe-area-inset-bottom);
+overflow:hidden;
+}
+
+.screen{position:absolute;inset:0;display:none}
+.screen.active{display:flex;flex-direction:column}
+
+.header{
+padding:12px;
+display:flex;
+justify-content:space-between;
+background:var(--panel);
+}
+
+.btn{background:#222;border:1px solid #333;color:#fff;padding:6px 12px}
+
+#net{position:fixed;top:10px;right:10px;font-size:12px}
+
+.pet{
+position:absolute;
+transition:transform .2s;
+cursor:pointer;
+}
+
+.glow{filter:drop-shadow(0 0 10px var(--gold))}
 </style>
 </head>
 
 <body>
 
-<div id="loading">加载中...</div>
+<div id="net">📡</div>
 
 <!-- 首页 -->
 <div id="home" class="screen active">
-    <div class="header">
-        <div>ARCADE HUB</div>
-        <div id="status">●</div>
-    </div>
-
-    <button onclick="go('farm')">农场</button>
-    <button onclick="go('game')">贪吃蛇</button>
+<div class="header">ARCADE HUB</div>
+<div style="margin:auto;text-align:center">
+<h1 style="color:var(--primary)">🐍</h1>
+<button class="btn" onclick="go('game')">进入贪吃蛇</button><br><br>
+<button class="btn" onclick="go('farm')">学生农场</button>
+</div>
 </div>
 
 <!-- 农场 -->
 <div id="farm" class="screen">
-    <div class="header">
-        <button onclick="go('home')">返回</button>
-        <div>农场</div>
-    </div>
-    <div id="farm-list"></div>
+<div class="header">
+<button onclick="go('home')" class="btn">◀ 返回</button>
+<div>农场</div>
+</div>
+<div id="farmBox" style="flex:1;position:relative"></div>
 </div>
 
 <!-- 游戏 -->
 <div id="game" class="screen">
-    <div class="header">
-        <button onclick="stopGame();go('home')">返回</button>
-        <div id="score">0</div>
-    </div>
-    <canvas id="cv"></canvas>
+<div class="header">
+<button onclick="stopGame();go('home')" class="btn">◀ 返回</button>
+<div id="score">0</div>
+</div>
+<canvas id="cv"></canvas>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:10px">
+<button onclick="dir='UP'">↑</button>
+<button onclick="dir='LEFT'">←</button>
+<button onclick="dir='RIGHT'">→</button>
+<button onclick="dir='DOWN'">↓</button>
+</div>
 </div>
 
 <script>
-/* ================= 初始化 ================= */
 
-const SB_URL = 'https://qfplpzosjcvvyhcotodz.supabase.co';
-const SB_KEY = 'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB';
+/* ================= 基础 ================= */
 
-let sb = null;
+const sb = supabase.createClient(
+'https://qfplpzosjcvvyhcotodz.supabase.co',
+'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB'
+);
 
-try {
-    if (!window.supabase) throw new Error("Supabase没加载");
-    sb = window.supabase.createClient(SB_URL, SB_KEY);
-    console.log("Supabase OK");
-} catch(e) {
-    alert("Supabase加载失败");
-}
+let cache = JSON.parse(localStorage.getItem('students')||'[]');
+let queue = JSON.parse(localStorage.getItem('queue')||'[]');
 
-/* ================= 通用 ================= */
-
-function loading(b){
-    document.getElementById('loading').style.display = b?'flex':'none';
-}
+/* ================= 路由 ================= */
 
 function go(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+if(id==='farm') initFarm();
+if(id==='game') startGame();
+}
 
-    if(id==='farm') loadFarm();
-    if(id==='game') startGame();
+/* ================= SVG引擎 ================= */
+
+function drawPet(type,stage){
+
+const color=["#0f8","#0ff","#f0f","#ff0","#f55"][type%5];
+
+const glow = stage>=3 ? "glow":"";
+
+return `
+<svg width="50" height="50" class="${glow}">
+<defs>
+<linearGradient id="g${type}">
+<stop offset="0%" stop-color="${color}"/>
+<stop offset="100%" stop-color="#000"/>
+</linearGradient>
+
+<radialGradient id="eye">
+<stop offset="0%" stop-color="#fff"/>
+<stop offset="100%" stop-color="#000"/>
+</radialGradient>
+</defs>
+
+<circle cx="25" cy="25" r="${10+stage*3}" fill="url(#g${type})"/>
+<circle cx="20" cy="20" r="5" fill="url(#eye)"/>
+</svg>
+`;
 }
 
 /* ================= 农场 ================= */
 
-async function loadFarm(){
-    loading(true);
-    try{
-        const {data,error} = await sb.from('students').select('*');
+let pets=[];
 
-        if(error) throw error;
+function initFarm(){
 
-        const box = document.getElementById('farm-list');
-        box.innerHTML = data.map(x=>`
-            <div style="padding:10px;border-bottom:1px solid #333">
-                ${x.name} - Lv.${x.level}
-            </div>
-        `).join('');
+const box=document.getElementById('farmBox');
+box.innerHTML='';
 
-    }catch(e){
-        console.error(e);
-        alert("数据库错误："+e.message+"（大概率RLS没关）");
-    }finally{
-        loading(false);
-    }
+pets = cache.map(s=>({
+...s,
+x:Math.random()*300,
+y:Math.random()*400,
+vx:(Math.random()-0.5),
+vy:(Math.random()-0.5)
+}));
+
+pets.forEach(p=>{
+const el=document.createElement('div');
+el.className='pet';
+el.innerHTML=drawPet(p.species,stage(p.level));
+box.appendChild(el);
+p.el=el;
+
+el.onclick=()=>feed(p,20);
+});
+
+}
+
+/* AI移动 */
+setInterval(()=>{
+if(!document.getElementById('farm').classList.contains('active'))return;
+
+pets.forEach(p=>{
+p.x+=p.vx*2;
+p.y+=p.vy*2;
+
+if(p.x<0||p.x>300)p.vx*=-1;
+if(p.y<0||p.y>500)p.vy*=-1;
+
+p.el.style.transform=`translate(${p.x}px,${p.y}px)`;
+});
+},50);
+
+/* ================= XP系统 ================= */
+
+function stage(lv){
+if(lv<5)return 0;
+if(lv<10)return 1;
+if(lv<15)return 2;
+return 3;
+}
+
+function feed(p,amount){
+
+/* 乐观更新 */
+p.xp+=amount;
+p.level=Math.floor(p.xp/100);
+
+saveLocal();
+
+sync({
+id:p.id,
+xp:p.xp,
+level:p.level
+});
+}
+
+/* ================= 离线队列 ================= */
+
+function sync(data){
+queue.push(data);
+localStorage.setItem('queue',JSON.stringify(queue));
+processQueue();
+}
+
+async function processQueue(){
+if(!navigator.onLine)return;
+
+while(queue.length){
+const item=queue[0];
+
+const {error}=await sb.from('students')
+.update(item)
+.eq('id',item.id);
+
+if(error) break;
+
+queue.shift();
+}
+
+localStorage.setItem('queue',JSON.stringify(queue));
+}
+
+/* ================= 本地缓存 ================= */
+
+function saveLocal(){
+localStorage.setItem('students',JSON.stringify(cache));
 }
 
 /* ================= 贪吃蛇 ================= */
 
 let snake,dir,food,timer,score;
 
-const cv = document.getElementById('cv');
-const ctx = cv.getContext('2d');
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
 
 function startGame(){
-    cv.width=300;cv.height=300;
-    snake=[{x:100,y:100}];
-    dir='RIGHT';
-    score=0;
-    spawn();
+cv.width=300;cv.height=300;
+snake=[{x:100,y:100}];
+dir='RIGHT';
+score=0;
+spawn();
 
-    if(timer) clearInterval(timer);
-    timer=setInterval(tick,150);
+if(timer)clearInterval(timer);
+timer=setInterval(tick,120);
 }
 
 function tick(){
-    let h={...snake[0]};
+let h={...snake[0]};
 
-    if(dir==='UP')h.y-=10;
-    if(dir==='DOWN')h.y+=10;
-    if(dir==='LEFT')h.x-=10;
-    if(dir==='RIGHT')h.x+=10;
+if(dir==='UP')h.y-=10;
+if(dir==='DOWN')h.y+=10;
+if(dir==='LEFT')h.x-=10;
+if(dir==='RIGHT')h.x+=10;
 
-    if(h.x<0||h.y<0||h.x>=300||h.y>=300){
-        stopGame();
-        alert("结束："+score);
-        return;
-    }
+if(h.x<0||h.y<0||h.x>=300||h.y>=300){
+stopGame();
+alert("结束:"+score);
+return;
+}
 
-    snake.unshift(h);
+snake.unshift(h);
 
-    if(h.x===food.x&&h.y===food.y){
-        score+=10;
-        spawn();
-    }else{
-        snake.pop();
-    }
+if(h.x===food.x&&h.y===food.y){
+score+=10;
+spawn();
+}else{
+snake.pop();
+}
 
-    draw();
+draw();
 }
 
 function draw(){
-    ctx.fillStyle="#000";
-    ctx.fillRect(0,0,300,300);
+ctx.fillStyle="#000";
+ctx.fillRect(0,0,300,300);
 
-    ctx.fillStyle=getComputedStyle(document.documentElement)
-        .getPropertyValue('--primary').trim() || '#0f0';
+ctx.fillStyle="#0f0";
+snake.forEach(p=>ctx.fillRect(p.x,p.y,8,8));
 
-    snake.forEach(p=>ctx.fillRect(p.x,p.y,8,8));
+ctx.fillStyle="red";
+ctx.fillRect(food.x,food.y,8,8);
 
-    ctx.fillStyle="red";
-    ctx.fillRect(food.x,food.y,8,8);
-
-    document.getElementById('score').innerText=score;
+document.getElementById('score').innerText=score;
 }
 
 function spawn(){
-    food={
-        x:Math.floor(Math.random()*30)*10,
-        y:Math.floor(Math.random()*30)*10
-    }
+food={
+x:Math.floor(Math.random()*30)*10,
+y:Math.floor(Math.random()*30)*10
+};
 }
 
-function stopGame(){
-    clearInterval(timer);
-}
+function stopGame(){clearInterval(timer)}
 
-/* 键盘控制 */
-document.addEventListener('keydown',e=>{
-    if(e.key==='ArrowUp')dir='UP';
-    if(e.key==='ArrowDown')dir='DOWN';
-    if(e.key==='ArrowLeft')dir='LEFT';
-    if(e.key==='ArrowRight')dir='RIGHT';
-});
+/* ================= 自动同步 ================= */
 
-/* ================= 连接检测 ================= */
+window.addEventListener('online',processQueue);
 
-(async()=>{
-    try{
-        const {error}=await sb.from('students').select('id').limit(1);
-        document.getElementById('status').style.color = error?'red':'#0f0';
-    }catch{
-        document.getElementById('status').style.color='red';
-    }
-})();
 </script>
 
 </body>
