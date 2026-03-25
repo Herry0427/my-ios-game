@@ -643,16 +643,32 @@ function getPetEmoji(student) {
   return (sp.stages && sp.stages[idx - 1]) || sp.stages[0] || '🥚';
 }
 
-// SVG渲染：返回宠物SVG字符串（用于农场地图和弹窗）
+function getPetImagePath(speciesId, stageIdx) {
+  // stageIdx: 1~4 对应幼年/进阶/成年/王者
+  return `assets/pets/${speciesId}_${stageIdx}.png`;
+}
+
+function getPetImageHTML(src, alt, s, fallbackHTML) {
+  return '<span style="position:relative;display:inline-flex;width:'+s+'px;height:'+s+'px;align-items:center;justify-content:center;">' +
+    '<img src="' + src + '" alt="' + alt + '" width="' + s + '" height="' + s + '" style="width:'+s+'px;height:'+s+'px;object-fit:contain;display:block;" ' +
+    'onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'inline-block\';">' +
+    '<span style="display:none;line-height:0;">' + fallbackHTML + '</span>' +
+  '</span>';
+}
+
+// 宠物渲染：优先图片，缺图时回退到旧SVG
 function getPetSVG(student, size) {
   const idx = getStageIdx(student.level);
   const sp  = getSpecies(student.species);
   const s   = size || 60;
-  if (idx === 0) return getMysteryEggSVG(s);
+  if (idx === 0) {
+    const eggFallback = getMysteryEggSVG(s);
+    return getPetImageHTML('assets/pets/mystery_egg.png', 'mystery egg', s, eggFallback);
+  }
   const key = sp.id + '_' + idx;
-  const svgStr = PET_SVG_DATA[key] || PET_SVG_DATA[sp.id + '_1'];
-  if (!svgStr) return getDefaultSVG(sp, idx, s);
-  return svgStr.replace(/width="60"/, 'width="'+s+'"').replace(/height="60"/, 'height="'+s+'"');
+  const svgStr = PET_SVG_DATA[key] || PET_SVG_DATA[sp.id + '_1'] || getDefaultSVG(sp, idx, s);
+  const fallback = svgStr.replace(/width="60"/, 'width="'+s+'"').replace(/height="60"/, 'height="'+s+'"');
+  return getPetImageHTML(getPetImagePath(sp.id, idx), sp.name, s, fallback);
 }
 
 // 通用fallback SVG（当专属SVG未实现时）
