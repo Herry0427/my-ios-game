@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#05070d" />
+  <title>Student Evolution Farm</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <canvas id="farmCanvas"></canvas>
+
+  <header class="hud">
+    <h1>Student Evolution Farm</h1>
+    <div class="actions">
+      <button id="openAdopt">领养</button>
+      <button id="openManage">管理</button>
+      <button id="openHall">名人堂</button>
+      <button id="openDex">图鉴</button>
+      <button id="toggleBgm">BGM</button>
+    </div>
+  </header>
+
+  <aside id="toast" class="toast hidden"></aside>
+
+  <section id="petPanel" class="modal hidden">
+    <div class="card">
+      <h2 id="petTitle">宠物互动</h2>
+      <p id="petStats"></p>
+      <div class="row">
+        <button id="feedSnack">喂零食 +20XP</button>
+        <button id="feedTrophy">发奖杯 +100XP</button>
+      </div>
+      <button id="closePetPanel" class="ghost">关闭</button>
+    </div>
+  </section>
+
+  <section id="adoptPage" class="page hidden">
+    <button class="back-btn">◀ 返回</button>
+    <div class="card page-card">
+      <h2>领养神秘蛋</h2>
+      <p>输入学生姓名，系统随机生成神秘蛋。</p>
+      <input id="studentNameInput" placeholder="学生姓名" />
+      <button id="adoptNow">立即领养</button>
+      <div id="adoptResult" class="result"></div>
+    </div>
+  </section>
+
+  <section id="managePage" class="page hidden">
+    <button class="back-btn">◀ 返回</button>
+    <div class="card page-card">
+      <h2>班级管理</h2>
+      <div id="manageList" class="list"></div>
+    </div>
+  </section>
+
+  <section id="hallPage" class="page hidden">
+    <button class="back-btn">◀ 返回</button>
+    <div class="card page-card">
+      <h2>名人堂</h2>
+      <ol id="hallList" class="hall"></ol>
+    </div>
+  </section>
+
+  <section id="dexPage" class="page hidden">
+    <button class="back-btn">◀ 返回</button>
+    <div class="card page-card">
+      <h2>进化图鉴</h2>
+      <ul class="dex">
+        <li>Lv0：Mystery Egg 神秘蛋</li>
+        <li>Lv1-4：Baby 幼年态</li>
+        <li>Lv5-9：Juvenile 少年态</li>
+        <li>Lv10-14：Adult 成年态</li>
+        <li>Lv15+：King / Legendary 传说王者态</li>
+      </ul>
+    </div>
+  </section>
+
+  <script src="./app.js"></script>
+</body>
+</html>
