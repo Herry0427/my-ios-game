@@ -29,9 +29,8 @@ const leagueSeasonCache = new Map();
 let footballListRequestId = 0;
 let leagueDetailRequestId = 0;
 const FOOTBALL_CACHE_PREFIX = "football_cache_v1_";
-const FOOTBALL_CACHE_TTL_MS = 10 * 60 * 1000;
-const FOOTBALL_AUTO_REFRESH_MS = 10 * 60 * 1000;
-let footballAutoRefreshTimer = null;
+const WEATHER_CACHE_KEY = `${FOOTBALL_CACHE_PREFIX}weather`;
+const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
 let refreshingFootballList = false;
 let refreshingLeagueDetail = false;
 
@@ -77,7 +76,6 @@ function showToast(message) {
 
 function pruneExpiredFootballCache() {
   try {
-    const now = Date.now();
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (!key || !key.startsWith(FOOTBALL_CACHE_PREFIX)) continue;
@@ -90,7 +88,7 @@ function pruneExpiredFootballCache() {
         localStorage.removeItem(key);
         continue;
       }
-      if (!payload || typeof payload.expiresAt !== "number" || payload.expiresAt <= now) {
+      if (!payload || typeof payload !== "object" || !("data" in payload)) {
         localStorage.removeItem(key);
       }
     }
@@ -108,11 +106,7 @@ function getLeagueCache(leagueId) {
     const raw = localStorage.getItem(cacheKeyLeague(leagueId));
     if (!raw) return null;
     const payload = JSON.parse(raw);
-    if (!payload || typeof payload.expiresAt !== "number" || !payload.data) return null;
-    if (payload.expiresAt <= Date.now()) {
-      localStorage.removeItem(cacheKeyLeague(leagueId));
-      return null;
-    }
+    if (!payload || !payload.data) return null;
     return payload.data;
   } catch (_err) {
     return null;
@@ -121,15 +115,33 @@ function getLeagueCache(leagueId) {
 
 function setLeagueCache(leagueId, data) {
   try {
-    const now = Date.now();
     const payload = {
-      savedAt: now,
-      expiresAt: now + FOOTBALL_CACHE_TTL_MS,
+      savedAt: Date.now(),
       data
     };
     localStorage.setItem(cacheKeyLeague(leagueId), JSON.stringify(payload));
   } catch (_err) {
     // Ignore storage quota or private mode errors.
+  }
+}
+
+function getWeatherCache() {
+  try {
+    const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    return payload?.data || null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function setWeatherCache(data) {
+  try {
+    const payload = { savedAt: Date.now(), data };
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(payload));
+  } catch (_err) {
+    // Ignore storage errors.
   }
 }
 
@@ -169,7 +181,6 @@ function openHome() {
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   homePage.classList.remove("hidden");
-  updateFootballAutoRefreshState();
 }
 
 function openWeather() {
@@ -177,7 +188,6 @@ function openWeather() {
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   weatherPage.classList.remove("hidden");
-  updateFootballAutoRefreshState();
 }
 
 function openFootball() {
@@ -185,49 +195,12 @@ function openFootball() {
   weatherPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
-  updateFootballAutoRefreshState();
 }
 
 function openLeagueDetail(leagueKey) {
   currentLeagueKey = leagueKey;
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.remove("hidden");
-  updateFootballAutoRefreshState();
-}
-
-function isFootballViewVisible() {
-  const listVisible = !footballPage.classList.contains("hidden");
-  const detailVisible = !leagueDetailPage.classList.contains("hidden");
-  return listVisible || detailVisible;
-}
-
-function stopFootballAutoRefresh() {
-  if (!footballAutoRefreshTimer) return;
-  clearInterval(footballAutoRefreshTimer);
-  footballAutoRefreshTimer = null;
-}
-
-function tickFootballAutoRefresh() {
-  if (document.visibilityState !== "visible") return;
-  if (!isFootballViewVisible()) return;
-
-  if (!footballPage.classList.contains("hidden")) {
-    refreshFootballLeagueList();
-    return;
-  }
-  if (!leagueDetailPage.classList.contains("hidden") && currentLeagueKey) {
-    refreshLeagueDetail();
-  }
-}
-
-function updateFootballAutoRefreshState() {
-  const shouldRun = document.visibilityState === "visible" && isFootballViewVisible();
-  if (!shouldRun) {
-    stopFootballAutoRefresh();
-    return;
-  }
-  if (footballAutoRefreshTimer) return;
-  footballAutoRefreshTimer = setInterval(tickFootballAutoRefresh, FOOTBALL_AUTO_REFRESH_MS);
 }
 
 function formatDate(rawDate) {
@@ -287,6 +260,21 @@ function getCurrentPosition() {
 }
 
 async function loadWeatherByLocation() {
+  const cached = getWeatherCache();
+  if (cached) {
+    locationText.textContent = cached.locationText || "已加载缓存位置";
+    weatherStatus.textContent = `缓存数据：${cached.savedAtText || "未知时间"}`;
+    renderWeather(cached.daily);
+    return;
+  }
+
+  if (!FORCE_REFRESH_ON_THIS_BOOT) {
+    locationText.textContent = "未拉取";
+    weatherStatus.textContent = "暂无缓存。点击主界面的“清除缓存并刷新代码”后再进入天气获取最新数据。";
+    weatherList.innerHTML = "";
+    return;
+  }
+
   weatherStatus.textContent = "正在获取定位...";
   weatherList.innerHTML = "";
   try {
@@ -303,6 +291,11 @@ async function loadWeatherByLocation() {
 
     weatherStatus.textContent = `已更新：${new Date().toLocaleString()}`;
     renderWeather(data.daily);
+    setWeatherCache({
+      daily: data.daily,
+      locationText: `当前位置：${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+      savedAtText: new Date().toLocaleString()
+    });
   } catch (err) {
     locationText.textContent = "定位失败";
     weatherStatus.textContent = "获取天气失败，请检查定位权限和网络。";
@@ -467,6 +460,10 @@ async function fetchLeagueGroupedMatches(leagueId) {
     return { ...cached, source: `${cached.source || "cache"}(cached)` };
   }
 
+  if (!FORCE_REFRESH_ON_THIS_BOOT) {
+    return { upcoming: [], finished: [], source: "cache-miss" };
+  }
+
   const currentSeason = await fetchLeagueCurrentSeason(leagueId);
   const events = await fetchLeagueEventsBySeason(leagueId, currentSeason);
   const map = new Map();
@@ -575,42 +572,13 @@ async function loadLeagueDetail() {
 }
 
 async function refreshFootballLeagueList() {
-  if (refreshingFootballList) return;
-  refreshingFootballList = true;
-  footballStatus.textContent = "正在刷新赛事列表...";
-  await Promise.all(LEAGUES.map(async (league) => {
-    try {
-      await fetchLeagueGroupedMatchesFresh(league.id);
-    } catch (_err) {
-      // Keep old cache for failed leagues.
-    }
-  }));
-  try {
-    return await loadFootballLeagueList();
-  } finally {
-    refreshingFootballList = false;
-  }
+  showToast("当前模式不主动拉新。请使用“清除缓存并刷新代码”拉取最新数据。");
+  return loadFootballLeagueList();
 }
 
 async function refreshLeagueDetail() {
-  if (refreshingLeagueDetail) return;
-  refreshingLeagueDetail = true;
-  const league = leagueMap.get(currentLeagueKey);
-  if (!league) {
-    refreshingLeagueDetail = false;
-    return;
-  }
-  leagueDetailStatus.textContent = `正在刷新 ${league.name} 数据...`;
-  try {
-    await fetchLeagueGroupedMatchesFresh(league.id);
-  } catch (_err) {
-    // Ignore and fallback to normal load.
-  }
-  try {
-    return await loadLeagueDetail();
-  } finally {
-    refreshingLeagueDetail = false;
-  }
+  showToast("当前模式不主动拉新。请使用“清除缓存并刷新代码”拉取最新数据。");
+  return loadLeagueDetail();
 }
 
 function onModuleClick(moduleName) {
@@ -635,14 +603,12 @@ document.getElementById("backHomeFromFootball").addEventListener("click", openHo
 document.getElementById("backToFootball").addEventListener("click", () => {
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
-  updateFootballAutoRefreshState();
   loadFootballLeagueList();
 });
 document.getElementById("refreshWeather").addEventListener("click", loadWeatherByLocation);
 document.getElementById("refreshFootballLeagues").addEventListener("click", refreshFootballLeagueList);
 document.getElementById("refreshLeagueDetail").addEventListener("click", refreshLeagueDetail);
 document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
-document.addEventListener("visibilitychange", updateFootballAutoRefreshState);
 
 pruneExpiredFootballCache();
 
