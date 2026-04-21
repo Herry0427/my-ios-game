@@ -65,6 +65,37 @@ function showToast(message) {
   }, 1400);
 }
 
+async function clearCacheAndReload() {
+  try {
+    showToast("正在清除缓存...");
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+
+    if ("serviceWorker" in navigator) {
+      if (navigator.serviceWorker.controller) {
+        const channel = new MessageChannel();
+        const responsePromise = new Promise((resolve) => {
+          channel.port1.onmessage = () => resolve();
+          setTimeout(resolve, 1200);
+        });
+        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_APP_CACHE" }, [channel.port2]);
+        await responsePromise;
+      }
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+
+    localStorage.clear();
+    sessionStorage.clear();
+    const cleanUrl = `${location.origin}${location.pathname}?refresh=${Date.now()}`;
+    location.replace(cleanUrl);
+  } catch (err) {
+    showToast(err.message || "清除缓存失败");
+  }
+}
+
 function openHome() {
   weatherPage.classList.add("hidden");
   footballPage.classList.add("hidden");
@@ -343,6 +374,7 @@ document.getElementById("backToFootball").addEventListener("click", () => {
 document.getElementById("refreshWeather").addEventListener("click", loadWeatherByLocation);
 document.getElementById("refreshFootballLeagues").addEventListener("click", loadFootballLeagueList);
 document.getElementById("refreshLeagueDetail").addEventListener("click", loadLeagueDetail);
+document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => null);

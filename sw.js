@@ -26,3 +26,13 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("message", (event) => {
+  if (!event.data || event.data.type !== "CLEAR_APP_CACHE") return;
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+    await self.registration.unregister();
+    if (event.ports && event.ports[0]) event.ports[0].postMessage({ ok: true });
+  })());
+});
