@@ -119,6 +119,73 @@ button:active { transform: scale(0.98); }
   color: #90d0ff;
 }
 
+.league-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.league-card {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(182, 204, 255, 0.24);
+  background: rgba(13, 25, 46, 0.78);
+  padding: 12px;
+}
+
+.league-card-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.league-card-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b9cbef;
+}
+
+.wc-block {
+  margin-top: 14px;
+}
+
+.wc-block h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #dbe7ff;
+}
+
+.wc-list {
+  display: grid;
+  gap: 8px;
+}
+
+.wc-item {
+  border-radius: 12px;
+  border: 1px solid rgba(182, 204, 255, 0.2);
+  background: rgba(13, 25, 46, 0.78);
+  padding: 10px 12px;
+}
+
+.wc-teams {
+  font-weight: 700;
+  color: #f0f5ff;
+  font-size: 14px;
+}
+
+.wc-meta {
+  margin-top: 4px;
+  color: #b9cbef;
+  font-size: 12px;
+}
+
+.wc-score {
+  margin-top: 6px;
+  font-size: 15px;
+  color: #9ed5ff;
+  font-weight: 700;
+}
+
 .back-btn {
   margin-bottom: 8px;
 }

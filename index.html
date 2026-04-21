@@ -14,7 +14,7 @@
   <main id="homePage" class="page home-page">
     <header class="top-bar">
       <h1>手机功能面板</h1>
-      <p>6 个模块（先实现天气预报）</p>
+      <p>6 个模块（已实现：天气预报、足球）</p>
     </header>
     <section class="module-grid">
       <button class="module-card primary" data-module="weather">
@@ -22,10 +22,10 @@
         <span class="module-title">天气预报</span>
         <span class="module-subtitle">当前定位 · 7日预报</span>
       </button>
-      <button class="module-card" data-module="module2">
-        <span class="module-icon">🧭</span>
-        <span class="module-title">模块 2</span>
-        <span class="module-subtitle">功能占位</span>
+      <button class="module-card" data-module="football">
+        <span class="module-icon">⚽</span>
+        <span class="module-title">足球</span>
+        <span class="module-subtitle">世界杯 + 五大联赛 + 欧冠</span>
       </button>
       <button class="module-card" data-module="module3">
         <span class="module-icon">📅</span>
@@ -63,6 +63,39 @@
 
     <section id="weatherStatus" class="status-card">准备获取天气...</section>
     <section id="weatherList" class="weather-list"></section>
+  </section>
+
+  <section id="footballPage" class="page hidden">
+    <header class="top-bar">
+      <button id="backHomeFromFootball" class="back-btn">← 返回</button>
+      <h2>足球赛程</h2>
+      <p>点击查看对应赛事（未开赛显示时间，已完赛显示比分）</p>
+    </header>
+
+    <section class="weather-actions"><button id="refreshFootballLeagues">刷新赛事列表</button></section>
+    <section id="footballStatus" class="status-card">准备获取赛事列表...</section>
+    <section id="leagueList" class="league-list"></section>
+  </section>
+
+  <section id="leagueDetailPage" class="page hidden">
+    <header class="top-bar">
+      <button id="backToFootball" class="back-btn">← 返回足球列表</button>
+      <h2 id="leagueDetailTitle">赛事详情</h2>
+      <p>未开赛显示时间，已完赛显示比分</p>
+    </header>
+    <section class="weather-actions">
+      <button id="refreshLeagueDetail">刷新当前赛事</button>
+    </section>
+    <section id="leagueDetailStatus" class="status-card">准备获取赛事数据...</section>
+
+    <section class="wc-block">
+      <h3>未开赛</h3>
+      <div id="leagueUpcomingList" class="wc-list"></div>
+    </section>
+    <section class="wc-block">
+      <h3>已完赛</h3>
+      <div id="leagueFinishedList" class="wc-list"></div>
+    </section>
   </section>
 
   <aside id="toast" class="toast hidden"></aside>
