@@ -216,6 +216,16 @@ async function fetchLeagueEvents(endpoint, leagueId) {
   return Array.isArray(data.events) ? data.events : [];
 }
 
+async function fetchEventsByDayAndLeague(dateText, leagueId) {
+  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/eventsday.php");
+  api.searchParams.set("d", dateText);
+  api.searchParams.set("l", String(leagueId));
+  const res = await fetch(api.toString());
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data.events) ? data.events : [];
+}
+
 async function fetchLeagueEventsBySeason(leagueId, seasonText) {
   const api = new URL("https://www.thesportsdb.com/api/v1/json/123/eventsseason.php");
   api.searchParams.set("id", String(leagueId));
@@ -281,6 +291,32 @@ function splitAndLimitMatches(matches) {
   };
 }
 
+async function fillUpcomingByDayWindow(leagueId, existingMap, maxDays = 21) {
+  const now = new Date();
+  const map = new Map(existingMap);
+  for (let i = 0; i < maxDays; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const dateText = `${yyyy}-${mm}-${dd}`;
+    let dayEvents = [];
+    try {
+      dayEvents = await fetchEventsByDayAndLeague(dateText, leagueId);
+    } catch (_err) {
+      dayEvents = [];
+    }
+    dayEvents.forEach((e) => {
+      const m = normalizeMatch(e);
+      map.set(m.idEvent, m);
+    });
+    const grouped = splitAndLimitMatches([...map.values()]);
+    if (grouped.upcoming.length >= MATCH_LIMIT) return map;
+  }
+  return map;
+}
+
 function parseMatchTime(event) {
   if (event.strTimestamp) return new Date(event.strTimestamp);
   if (event.dateEvent) return new Date(`${event.dateEvent}T${event.strTime || "00:00:00"}`);
@@ -330,6 +366,8 @@ async function fetchLeagueGroupedMatches(leagueId) {
     map.set(m.idEvent, m);
   });
   const grouped = splitAndLimitMatches([...map.values()]);
+  let source = `season:${currentSeason}`;
+
   if (grouped.upcoming.length < MATCH_LIMIT) {
     try {
       const nextEvents = await fetchLeagueEvents("eventsnextleague", leagueId);
@@ -337,12 +375,22 @@ async function fetchLeagueGroupedMatches(leagueId) {
         const m = normalizeMatch(e);
         map.set(m.idEvent, m);
       });
+      source += "+next";
     } catch (_err) {
-      // Keep season-only data if fallback fails.
+      // ignore
     }
   }
-  const finalGrouped = splitAndLimitMatches([...map.values()]);
-  return { ...finalGrouped, source: `season:${currentSeason}+nextFallback` };
+
+  let groupedAfterNext = splitAndLimitMatches([...map.values()]);
+  if (groupedAfterNext.upcoming.length < MATCH_LIMIT) {
+    const filledMap = await fillUpcomingByDayWindow(leagueId, map, 21);
+    map.clear();
+    filledMap.forEach((v, k) => map.set(k, v));
+    source += "+dayWindow";
+    groupedAfterNext = splitAndLimitMatches([...map.values()]);
+  }
+
+  return { ...groupedAfterNext, source };
 }
 
 async function loadFootballLeagueList() {
