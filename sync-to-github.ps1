@@ -26,7 +26,19 @@ $RemoteUrl = "https://github.com/Herry0427/my-ios-game.git"
 
 function Assert-Git {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    throw "git not found. Install Git for Windows and reopen Cursor."
+    foreach ($p in @(
+        "C:\Program Files\Git\cmd",
+        "C:\Program Files\Git\bin",
+        "C:\Program Files (x86)\Git\cmd",
+        "C:\Program Files (x86)\Git\bin"
+      )) {
+      if (Test-Path $p) {
+        $env:Path = "$p;$env:Path"
+      }
+    }
+  }
+  if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "git not found. Reopen Cursor after Git installation."
   }
   git config --global http.version HTTP/1.1 | Out-Null
 }
