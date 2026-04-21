@@ -14,25 +14,25 @@ const leagueFinishedList = document.getElementById("leagueFinishedList");
 const toast = document.getElementById("toast");
 
 const LEAGUES = [
-  { id: "4429", key: "worldcup", name: "世界杯", priority: 1 },
-  { id: "4328", key: "epl", name: "英超", priority: 2 },
-  { id: "4335", key: "laliga", name: "西甲", priority: 3 },
-  { id: "4331", key: "bundesliga", name: "德甲", priority: 4 },
-  { id: "4332", key: "seriea", name: "意甲", priority: 5 },
-  { id: "4334", key: "ligue1", name: "法甲", priority: 6 },
-  { id: "4480", key: "ucl", name: "欧冠", priority: 7 }
+  { key: "worldcup", name: "世界杯", espnCode: "fifa.world", priority: 1 },
+  { key: "epl", name: "英超", espnCode: "eng.1", priority: 2 },
+  { key: "laliga", name: "西甲", espnCode: "esp.1", priority: 3 },
+  { key: "bundesliga", name: "德甲", espnCode: "ger.1", priority: 4 },
+  { key: "seriea", name: "意甲", espnCode: "ita.1", priority: 5 },
+  { key: "ligue1", name: "法甲", espnCode: "fra.1", priority: 6 },
+  { key: "ucl", name: "欧冠", espnCode: "uefa.champions", priority: 7 }
 ];
+
 const leagueMap = new Map(LEAGUES.map((x) => [x.key, x]));
 let currentLeagueKey = null;
-const MATCH_LIMIT = 10;
-const leagueSeasonCache = new Map();
 let footballListRequestId = 0;
 let leagueDetailRequestId = 0;
-const FOOTBALL_CACHE_PREFIX = "football_cache_v1_";
-const WEATHER_CACHE_KEY = `${FOOTBALL_CACHE_PREFIX}weather`;
+let footballPrefetchPromise = null;
+
+const MATCH_LIMIT = 10;
+const CACHE_PREFIX = "football_cache_v2_";
+const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
 const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
-let refreshingFootballList = false;
-let refreshingLeagueDetail = false;
 
 const weatherCodeMap = {
   0: "晴",
@@ -69,65 +69,16 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.remove("hidden");
   clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => {
-    toast.classList.add("hidden");
-  }, 1400);
+  showToast.timer = setTimeout(() => toast.classList.add("hidden"), 1400);
 }
 
-function pruneExpiredFootballCache() {
+function leagueCacheKey(leagueKey) {
+  return `${CACHE_PREFIX}league_${leagueKey}`;
+}
+
+function getCachedJson(key) {
   try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith(FOOTBALL_CACHE_PREFIX)) continue;
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      let payload = null;
-      try {
-        payload = JSON.parse(raw);
-      } catch (_err) {
-        localStorage.removeItem(key);
-        continue;
-      }
-      if (!payload || typeof payload !== "object" || !("data" in payload)) {
-        localStorage.removeItem(key);
-      }
-    }
-  } catch (_err) {
-    // Ignore storage errors silently.
-  }
-}
-
-function cacheKeyLeague(leagueId) {
-  return `${FOOTBALL_CACHE_PREFIX}league_${leagueId}`;
-}
-
-function getLeagueCache(leagueId) {
-  try {
-    const raw = localStorage.getItem(cacheKeyLeague(leagueId));
-    if (!raw) return null;
-    const payload = JSON.parse(raw);
-    if (!payload || !payload.data) return null;
-    return payload.data;
-  } catch (_err) {
-    return null;
-  }
-}
-
-function setLeagueCache(leagueId, data) {
-  try {
-    const payload = {
-      savedAt: Date.now(),
-      data
-    };
-    localStorage.setItem(cacheKeyLeague(leagueId), JSON.stringify(payload));
-  } catch (_err) {
-    // Ignore storage quota or private mode errors.
-  }
-}
-
-function getWeatherCache() {
-  try {
-    const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const payload = JSON.parse(raw);
     return payload?.data || null;
@@ -136,43 +87,96 @@ function getWeatherCache() {
   }
 }
 
-function setWeatherCache(data) {
+function setCachedJson(key, data) {
   try {
-    const payload = { savedAt: Date.now(), data };
-    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(payload));
+    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), data }));
   } catch (_err) {
-    // Ignore storage errors.
+    // Ignore quota/private mode errors.
   }
 }
 
-async function clearCacheAndReload() {
-  try {
-    showToast("正在清除缓存...");
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
-    }
+function getWeatherCache() {
+  return getCachedJson(WEATHER_CACHE_KEY);
+}
 
-    if ("serviceWorker" in navigator) {
-      if (navigator.serviceWorker.controller) {
-        const channel = new MessageChannel();
-        const responsePromise = new Promise((resolve) => {
-          channel.port1.onmessage = () => resolve();
-          setTimeout(resolve, 1200);
-        });
-        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_APP_CACHE" }, [channel.port2]);
-        await responsePromise;
-      }
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((reg) => reg.unregister()));
-    }
+function setWeatherCache(data) {
+  setCachedJson(WEATHER_CACHE_KEY, data);
+}
 
-    localStorage.clear();
-    sessionStorage.clear();
-    const cleanUrl = `${location.origin}${location.pathname}?refresh=${Date.now()}`;
-    location.replace(cleanUrl);
-  } catch (err) {
-    showToast(err.message || "清除缓存失败");
+function getLeagueCache(leagueKey) {
+  return getCachedJson(leagueCacheKey(leagueKey));
+}
+
+function setLeagueCache(leagueKey, data) {
+  setCachedJson(leagueCacheKey(leagueKey), data);
+}
+
+function parseMatchDate(dateStr) {
+  const dt = new Date(dateStr || 0);
+  return Number.isNaN(dt.getTime()) ? new Date(0) : dt;
+}
+
+function formatDate(rawDate) {
+  const d = new Date(rawDate);
+  const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${d.getMonth() + 1}/${d.getDate()} ${week[d.getDay()]}`;
+}
+
+function formatDateTime(dateISO) {
+  if (!dateISO) return "时间未知";
+  const d = new Date(dateISO);
+  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${formatDate(d.toISOString())} ${time}`;
+}
+
+function renderWeather(daily) {
+  weatherList.innerHTML = "";
+  for (let i = 0; i < daily.time.length; i++) {
+    const code = daily.weathercode[i];
+    const item = document.createElement("article");
+    item.className = "weather-item";
+    item.innerHTML = `
+      <div>
+        <div class="weather-date">${formatDate(daily.time[i])}</div>
+        <div class="weather-desc">${weatherCodeMap[code] || "未知天气"} · 降水概率 ${daily.precipitation_probability_max[i] ?? 0}%</div>
+      </div>
+      <div class="weather-temp">${Math.round(daily.temperature_2m_max[i])}° / ${Math.round(daily.temperature_2m_min[i])}°</div>
+    `;
+    weatherList.appendChild(item);
+  }
+}
+
+function renderLeagueMatches(upcoming, finished) {
+  leagueUpcomingList.innerHTML = "";
+  leagueFinishedList.innerHTML = "";
+
+  if (!upcoming.length) {
+    leagueUpcomingList.innerHTML = '<div class="status-card">暂无未开赛赛程</div>';
+  } else {
+    upcoming.forEach((m) => {
+      const el = document.createElement("article");
+      el.className = "wc-item";
+      el.innerHTML = `
+        <div class="wc-teams">${m.home} vs ${m.away}</div>
+        <div class="wc-meta">${formatDateTime(m.dateISO)}</div>
+      `;
+      leagueUpcomingList.appendChild(el);
+    });
+  }
+
+  if (!finished.length) {
+    leagueFinishedList.innerHTML = '<div class="status-card">暂无已完赛数据</div>';
+  } else {
+    finished.forEach((m) => {
+      const el = document.createElement("article");
+      el.className = "wc-item";
+      el.innerHTML = `
+        <div class="wc-teams">${m.home} vs ${m.away}</div>
+        <div class="wc-meta">${formatDateTime(m.dateISO)}</div>
+        <div class="wc-score">${m.homeScore} : ${m.awayScore}</div>
+      `;
+      leagueFinishedList.appendChild(el);
+    });
   }
 }
 
@@ -203,32 +207,33 @@ function openLeagueDetail(leagueKey) {
   leagueDetailPage.classList.remove("hidden");
 }
 
-function formatDate(rawDate) {
-  const d = new Date(rawDate);
-  const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-  return `${d.getMonth() + 1}/${d.getDate()} ${week[d.getDay()]}`;
-}
+async function clearCacheAndReload() {
+  try {
+    showToast("正在清除缓存...");
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
 
-function formatDateTime(dateText, timeText) {
-  if (!dateText) return "时间未知";
-  const cleanTime = (timeText || "00:00:00").slice(0, 5);
-  return `${formatDate(dateText)} ${cleanTime}`;
-}
+    if ("serviceWorker" in navigator) {
+      if (navigator.serviceWorker.controller) {
+        const channel = new MessageChannel();
+        const responsePromise = new Promise((resolve) => {
+          channel.port1.onmessage = () => resolve();
+          setTimeout(resolve, 1200);
+        });
+        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_APP_CACHE" }, [channel.port2]);
+        await responsePromise;
+      }
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
 
-function renderWeather(daily) {
-  weatherList.innerHTML = "";
-  for (let i = 0; i < daily.time.length; i++) {
-    const code = daily.weathercode[i];
-    const item = document.createElement("article");
-    item.className = "weather-item";
-    item.innerHTML = `
-      <div>
-        <div class="weather-date">${formatDate(daily.time[i])}</div>
-        <div class="weather-desc">${weatherCodeMap[code] || "未知天气"} · 降水概率 ${daily.precipitation_probability_max[i] ?? 0}%</div>
-      </div>
-      <div class="weather-temp">${Math.round(daily.temperature_2m_max[i])}° / ${Math.round(daily.temperature_2m_min[i])}°</div>
-    `;
-    weatherList.appendChild(item);
+    localStorage.clear();
+    sessionStorage.clear();
+    location.replace(`${location.origin}${location.pathname}?refresh=${Date.now()}`);
+  } catch (err) {
+    showToast(err.message || "清除缓存失败");
   }
 }
 
@@ -239,7 +244,6 @@ async function fetchSevenDayWeather(lat, lon) {
   api.searchParams.set("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max");
   api.searchParams.set("timezone", "auto");
   api.searchParams.set("forecast_days", "7");
-
   const res = await fetch(api.toString());
   if (!res.ok) throw new Error(`天气接口请求失败: ${res.status}`);
   return res.json();
@@ -270,7 +274,7 @@ async function loadWeatherByLocation() {
 
   if (!FORCE_REFRESH_ON_THIS_BOOT) {
     locationText.textContent = "未拉取";
-    weatherStatus.textContent = "暂无缓存。点击主界面的“清除缓存并刷新代码”后再进入天气获取最新数据。";
+    weatherStatus.textContent = "暂无缓存。请先在主界面点击“清除缓存并刷新代码”。";
     weatherList.innerHTML = "";
     return;
   }
@@ -281,19 +285,17 @@ async function loadWeatherByLocation() {
     const pos = await getCurrentPosition();
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
-    locationText.textContent = `当前位置：${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-    weatherStatus.textContent = "正在获取 7 日天气...";
-
     const data = await fetchSevenDayWeather(lat, lon);
     if (!data.daily || !Array.isArray(data.daily.time) || data.daily.time.length === 0) {
       throw new Error("天气数据为空");
     }
-
+    const loc = `当前位置：${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    locationText.textContent = loc;
     weatherStatus.textContent = `已更新：${new Date().toLocaleString()}`;
     renderWeather(data.daily);
     setWeatherCache({
       daily: data.daily,
-      locationText: `当前位置：${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+      locationText: loc,
       savedAtText: new Date().toLocaleString()
     });
   } catch (err) {
@@ -303,79 +305,54 @@ async function loadWeatherByLocation() {
   }
 }
 
-async function fetchLeagueEvents(endpoint, leagueId) {
-  const api = new URL(`https://www.thesportsdb.com/api/v1/json/123/${endpoint}.php`);
-  api.searchParams.set("id", String(leagueId));
-  const res = await fetch(api.toString());
-  if (!res.ok) throw new Error(`赛事接口请求失败: ${res.status}`);
+function dateRangeParam(daysPast = 180, daysFuture = 240) {
+  const now = new Date();
+  const from = new Date(now);
+  from.setDate(now.getDate() - daysPast);
+  const to = new Date(now);
+  to.setDate(now.getDate() + daysFuture);
+  const fmt = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  return `${fmt(from)}-${fmt(to)}`;
+}
+
+async function fetchLeagueFromEspn(league) {
+  const url = new URL(`https://site.api.espn.com/apis/site/v2/sports/soccer/${league.espnCode}/scoreboard`);
+  url.searchParams.set("dates", dateRangeParam());
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`足球接口请求失败: ${res.status}`);
   const data = await res.json();
   return Array.isArray(data.events) ? data.events : [];
 }
 
-async function fetchEventsByDayAndLeague(dateText, leagueId) {
-  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/eventsday.php");
-  api.searchParams.set("d", dateText);
-  api.searchParams.set("l", String(leagueId));
-  const res = await fetch(api.toString());
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data.events) ? data.events : [];
-}
-
-async function fetchLeagueEventsBySeason(leagueId, seasonText) {
-  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/eventsseason.php");
-  api.searchParams.set("id", String(leagueId));
-  api.searchParams.set("s", String(seasonText));
-  const res = await fetch(api.toString());
-  if (!res.ok) throw new Error(`赛季接口请求失败: ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data.events) ? data.events : [];
-}
-
-async function fetchLeagueCurrentSeason(leagueId) {
-  if (leagueSeasonCache.has(leagueId)) return leagueSeasonCache.get(leagueId);
-  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/lookupleague.php");
-  api.searchParams.set("id", String(leagueId));
-  const res = await fetch(api.toString());
-  if (!res.ok) throw new Error(`联赛信息接口请求失败: ${res.status}`);
-  const data = await res.json();
-  const season = data?.leagues?.[0]?.strCurrentSeason;
-  if (!season) throw new Error("未获取到当前赛季");
-  leagueSeasonCache.set(leagueId, season);
-  return season;
-}
-
-function normalizeMatch(e) {
-  const status = (e.strStatus || "").toLowerCase();
+function normalizeEspnEvent(event) {
+  const comp = event?.competitions?.[0];
+  const competitors = Array.isArray(comp?.competitors) ? comp.competitors : [];
+  const home = competitors.find((c) => c.homeAway === "home");
+  const away = competitors.find((c) => c.homeAway === "away");
+  const statusType = comp?.status?.type || event?.status?.type || {};
   return {
-    idEvent: e.idEvent || `${e.strHomeTeam || ""}-${e.strAwayTeam || ""}-${e.dateEvent || ""}-${e.strTime || ""}`,
-    home: e.strHomeTeam || "主队",
-    away: e.strAwayTeam || "客队",
-    dateEvent: e.dateEvent,
-    strTime: e.strTime || "",
-    homeScore: e.intHomeScore,
-    awayScore: e.intAwayScore,
-    matchTime: parseMatchTime(e),
-    status
+    id: event?.id || `${home?.team?.displayName || "home"}-${away?.team?.displayName || "away"}-${event?.date || ""}`,
+    dateISO: event?.date || "",
+    matchTime: parseMatchDate(event?.date),
+    home: home?.team?.displayName || "主队",
+    away: away?.team?.displayName || "客队",
+    homeScore: home?.score ?? "",
+    awayScore: away?.score ?? "",
+    isFinished: Boolean(statusType.completed) || statusType.state === "post",
+    isUpcoming: statusType.state === "pre"
   };
 }
 
-function splitAndLimitMatches(matches) {
+function splitAndLimitEspnMatches(matches) {
   const now = new Date();
   const upcoming = [];
   const finished = [];
   matches.forEach((m) => {
-    const hs = m.homeScore;
-    const as = m.awayScore;
-    const hasScore = hs !== null && hs !== undefined && hs !== "" && as !== null && as !== undefined && as !== "";
-    const isFinishedByStatus = /(match finished|finished|ft|after penalties|aet)/.test(m.status);
-    const isUpcomingByStatus = /(not started|ns|scheduled|tbd|postponed|time to be defined|fixture)/.test(m.status);
-
-    if (isFinishedByStatus || hasScore) {
+    if (m.isFinished) {
       finished.push(m);
       return;
     }
-    if (isUpcomingByStatus || m.matchTime > now) {
+    if (m.isUpcoming || m.matchTime > now) {
       upcoming.push(m);
     }
   });
@@ -387,142 +364,66 @@ function splitAndLimitMatches(matches) {
   };
 }
 
-async function fillUpcomingByDayWindow(leagueId, existingMap, maxDays = 21) {
-  const now = new Date();
-  const map = new Map(existingMap);
-  for (let i = 0; i < maxDays; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const dateText = `${yyyy}-${mm}-${dd}`;
-    let dayEvents = [];
-    try {
-      dayEvents = await fetchEventsByDayAndLeague(dateText, leagueId);
-    } catch (_err) {
-      dayEvents = [];
-    }
-    dayEvents.forEach((e) => {
-      const m = normalizeMatch(e);
-      map.set(m.idEvent, m);
-    });
-    const grouped = splitAndLimitMatches([...map.values()]);
-    if (grouped.upcoming.length >= MATCH_LIMIT) return map;
-  }
-  return map;
-}
-
-function parseMatchTime(event) {
-  if (event.strTimestamp) return new Date(event.strTimestamp);
-  if (event.dateEvent) return new Date(`${event.dateEvent}T${event.strTime || "00:00:00"}`);
-  return new Date(0);
-}
-
-function renderLeagueMatches(upcoming, finished) {
-  leagueUpcomingList.innerHTML = "";
-  leagueFinishedList.innerHTML = "";
-
-  if (!upcoming.length) {
-    leagueUpcomingList.innerHTML = '<div class="status-card">暂无未开赛赛程</div>';
-  } else {
-    upcoming.forEach((m) => {
-      const el = document.createElement("article");
-      el.className = "wc-item";
-      el.innerHTML = `
-        <div class="wc-teams">${m.home} vs ${m.away}</div>
-        <div class="wc-meta">${formatDateTime(m.dateEvent, m.strTime)}</div>
-      `;
-      leagueUpcomingList.appendChild(el);
-    });
-  }
-
-  if (!finished.length) {
-    leagueFinishedList.innerHTML = '<div class="status-card">暂无已完赛数据</div>';
-  } else {
-    finished.forEach((m) => {
-      const el = document.createElement("article");
-      el.className = "wc-item";
-      el.innerHTML = `
-        <div class="wc-teams">${m.home} vs ${m.away}</div>
-        <div class="wc-meta">${formatDateTime(m.dateEvent, m.strTime)}</div>
-        <div class="wc-score">${m.homeScore} : ${m.awayScore}</div>
-      `;
-      leagueFinishedList.appendChild(el);
-    });
-  }
-}
-
-async function fetchLeagueGroupedMatches(leagueId) {
-  pruneExpiredFootballCache();
-  const cached = getLeagueCache(leagueId);
-  if (cached) {
-    return { ...cached, source: `${cached.source || "cache"}(cached)` };
-  }
-
-  if (!FORCE_REFRESH_ON_THIS_BOOT) {
-    return { upcoming: [], finished: [], source: "cache-miss" };
-  }
-
-  const currentSeason = await fetchLeagueCurrentSeason(leagueId);
-  const events = await fetchLeagueEventsBySeason(leagueId, currentSeason);
+async function pullLeagueAndCache(league) {
+  const events = await fetchLeagueFromEspn(league);
   const map = new Map();
-  events.forEach((e) => {
-    const m = normalizeMatch(e);
-    map.set(m.idEvent, m);
+  events.forEach((event) => {
+    const match = normalizeEspnEvent(event);
+    map.set(match.id, match);
   });
-  const grouped = splitAndLimitMatches([...map.values()]);
-  let source = `season:${currentSeason}`;
-
-  if (grouped.upcoming.length < MATCH_LIMIT) {
-    try {
-      const nextEvents = await fetchLeagueEvents("eventsnextleague", leagueId);
-      nextEvents.forEach((e) => {
-        const m = normalizeMatch(e);
-        map.set(m.idEvent, m);
-      });
-      source += "+next";
-    } catch (_err) {
-      // ignore
-    }
-  }
-
-  let groupedAfterNext = splitAndLimitMatches([...map.values()]);
-  if (groupedAfterNext.upcoming.length < MATCH_LIMIT) {
-    const filledMap = await fillUpcomingByDayWindow(leagueId, map, 21);
-    map.clear();
-    filledMap.forEach((v, k) => map.set(k, v));
-    source += "+dayWindow";
-    groupedAfterNext = splitAndLimitMatches([...map.values()]);
-  }
-
-  const finalData = { ...groupedAfterNext, source };
-  setLeagueCache(leagueId, finalData);
+  const grouped = splitAndLimitEspnMatches([...map.values()]);
+  const finalData = { ...grouped, source: "espn" };
+  setLeagueCache(league.key, finalData);
   return finalData;
 }
 
-async function fetchLeagueGroupedMatchesFresh(leagueId) {
-  try {
-    localStorage.removeItem(cacheKeyLeague(leagueId));
-  } catch (_err) {
-    // Ignore.
-  }
-  return fetchLeagueGroupedMatches(leagueId);
+async function getLeagueGroupedMatches(league) {
+  const cached = getLeagueCache(league.key);
+  if (cached) return { ...cached, source: "cache" };
+  return { upcoming: [], finished: [], source: "cache-miss" };
+}
+
+async function prefetchFootballCaches() {
+  if (!FORCE_REFRESH_ON_THIS_BOOT) return;
+  if (footballPrefetchPromise) return footballPrefetchPromise;
+  footballPrefetchPromise = (async () => {
+    for (const league of LEAGUES) {
+      try {
+        await pullLeagueAndCache(league);
+      } catch (_err) {
+        // Keep trying remaining leagues.
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  })();
+  return footballPrefetchPromise;
 }
 
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
-  footballStatus.textContent = "正在获取赛事列表...";
   leagueList.innerHTML = "";
+  footballStatus.textContent = "已加载缓存数据";
+
+  if (FORCE_REFRESH_ON_THIS_BOOT) {
+    footballStatus.textContent = "首次拉取数据中...";
+    await prefetchFootballCaches();
+  }
+
   try {
-    const summaries = await Promise.all(LEAGUES.map(async (league) => {
+    const summaries = [];
+    for (const league of LEAGUES) {
       try {
-        const { upcoming, finished } = await fetchLeagueGroupedMatches(league.id);
-        return { ...league, upcomingCount: upcoming.length, finishedCount: finished.length, hasData: (upcoming.length + finished.length) > 0 };
+        const grouped = await getLeagueGroupedMatches(league);
+        summaries.push({
+          ...league,
+          upcomingCount: grouped.upcoming.length,
+          finishedCount: grouped.finished.length,
+          hasData: grouped.upcoming.length + grouped.finished.length > 0
+        });
       } catch (_err) {
-        return { ...league, upcomingCount: 0, finishedCount: 0, hasData: false };
+        summaries.push({ ...league, upcomingCount: 0, finishedCount: 0, hasData: false });
       }
-    }));
+    }
     summaries.sort((a, b) => {
       if (a.key === "worldcup" || b.key === "worldcup") {
         if (a.key === "worldcup" && b.key !== "worldcup") return a.hasData ? -1 : 1;
@@ -530,6 +431,7 @@ async function loadFootballLeagueList() {
       }
       return a.priority - b.priority;
     });
+
     if (reqId !== footballListRequestId) return;
     leagueList.innerHTML = "";
     summaries.forEach((league) => {
@@ -545,10 +447,10 @@ async function loadFootballLeagueList() {
       });
       leagueList.appendChild(btn);
     });
-    footballStatus.textContent = `已更新：${new Date().toLocaleString()}（共 ${summaries.length} 个赛事，默认近${MATCH_LIMIT}场）`;
+    footballStatus.textContent = "已加载缓存数据（仅主界面清缓存后拉新）";
   } catch (err) {
-    footballStatus.textContent = "获取足球赛事列表失败，请检查网络。";
-    showToast(err.message || "获取足球赛事列表失败");
+    footballStatus.textContent = "读取足球数据失败。";
+    showToast(err.message || "读取足球数据失败");
   }
 }
 
@@ -557,28 +459,20 @@ async function loadLeagueDetail() {
   const league = leagueMap.get(currentLeagueKey);
   if (!league) return;
   leagueDetailTitle.textContent = `${league.name} 赛程`;
-  leagueDetailStatus.textContent = `正在获取 ${league.name} 数据...`;
   leagueUpcomingList.innerHTML = "";
   leagueFinishedList.innerHTML = "";
+  leagueDetailStatus.textContent = "已加载缓存数据";
+
   try {
-    const { upcoming, finished, source } = await fetchLeagueGroupedMatches(league.id);
+    if (FORCE_REFRESH_ON_THIS_BOOT) await prefetchFootballCaches();
+    const grouped = await getLeagueGroupedMatches(league);
     if (reqId !== leagueDetailRequestId) return;
-    renderLeagueMatches(upcoming, finished);
-    leagueDetailStatus.textContent = `已更新：${new Date().toLocaleString()}（未开赛 ${upcoming.length} 场，已完赛 ${finished.length} 场，来源 ${source}）`;
+    renderLeagueMatches(grouped.upcoming, grouped.finished);
+    leagueDetailStatus.textContent = `缓存数据（未开赛 ${grouped.upcoming.length} 场，已完赛 ${grouped.finished.length} 场）`;
   } catch (err) {
-    leagueDetailStatus.textContent = `获取${league.name}数据失败，请检查网络。`;
-    showToast(err.message || "获取赛事详情失败");
+    leagueDetailStatus.textContent = "读取赛事详情失败。";
+    showToast(err.message || "读取赛事详情失败");
   }
-}
-
-async function refreshFootballLeagueList() {
-  showToast("当前模式不主动拉新。请使用“清除缓存并刷新代码”拉取最新数据。");
-  return loadFootballLeagueList();
-}
-
-async function refreshLeagueDetail() {
-  showToast("当前模式不主动拉新。请使用“清除缓存并刷新代码”拉取最新数据。");
-  return loadLeagueDetail();
 }
 
 function onModuleClick(moduleName) {
@@ -605,12 +499,7 @@ document.getElementById("backToFootball").addEventListener("click", () => {
   footballPage.classList.remove("hidden");
   loadFootballLeagueList();
 });
-document.getElementById("refreshWeather").addEventListener("click", loadWeatherByLocation);
-document.getElementById("refreshFootballLeagues").addEventListener("click", refreshFootballLeagueList);
-document.getElementById("refreshLeagueDetail").addEventListener("click", refreshLeagueDetail);
 document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
-
-pruneExpiredFootballCache();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => null);
