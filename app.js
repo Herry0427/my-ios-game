@@ -24,6 +24,7 @@ const LEAGUES = [
 ];
 const leagueMap = new Map(LEAGUES.map((x) => [x.key, x]));
 let currentLeagueKey = null;
+const MATCH_LIMIT = 10;
 
 const weatherCodeMap = {
   0: "晴",
@@ -212,6 +213,61 @@ async function fetchLeagueEvents(endpoint, leagueId) {
   return Array.isArray(data.events) ? data.events : [];
 }
 
+async function fetchLeagueEventsBySeason(leagueId, seasonText) {
+  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/eventsseason.php");
+  api.searchParams.set("id", String(leagueId));
+  api.searchParams.set("s", String(seasonText));
+  const res = await fetch(api.toString());
+  if (!res.ok) throw new Error(`赛季接口请求失败: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data.events) ? data.events : [];
+}
+
+function guessSeasonCandidates(leagueId) {
+  const now = new Date();
+  const y = now.getFullYear();
+  if (String(leagueId) === "4429") {
+    return [String(y + 1), String(y), String(y - 2)];
+  }
+  return [
+    `${y - 1}-${y}`,
+    `${y}-${y + 1}`,
+    `${y - 2}-${y - 1}`
+  ];
+}
+
+function normalizeMatch(e) {
+  return {
+    idEvent: e.idEvent || `${e.strHomeTeam || ""}-${e.strAwayTeam || ""}-${e.dateEvent || ""}-${e.strTime || ""}`,
+    home: e.strHomeTeam || "主队",
+    away: e.strAwayTeam || "客队",
+    dateEvent: e.dateEvent,
+    strTime: e.strTime || "",
+    homeScore: e.intHomeScore,
+    awayScore: e.intAwayScore,
+    matchTime: parseMatchTime(e)
+  };
+}
+
+function splitAndLimitMatches(matches) {
+  const now = new Date();
+  const upcoming = [];
+  const finished = [];
+  matches.forEach((m) => {
+    const hs = m.homeScore;
+    const as = m.awayScore;
+    const hasScore = hs !== null && hs !== undefined && hs !== "" && as !== null && as !== undefined && as !== "";
+    if (hasScore) finished.push(m);
+    else if (m.matchTime > now) upcoming.push(m);
+  });
+  upcoming.sort((a, b) => a.matchTime - b.matchTime);
+  finished.sort((a, b) => b.matchTime - a.matchTime);
+  return {
+    upcoming: upcoming.slice(0, MATCH_LIMIT),
+    finished: finished.slice(0, MATCH_LIMIT)
+  };
+}
+
 function parseMatchTime(event) {
   if (event.strTimestamp) return new Date(event.strTimestamp);
   if (event.dateEvent) return new Date(`${event.dateEvent}T${event.strTime || "00:00:00"}`);
@@ -253,43 +309,42 @@ function renderLeagueMatches(upcoming, finished) {
 }
 
 async function fetchLeagueGroupedMatches(leagueId) {
+  const seasonCandidates = guessSeasonCandidates(leagueId);
+  const seasonEventsMap = new Map();
+  let seasonSource = "";
+
+  for (const s of seasonCandidates) {
+    try {
+      const events = await fetchLeagueEventsBySeason(leagueId, s);
+      if (!events.length) continue;
+      seasonSource = s;
+      events.forEach((e) => {
+        const m = normalizeMatch(e);
+        seasonEventsMap.set(m.idEvent, m);
+      });
+      if (seasonEventsMap.size >= MATCH_LIMIT * 2) break;
+    } catch (_err) {
+      // Try next candidate season.
+    }
+  }
+
+  if (seasonEventsMap.size > 0) {
+    const grouped = splitAndLimitMatches([...seasonEventsMap.values()]);
+    if (grouped.upcoming.length || grouped.finished.length) {
+      return { ...grouped, source: `season:${seasonSource || "unknown"}` };
+    }
+  }
+
+  // Fallback: old next/past endpoints
   const [upcomingRaw, finishedRaw] = await Promise.all([
     fetchLeagueEvents("eventsnextleague", leagueId),
     fetchLeagueEvents("eventspastleague", leagueId)
   ]);
-  const now = new Date();
-  const upcoming = [];
-  const finished = [];
-  upcomingRaw.forEach((e) => {
-    const item = {
-      home: e.strHomeTeam || "主队",
-      away: e.strAwayTeam || "客队",
-      dateEvent: e.dateEvent,
-      strTime: e.strTime || "",
-      homeScore: e.intHomeScore,
-      awayScore: e.intAwayScore,
-      matchTime: parseMatchTime(e)
-    };
-    if (item.matchTime > now) upcoming.push(item);
-  });
-  finishedRaw.forEach((e) => {
-    const hs = e.intHomeScore;
-    const as = e.intAwayScore;
-    const hasScore = hs !== null && hs !== undefined && hs !== "" && as !== null && as !== undefined && as !== "";
-    if (!hasScore) return;
-    finished.push({
-      home: e.strHomeTeam || "主队",
-      away: e.strAwayTeam || "客队",
-      dateEvent: e.dateEvent,
-      strTime: e.strTime || "",
-      homeScore: hs,
-      awayScore: as,
-      matchTime: parseMatchTime(e)
-    });
-  });
-  upcoming.sort((a, b) => a.matchTime - b.matchTime);
-  finished.sort((a, b) => b.matchTime - a.matchTime);
-  return { upcoming, finished };
+  const merged = [];
+  upcomingRaw.forEach((e) => merged.push(normalizeMatch(e)));
+  finishedRaw.forEach((e) => merged.push(normalizeMatch(e)));
+  const fallbackGrouped = splitAndLimitMatches(merged);
+  return { ...fallbackGrouped, source: "fallback:nextpast" };
 }
 
 async function loadFootballLeagueList() {
@@ -324,7 +379,7 @@ async function loadFootballLeagueList() {
       });
       leagueList.appendChild(btn);
     });
-    footballStatus.textContent = `已更新：${new Date().toLocaleString()}（共 ${summaries.length} 个赛事）`;
+    footballStatus.textContent = `已更新：${new Date().toLocaleString()}（共 ${summaries.length} 个赛事，默认近${MATCH_LIMIT}场）`;
   } catch (err) {
     footballStatus.textContent = "获取足球赛事列表失败，请检查网络。";
     showToast(err.message || "获取足球赛事列表失败");
@@ -339,9 +394,9 @@ async function loadLeagueDetail() {
   leagueUpcomingList.innerHTML = "";
   leagueFinishedList.innerHTML = "";
   try {
-    const { upcoming, finished } = await fetchLeagueGroupedMatches(league.id);
+    const { upcoming, finished, source } = await fetchLeagueGroupedMatches(league.id);
     renderLeagueMatches(upcoming, finished);
-    leagueDetailStatus.textContent = `已更新：${new Date().toLocaleString()}（未开赛 ${upcoming.length} 场，已完赛 ${finished.length} 场）`;
+    leagueDetailStatus.textContent = `已更新：${new Date().toLocaleString()}（未开赛 ${upcoming.length} 场，已完赛 ${finished.length} 场，来源 ${source}）`;
   } catch (err) {
     leagueDetailStatus.textContent = `获取${league.name}数据失败，请检查网络。`;
     showToast(err.message || "获取赛事详情失败");
