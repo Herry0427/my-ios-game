@@ -30,7 +30,7 @@ let leagueDetailRequestId = 0;
 let footballPrefetchPromise = null;
 
 const MATCH_LIMIT = 10;
-const CACHE_PREFIX = "football_cache_v2_";
+const CACHE_PREFIX = "football_cache_v3_";
 const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
 const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
 
@@ -298,12 +298,12 @@ async function loadWeatherByLocation() {
   }
 }
 
-function dateRangeParam(daysPast = 180, daysFuture = 240) {
+function dateRangeParam() {
   const now = new Date();
   const from = new Date(now);
-  from.setDate(now.getDate() - daysPast);
   const to = new Date(now);
-  to.setDate(now.getDate() + daysFuture);
+  from.setDate(now.getDate() - 30);
+  to.setDate(now.getDate() + 120);
   const fmt = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
   return `${fmt(from)}-${fmt(to)}`;
 }
