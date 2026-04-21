@@ -272,13 +272,6 @@ async function loadWeatherByLocation() {
     return;
   }
 
-  if (!FORCE_REFRESH_ON_THIS_BOOT) {
-    locationText.textContent = "未拉取";
-    weatherStatus.textContent = "暂无缓存。请先在主界面点击“清除缓存并刷新代码”。";
-    weatherList.innerHTML = "";
-    return;
-  }
-
   weatherStatus.textContent = "正在获取定位...";
   weatherList.innerHTML = "";
   try {
@@ -380,7 +373,7 @@ async function pullLeagueAndCache(league) {
 async function getLeagueGroupedMatches(league) {
   const cached = getLeagueCache(league.key);
   if (cached) return { ...cached, source: "cache" };
-  return { upcoming: [], finished: [], source: "cache-miss" };
+  return pullLeagueAndCache(league);
 }
 
 async function prefetchFootballCaches() {
@@ -447,7 +440,7 @@ async function loadFootballLeagueList() {
       });
       leagueList.appendChild(btn);
     });
-    footballStatus.textContent = "已加载缓存数据（仅主界面清缓存后拉新）";
+    footballStatus.textContent = "已加载赛事数据";
   } catch (err) {
     footballStatus.textContent = "读取足球数据失败。";
     showToast(err.message || "读取足球数据失败");
