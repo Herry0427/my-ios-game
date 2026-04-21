@@ -23,6 +23,25 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 $RemoteUrl = "https://github.com/Herry0427/my-ios-game.git"
+$GitRetries = 6
+
+function Invoke-GitRetry {
+  param(
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$Command,
+    [Parameter(Mandatory = $true)]
+    [string]$Label
+  )
+
+  for ($i = 1; $i -le $GitRetries; $i++) {
+    & $Command
+    if ($LASTEXITCODE -eq 0) { return $true }
+    $wait = [Math]::Min(20, 2 * $i)
+    Write-Host "$Label failed (attempt $i/$GitRetries), retry in ${wait}s..." -ForegroundColor DarkYellow
+    Start-Sleep -Seconds $wait
+  }
+  return $false
+}
 
 function Assert-Git {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -58,16 +77,8 @@ function Ensure-Repo {
     git remote add origin $RemoteUrl
   }
 
-  $fetched = $false
-  for ($i = 1; $i -le 3; $i++) {
-    git fetch origin
-    if ($LASTEXITCODE -eq 0) {
-      $fetched = $true
-      break
-    }
-    Start-Sleep -Seconds 2
-  }
-  if (-not $fetched) { throw "git fetch failed after 3 retries." }
+  $fetched = Invoke-GitRetry -Command { git fetch origin } -Label "git fetch"
+  if (-not $fetched) { throw "git fetch failed after retries." }
 
   $statusHeader = git status --porcelain=v1 -b
   if ($statusHeader -match "No commits yet") {
@@ -77,16 +88,8 @@ function Ensure-Repo {
     }
   }
   else {
-    $pulled = $false
-    for ($i = 1; $i -le 3; $i++) {
-      git pull origin main
-      if ($LASTEXITCODE -eq 0) {
-        $pulled = $true
-        break
-      }
-      Start-Sleep -Seconds 2
-    }
-    if (-not $pulled) { throw "git pull failed after 3 retries." }
+    $pulled = Invoke-GitRetry -Command { git pull origin main } -Label "git pull"
+    if (-not $pulled) { throw "git pull failed after retries." }
   }
   git branch --set-upstream-to=origin/main main 2>$null
   Write-Host "Repo is connected to origin/main." -ForegroundColor Green
@@ -97,32 +100,16 @@ Ensure-Repo
 
 switch ($Action) {
   "pull" {
-    $pulled = $false
-    for ($i = 1; $i -le 3; $i++) {
-      git pull origin main
-      if ($LASTEXITCODE -eq 0) {
-        $pulled = $true
-        break
-      }
-      Start-Sleep -Seconds 2
-    }
-    if (-not $pulled) { throw "git pull failed after 3 retries." }
+    $pulled = Invoke-GitRetry -Command { git pull origin main } -Label "git pull"
+    if (-not $pulled) { throw "git pull failed after retries." }
   }
   "push" {
     git add -A
     $status = git status --porcelain
     if (-not $status) {
       Write-Host "No local changes to commit." -ForegroundColor Yellow
-      $pushed = $false
-      for ($i = 1; $i -le 3; $i++) {
-        git push origin main
-        if ($LASTEXITCODE -eq 0) {
-          $pushed = $true
-          break
-        }
-        Start-Sleep -Seconds 2
-      }
-      if (-not $pushed) { throw "git push failed after 3 retries." }
+      $pushed = Invoke-GitRetry -Command { git push origin main } -Label "git push"
+      if (-not $pushed) { throw "git push failed after retries." }
       return
     }
 
@@ -131,16 +118,8 @@ switch ($Action) {
     }
     git commit -m $Message
     if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
-    $pushed = $false
-    for ($i = 1; $i -le 3; $i++) {
-      git push origin main
-      if ($LASTEXITCODE -eq 0) {
-        $pushed = $true
-        break
-      }
-      Start-Sleep -Seconds 2
-    }
-    if (-not $pushed) { throw "git push failed after 3 retries. Try pull first." }
+    $pushed = Invoke-GitRetry -Command { git push origin main } -Label "git push"
+    if (-not $pushed) { throw "git push failed after retries. Try pull first." }
     Write-Host "Pushed to GitHub." -ForegroundColor Green
   }
 }

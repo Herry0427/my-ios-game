@@ -28,6 +28,12 @@ const MATCH_LIMIT = 10;
 const leagueSeasonCache = new Map();
 let footballListRequestId = 0;
 let leagueDetailRequestId = 0;
+const FOOTBALL_CACHE_PREFIX = "football_cache_v1_";
+const FOOTBALL_CACHE_TTL_MS = 10 * 60 * 1000;
+const FOOTBALL_AUTO_REFRESH_MS = 10 * 60 * 1000;
+let footballAutoRefreshTimer = null;
+let refreshingFootballList = false;
+let refreshingLeagueDetail = false;
 
 const weatherCodeMap = {
   0: "晴",
@@ -69,6 +75,64 @@ function showToast(message) {
   }, 1400);
 }
 
+function pruneExpiredFootballCache() {
+  try {
+    const now = Date.now();
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(FOOTBALL_CACHE_PREFIX)) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      let payload = null;
+      try {
+        payload = JSON.parse(raw);
+      } catch (_err) {
+        localStorage.removeItem(key);
+        continue;
+      }
+      if (!payload || typeof payload.expiresAt !== "number" || payload.expiresAt <= now) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (_err) {
+    // Ignore storage errors silently.
+  }
+}
+
+function cacheKeyLeague(leagueId) {
+  return `${FOOTBALL_CACHE_PREFIX}league_${leagueId}`;
+}
+
+function getLeagueCache(leagueId) {
+  try {
+    const raw = localStorage.getItem(cacheKeyLeague(leagueId));
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    if (!payload || typeof payload.expiresAt !== "number" || !payload.data) return null;
+    if (payload.expiresAt <= Date.now()) {
+      localStorage.removeItem(cacheKeyLeague(leagueId));
+      return null;
+    }
+    return payload.data;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function setLeagueCache(leagueId, data) {
+  try {
+    const now = Date.now();
+    const payload = {
+      savedAt: now,
+      expiresAt: now + FOOTBALL_CACHE_TTL_MS,
+      data
+    };
+    localStorage.setItem(cacheKeyLeague(leagueId), JSON.stringify(payload));
+  } catch (_err) {
+    // Ignore storage quota or private mode errors.
+  }
+}
+
 async function clearCacheAndReload() {
   try {
     showToast("正在清除缓存...");
@@ -105,6 +169,7 @@ function openHome() {
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   homePage.classList.remove("hidden");
+  updateFootballAutoRefreshState();
 }
 
 function openWeather() {
@@ -112,6 +177,7 @@ function openWeather() {
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   weatherPage.classList.remove("hidden");
+  updateFootballAutoRefreshState();
 }
 
 function openFootball() {
@@ -119,12 +185,49 @@ function openFootball() {
   weatherPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
+  updateFootballAutoRefreshState();
 }
 
 function openLeagueDetail(leagueKey) {
   currentLeagueKey = leagueKey;
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.remove("hidden");
+  updateFootballAutoRefreshState();
+}
+
+function isFootballViewVisible() {
+  const listVisible = !footballPage.classList.contains("hidden");
+  const detailVisible = !leagueDetailPage.classList.contains("hidden");
+  return listVisible || detailVisible;
+}
+
+function stopFootballAutoRefresh() {
+  if (!footballAutoRefreshTimer) return;
+  clearInterval(footballAutoRefreshTimer);
+  footballAutoRefreshTimer = null;
+}
+
+function tickFootballAutoRefresh() {
+  if (document.visibilityState !== "visible") return;
+  if (!isFootballViewVisible()) return;
+
+  if (!footballPage.classList.contains("hidden")) {
+    refreshFootballLeagueList();
+    return;
+  }
+  if (!leagueDetailPage.classList.contains("hidden") && currentLeagueKey) {
+    refreshLeagueDetail();
+  }
+}
+
+function updateFootballAutoRefreshState() {
+  const shouldRun = document.visibilityState === "visible" && isFootballViewVisible();
+  if (!shouldRun) {
+    stopFootballAutoRefresh();
+    return;
+  }
+  if (footballAutoRefreshTimer) return;
+  footballAutoRefreshTimer = setInterval(tickFootballAutoRefresh, FOOTBALL_AUTO_REFRESH_MS);
 }
 
 function formatDate(rawDate) {
@@ -358,6 +461,12 @@ function renderLeagueMatches(upcoming, finished) {
 }
 
 async function fetchLeagueGroupedMatches(leagueId) {
+  pruneExpiredFootballCache();
+  const cached = getLeagueCache(leagueId);
+  if (cached) {
+    return { ...cached, source: `${cached.source || "cache"}(cached)` };
+  }
+
   const currentSeason = await fetchLeagueCurrentSeason(leagueId);
   const events = await fetchLeagueEventsBySeason(leagueId, currentSeason);
   const map = new Map();
@@ -390,7 +499,18 @@ async function fetchLeagueGroupedMatches(leagueId) {
     groupedAfterNext = splitAndLimitMatches([...map.values()]);
   }
 
-  return { ...groupedAfterNext, source };
+  const finalData = { ...groupedAfterNext, source };
+  setLeagueCache(leagueId, finalData);
+  return finalData;
+}
+
+async function fetchLeagueGroupedMatchesFresh(leagueId) {
+  try {
+    localStorage.removeItem(cacheKeyLeague(leagueId));
+  } catch (_err) {
+    // Ignore.
+  }
+  return fetchLeagueGroupedMatches(leagueId);
 }
 
 async function loadFootballLeagueList() {
@@ -424,7 +544,7 @@ async function loadFootballLeagueList() {
       `;
       btn.addEventListener("click", () => {
         openLeagueDetail(league.key);
-        loadLeagueDetail();
+        refreshLeagueDetail();
       });
       leagueList.appendChild(btn);
     });
@@ -454,6 +574,45 @@ async function loadLeagueDetail() {
   }
 }
 
+async function refreshFootballLeagueList() {
+  if (refreshingFootballList) return;
+  refreshingFootballList = true;
+  footballStatus.textContent = "正在刷新赛事列表...";
+  await Promise.all(LEAGUES.map(async (league) => {
+    try {
+      await fetchLeagueGroupedMatchesFresh(league.id);
+    } catch (_err) {
+      // Keep old cache for failed leagues.
+    }
+  }));
+  try {
+    return await loadFootballLeagueList();
+  } finally {
+    refreshingFootballList = false;
+  }
+}
+
+async function refreshLeagueDetail() {
+  if (refreshingLeagueDetail) return;
+  refreshingLeagueDetail = true;
+  const league = leagueMap.get(currentLeagueKey);
+  if (!league) {
+    refreshingLeagueDetail = false;
+    return;
+  }
+  leagueDetailStatus.textContent = `正在刷新 ${league.name} 数据...`;
+  try {
+    await fetchLeagueGroupedMatchesFresh(league.id);
+  } catch (_err) {
+    // Ignore and fallback to normal load.
+  }
+  try {
+    return await loadLeagueDetail();
+  } finally {
+    refreshingLeagueDetail = false;
+  }
+}
+
 function onModuleClick(moduleName) {
   if (moduleName === "weather") {
     openWeather();
@@ -462,7 +621,7 @@ function onModuleClick(moduleName) {
   }
   if (moduleName === "football") {
     openFootball();
-    loadFootballLeagueList();
+    refreshFootballLeagueList();
     return;
   }
   showToast("该模块暂未开发");
@@ -476,11 +635,16 @@ document.getElementById("backHomeFromFootball").addEventListener("click", openHo
 document.getElementById("backToFootball").addEventListener("click", () => {
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
+  updateFootballAutoRefreshState();
+  refreshFootballLeagueList();
 });
 document.getElementById("refreshWeather").addEventListener("click", loadWeatherByLocation);
-document.getElementById("refreshFootballLeagues").addEventListener("click", loadFootballLeagueList);
-document.getElementById("refreshLeagueDetail").addEventListener("click", loadLeagueDetail);
+document.getElementById("refreshFootballLeagues").addEventListener("click", refreshFootballLeagueList);
+document.getElementById("refreshLeagueDetail").addEventListener("click", refreshLeagueDetail);
 document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
+document.addEventListener("visibilitychange", updateFootballAutoRefreshState);
+
+pruneExpiredFootballCache();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => null);

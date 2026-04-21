@@ -30,7 +30,7 @@ git config --global user.email "liu.heng.9627@gmail.com"
 Write-Host "Step 1/2: pull remote changes..." -ForegroundColor Cyan
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\sync-to-github.ps1" pull
 if ($LASTEXITCODE -ne 0) {
-  throw "pull failed. Resolve conflicts and run again."
+  Write-Warning "pull failed (likely network issue). Continue to push attempt..."
 }
 
 Write-Host "Step 2/2: push local changes..." -ForegroundColor Cyan
