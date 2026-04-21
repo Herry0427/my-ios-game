@@ -26,6 +26,8 @@ const leagueMap = new Map(LEAGUES.map((x) => [x.key, x]));
 let currentLeagueKey = null;
 const MATCH_LIMIT = 10;
 const leagueSeasonCache = new Map();
+let footballListRequestId = 0;
+let leagueDetailRequestId = 0;
 
 const weatherCodeMap = {
   0: "晴",
@@ -238,6 +240,7 @@ async function fetchLeagueCurrentSeason(leagueId) {
 }
 
 function normalizeMatch(e) {
+  const status = (e.strStatus || "").toLowerCase();
   return {
     idEvent: e.idEvent || `${e.strHomeTeam || ""}-${e.strAwayTeam || ""}-${e.dateEvent || ""}-${e.strTime || ""}`,
     home: e.strHomeTeam || "主队",
@@ -246,7 +249,8 @@ function normalizeMatch(e) {
     strTime: e.strTime || "",
     homeScore: e.intHomeScore,
     awayScore: e.intAwayScore,
-    matchTime: parseMatchTime(e)
+    matchTime: parseMatchTime(e),
+    status
   };
 }
 
@@ -258,8 +262,16 @@ function splitAndLimitMatches(matches) {
     const hs = m.homeScore;
     const as = m.awayScore;
     const hasScore = hs !== null && hs !== undefined && hs !== "" && as !== null && as !== undefined && as !== "";
-    if (hasScore) finished.push(m);
-    else if (m.matchTime > now) upcoming.push(m);
+    const isFinishedByStatus = /(match finished|finished|ft|after penalties|aet)/.test(m.status);
+    const isUpcomingByStatus = /(not started|ns|scheduled|tbd|postponed|time to be defined|fixture)/.test(m.status);
+
+    if (isFinishedByStatus || hasScore) {
+      finished.push(m);
+      return;
+    }
+    if (isUpcomingByStatus || m.matchTime > now) {
+      upcoming.push(m);
+    }
   });
   upcoming.sort((a, b) => a.matchTime - b.matchTime);
   finished.sort((a, b) => b.matchTime - a.matchTime);
@@ -318,10 +330,23 @@ async function fetchLeagueGroupedMatches(leagueId) {
     map.set(m.idEvent, m);
   });
   const grouped = splitAndLimitMatches([...map.values()]);
-  return { ...grouped, source: `season:${currentSeason}` };
+  if (grouped.upcoming.length < MATCH_LIMIT) {
+    try {
+      const nextEvents = await fetchLeagueEvents("eventsnextleague", leagueId);
+      nextEvents.forEach((e) => {
+        const m = normalizeMatch(e);
+        map.set(m.idEvent, m);
+      });
+    } catch (_err) {
+      // Keep season-only data if fallback fails.
+    }
+  }
+  const finalGrouped = splitAndLimitMatches([...map.values()]);
+  return { ...finalGrouped, source: `season:${currentSeason}+nextFallback` };
 }
 
 async function loadFootballLeagueList() {
+  const reqId = ++footballListRequestId;
   footballStatus.textContent = "正在获取赛事列表...";
   leagueList.innerHTML = "";
   try {
@@ -340,6 +365,8 @@ async function loadFootballLeagueList() {
       }
       return a.priority - b.priority;
     });
+    if (reqId !== footballListRequestId) return;
+    leagueList.innerHTML = "";
     summaries.forEach((league) => {
       const btn = document.createElement("button");
       btn.className = "league-card";
@@ -361,6 +388,7 @@ async function loadFootballLeagueList() {
 }
 
 async function loadLeagueDetail() {
+  const reqId = ++leagueDetailRequestId;
   const league = leagueMap.get(currentLeagueKey);
   if (!league) return;
   leagueDetailTitle.textContent = `${league.name} 赛程`;
@@ -369,6 +397,7 @@ async function loadLeagueDetail() {
   leagueFinishedList.innerHTML = "";
   try {
     const { upcoming, finished, source } = await fetchLeagueGroupedMatches(league.id);
+    if (reqId !== leagueDetailRequestId) return;
     renderLeagueMatches(upcoming, finished);
     leagueDetailStatus.textContent = `已更新：${new Date().toLocaleString()}（未开赛 ${upcoming.length} 场，已完赛 ${finished.length} 场，来源 ${source}）`;
   } catch (err) {
