@@ -25,6 +25,7 @@ const LEAGUES = [
 const leagueMap = new Map(LEAGUES.map((x) => [x.key, x]));
 let currentLeagueKey = null;
 const MATCH_LIMIT = 10;
+const leagueSeasonCache = new Map();
 
 const weatherCodeMap = {
   0: "晴",
@@ -223,17 +224,17 @@ async function fetchLeagueEventsBySeason(leagueId, seasonText) {
   return Array.isArray(data.events) ? data.events : [];
 }
 
-function guessSeasonCandidates(leagueId) {
-  const now = new Date();
-  const y = now.getFullYear();
-  if (String(leagueId) === "4429") {
-    return [String(y + 1), String(y), String(y - 2)];
-  }
-  return [
-    `${y - 1}-${y}`,
-    `${y}-${y + 1}`,
-    `${y - 2}-${y - 1}`
-  ];
+async function fetchLeagueCurrentSeason(leagueId) {
+  if (leagueSeasonCache.has(leagueId)) return leagueSeasonCache.get(leagueId);
+  const api = new URL("https://www.thesportsdb.com/api/v1/json/123/lookupleague.php");
+  api.searchParams.set("id", String(leagueId));
+  const res = await fetch(api.toString());
+  if (!res.ok) throw new Error(`联赛信息接口请求失败: ${res.status}`);
+  const data = await res.json();
+  const season = data?.leagues?.[0]?.strCurrentSeason;
+  if (!season) throw new Error("未获取到当前赛季");
+  leagueSeasonCache.set(leagueId, season);
+  return season;
 }
 
 function normalizeMatch(e) {
@@ -309,42 +310,15 @@ function renderLeagueMatches(upcoming, finished) {
 }
 
 async function fetchLeagueGroupedMatches(leagueId) {
-  const seasonCandidates = guessSeasonCandidates(leagueId);
-  const seasonEventsMap = new Map();
-  let seasonSource = "";
-
-  for (const s of seasonCandidates) {
-    try {
-      const events = await fetchLeagueEventsBySeason(leagueId, s);
-      if (!events.length) continue;
-      seasonSource = s;
-      events.forEach((e) => {
-        const m = normalizeMatch(e);
-        seasonEventsMap.set(m.idEvent, m);
-      });
-      if (seasonEventsMap.size >= MATCH_LIMIT * 2) break;
-    } catch (_err) {
-      // Try next candidate season.
-    }
-  }
-
-  if (seasonEventsMap.size > 0) {
-    const grouped = splitAndLimitMatches([...seasonEventsMap.values()]);
-    if (grouped.upcoming.length || grouped.finished.length) {
-      return { ...grouped, source: `season:${seasonSource || "unknown"}` };
-    }
-  }
-
-  // Fallback: old next/past endpoints
-  const [upcomingRaw, finishedRaw] = await Promise.all([
-    fetchLeagueEvents("eventsnextleague", leagueId),
-    fetchLeagueEvents("eventspastleague", leagueId)
-  ]);
-  const merged = [];
-  upcomingRaw.forEach((e) => merged.push(normalizeMatch(e)));
-  finishedRaw.forEach((e) => merged.push(normalizeMatch(e)));
-  const fallbackGrouped = splitAndLimitMatches(merged);
-  return { ...fallbackGrouped, source: "fallback:nextpast" };
+  const currentSeason = await fetchLeagueCurrentSeason(leagueId);
+  const events = await fetchLeagueEventsBySeason(leagueId, currentSeason);
+  const map = new Map();
+  events.forEach((e) => {
+    const m = normalizeMatch(e);
+    map.set(m.idEvent, m);
+  });
+  const grouped = splitAndLimitMatches([...map.values()]);
+  return { ...grouped, source: `season:${currentSeason}` };
 }
 
 async function loadFootballLeagueList() {
