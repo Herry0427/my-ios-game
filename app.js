@@ -544,7 +544,7 @@ async function loadFootballLeagueList() {
       `;
       btn.addEventListener("click", () => {
         openLeagueDetail(league.key);
-        refreshLeagueDetail();
+        loadLeagueDetail();
       });
       leagueList.appendChild(btn);
     });
@@ -621,7 +621,7 @@ function onModuleClick(moduleName) {
   }
   if (moduleName === "football") {
     openFootball();
-    refreshFootballLeagueList();
+    loadFootballLeagueList();
     return;
   }
   showToast("该模块暂未开发");
@@ -636,7 +636,7 @@ document.getElementById("backToFootball").addEventListener("click", () => {
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
   updateFootballAutoRefreshState();
-  refreshFootballLeagueList();
+  loadFootballLeagueList();
 });
 document.getElementById("refreshWeather").addEventListener("click", loadWeatherByLocation);
 document.getElementById("refreshFootballLeagues").addEventListener("click", refreshFootballLeagueList);
