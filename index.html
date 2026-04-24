@@ -30,10 +30,10 @@
         <span class="module-title">足球</span>
         <span class="module-subtitle">世界杯 + 五大联赛 + 欧冠</span>
       </button>
-      <button class="module-card" data-module="module3">
+      <button class="module-card" data-module="birthday">
         <span class="module-icon">📅</span>
-        <span class="module-title">模块 3</span>
-        <span class="module-subtitle">功能占位</span>
+        <span class="module-title">生日倒计时</span>
+        <span class="module-subtitle">未来两个月生日提醒</span>
       </button>
       <button class="module-card" data-module="module4">
         <span class="module-icon">💬</span>
@@ -68,7 +68,7 @@
     <header class="top-bar">
       <button id="backHomeFromFootball" class="back-btn">← 返回</button>
       <h2>足球赛程</h2>
-      <p>点击查看对应赛事（默认展示近10场）</p>
+      <p>同源 data 数据包 + 浏览器缓存；电脑运行 tools/sync_football_baidu.py 更新</p>
     </header>
 
     <section id="footballStatus" class="status-card">准备获取赛事列表...</section>
@@ -90,6 +90,40 @@
     <section class="wc-block">
       <h3>已完赛</h3>
       <div id="leagueFinishedList" class="wc-list"></div>
+    </section>
+  </section>
+
+  <section id="birthdayPage" class="page hidden">
+    <header class="top-bar">
+      <button id="backHomeFromBirthday" class="back-btn">← 返回</button>
+      <h2>生日倒计时</h2>
+      <p>展示未来两个月内即将过生日的人（已过不显示）</p>
+    </header>
+
+    <section id="birthdayStatus" class="status-card">请先添加生日信息。</section>
+    <section id="birthdayUpcomingList" class="birthday-list"></section>
+
+    <section class="birthday-form-card">
+      <h3>添加生日</h3>
+      <label class="form-label">姓名</label>
+      <input id="birthdayNameInput" type="text" placeholder="例如：张三" />
+
+      <label class="form-label">出生日期</label>
+      <input id="birthdayDateInput" type="date" />
+
+      <label class="form-label">生日类型</label>
+      <select id="birthdayCalendarType">
+        <option value="solar">国历（公历）</option>
+        <option value="lunar">农历</option>
+      </select>
+
+      <p id="birthdayCalendarHint" class="form-hint">国历：按公历日期计算倒计时。</p>
+      <button id="addBirthdayBtn">保存生日</button>
+    </section>
+
+    <section class="birthday-form-card">
+      <h3>已添加人员</h3>
+      <div id="birthdayPeopleList" class="birthday-people-list"></div>
     </section>
   </section>
 

@@ -2,6 +2,7 @@ const homePage = document.getElementById("homePage");
 const weatherPage = document.getElementById("weatherPage");
 const footballPage = document.getElementById("footballPage");
 const leagueDetailPage = document.getElementById("leagueDetailPage");
+const birthdayPage = document.getElementById("birthdayPage");
 const locationText = document.getElementById("locationText");
 const weatherStatus = document.getElementById("weatherStatus");
 const weatherList = document.getElementById("weatherList");
@@ -11,28 +12,44 @@ const leagueDetailTitle = document.getElementById("leagueDetailTitle");
 const leagueDetailStatus = document.getElementById("leagueDetailStatus");
 const leagueUpcomingList = document.getElementById("leagueUpcomingList");
 const leagueFinishedList = document.getElementById("leagueFinishedList");
+const birthdayStatus = document.getElementById("birthdayStatus");
+const birthdayUpcomingList = document.getElementById("birthdayUpcomingList");
+const birthdayPeopleList = document.getElementById("birthdayPeopleList");
+const birthdayNameInput = document.getElementById("birthdayNameInput");
+const birthdayDateInput = document.getElementById("birthdayDateInput");
+const birthdayCalendarType = document.getElementById("birthdayCalendarType");
+const birthdayCalendarHint = document.getElementById("birthdayCalendarHint");
 const toast = document.getElementById("toast");
 
 const LEAGUES = [
-  { key: "worldcup", name: "世界杯", espnCode: "fifa.world", priority: 1 },
-  { key: "epl", name: "英超", espnCode: "eng.1", priority: 2 },
-  { key: "laliga", name: "西甲", espnCode: "esp.1", priority: 3 },
-  { key: "bundesliga", name: "德甲", espnCode: "ger.1", priority: 4 },
-  { key: "seriea", name: "意甲", espnCode: "ita.1", priority: 5 },
-  { key: "ligue1", name: "法甲", espnCode: "fra.1", priority: 6 },
-  { key: "ucl", name: "欧冠", espnCode: "uefa.champions", priority: 7 }
+  { key: "worldcup", name: "世界杯", priority: 1 },
+  { key: "epl", name: "英超", priority: 2 },
+  { key: "laliga", name: "西甲", priority: 3 },
+  { key: "bundesliga", name: "德甲", priority: 4 },
+  { key: "seriea", name: "意甲", priority: 5 },
+  { key: "ligue1", name: "法甲", priority: 6 },
+  { key: "ucl", name: "欧冠", priority: 7 }
 ];
 
 const leagueMap = new Map(LEAGUES.map((x) => [x.key, x]));
 let currentLeagueKey = null;
 let footballListRequestId = 0;
 let leagueDetailRequestId = 0;
-let footballPrefetchPromise = null;
+let footballBundleLoadPromise = null;
 
 const MATCH_LIMIT = 10;
-const CACHE_PREFIX = "football_cache_v3_";
+const FOOTBALL_BUNDLE_URL = "./data/football_bundle.json";
+const CACHE_PREFIX = "football_cache_v4_";
 const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
+const BIRTHDAY_CACHE_KEY = `${CACHE_PREFIX}birthday_people`;
 const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
+const BIRTHDAY_WINDOW_DAYS = 60;
+let birthdayPeople = [];
+
+const lunarFormatter = new Intl.DateTimeFormat("zh-Hans-u-ca-chinese", {
+  month: "long",
+  day: "numeric"
+});
 
 const weatherCodeMap = {
   0: "晴",
@@ -116,6 +133,34 @@ function parseMatchDate(dateStr) {
   return Number.isNaN(dt.getTime()) ? new Date(0) : dt;
 }
 
+function parseDateInputToNoon(dateText) {
+  if (!dateText) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mm = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  const dt = new Date(y, mm, d, 12, 0, 0);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function diffDays(target, base) {
+  const ms = startOfDay(target).getTime() - startOfDay(base).getTime();
+  return Math.round(ms / 86400000);
+}
+
+function getLunarMonthDay(date) {
+  const parts = lunarFormatter.formatToParts(date);
+  const month = (parts.find((p) => p.type === "month")?.value || "").replace(/\s+/g, "");
+  const day = (parts.find((p) => p.type === "day")?.value || "").replace(/\s+/g, "");
+  return { month, day, text: `${month}${day}` };
+}
+
 function formatDate(rawDate) {
   const d = new Date(rawDate);
   const week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
@@ -180,10 +225,170 @@ function renderLeagueMatches(upcoming, finished) {
   }
 }
 
+function loadBirthdayPeople() {
+  const data = getCachedJson(BIRTHDAY_CACHE_KEY);
+  birthdayPeople = Array.isArray(data) ? data : [];
+}
+
+function saveBirthdayPeople() {
+  setCachedJson(BIRTHDAY_CACHE_KEY, birthdayPeople);
+}
+
+function updateBirthdayHint() {
+  const type = birthdayCalendarType.value;
+  const dt = parseDateInputToNoon(birthdayDateInput.value);
+  if (type === "solar") {
+    birthdayCalendarHint.textContent = "国历：按公历日期计算倒计时。";
+    return;
+  }
+  if (!dt) {
+    birthdayCalendarHint.textContent = "农历：先选择出生日期，系统自动换算对应农历月日。";
+    return;
+  }
+  const lunar = getLunarMonthDay(dt);
+  birthdayCalendarHint.textContent = `农历：将按 ${lunar.text} 计算每年的生日倒计时。`;
+}
+
+function computeSolarCountdown(person, now) {
+  const birth = parseDateInputToNoon(person.birthDate);
+  if (!birth) return null;
+  const today = startOfDay(now);
+  let target = new Date(today.getFullYear(), birth.getMonth(), birth.getDate(), 12, 0, 0);
+  if (startOfDay(target) < today) {
+    target = new Date(today.getFullYear() + 1, birth.getMonth(), birth.getDate(), 12, 0, 0);
+  }
+  const days = diffDays(target, today);
+  if (days < 0 || days > BIRTHDAY_WINDOW_DAYS) return null;
+  return { targetDate: target, days };
+}
+
+function computeLunarCountdown(person, now) {
+  if (!person.lunarMonth || !person.lunarDay) return null;
+  const today = startOfDay(now);
+  for (let i = 0; i <= BIRTHDAY_WINDOW_DAYS; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+    const lunar = getLunarMonthDay(noon);
+    if (lunar.month === person.lunarMonth && lunar.day === person.lunarDay) {
+      return { targetDate: noon, days: i };
+    }
+  }
+  return null;
+}
+
+function getUpcomingBirthdays() {
+  const now = new Date();
+  const rows = [];
+  birthdayPeople.forEach((p) => {
+    const countdown = p.calendarType === "lunar"
+      ? computeLunarCountdown(p, now)
+      : computeSolarCountdown(p, now);
+    if (!countdown) return;
+    rows.push({
+      ...p,
+      days: countdown.days,
+      targetDate: countdown.targetDate
+    });
+  });
+  rows.sort((a, b) => a.days - b.days || a.name.localeCompare(b.name, "zh-Hans-CN"));
+  return rows;
+}
+
+function renderBirthdayPeople() {
+  birthdayPeopleList.innerHTML = "";
+  if (!birthdayPeople.length) {
+    birthdayPeopleList.innerHTML = '<div class="status-card">暂无人员，请先添加。</div>';
+    return;
+  }
+  birthdayPeople.forEach((p) => {
+    const row = document.createElement("div");
+    row.className = "birthday-person-row";
+    const typeText = p.calendarType === "lunar" ? `农历 ${p.lunarMonth || ""}${p.lunarDay || ""}` : "国历";
+    row.innerHTML = `<div>${p.name} · ${typeText}</div>`;
+    const delBtn = document.createElement("button");
+    delBtn.className = "danger-btn";
+    delBtn.textContent = "删除";
+    delBtn.addEventListener("click", () => {
+      birthdayPeople = birthdayPeople.filter((x) => x.id !== p.id);
+      saveBirthdayPeople();
+      renderBirthdayModule();
+      showToast("已删除");
+    });
+    row.appendChild(delBtn);
+    birthdayPeopleList.appendChild(row);
+  });
+}
+
+function renderBirthdayUpcoming() {
+  const rows = getUpcomingBirthdays();
+  birthdayUpcomingList.innerHTML = "";
+  if (!rows.length) {
+    birthdayStatus.textContent = `未来${BIRTHDAY_WINDOW_DAYS}天内暂无生日。`;
+    birthdayUpcomingList.innerHTML = '<div class="status-card">没有符合条件的生日提醒。</div>';
+    return;
+  }
+  birthdayStatus.textContent = `未来${BIRTHDAY_WINDOW_DAYS}天共有 ${rows.length} 位即将生日。`;
+  rows.forEach((r) => {
+    const card = document.createElement("article");
+    card.className = "birthday-item";
+    const typeText = r.calendarType === "lunar"
+      ? `农历 ${r.lunarMonth}${r.lunarDay}`
+      : "国历";
+    const countdownText = r.days === 0 ? "今天生日" : `还有 ${r.days} 天`;
+    card.innerHTML = `
+      <div class="birthday-item-name">${r.name}</div>
+      <div class="birthday-item-meta">${typeText} · 下次生日 ${formatDateTime(r.targetDate.toISOString())}</div>
+      <div class="birthday-item-countdown">${countdownText}</div>
+    `;
+    birthdayUpcomingList.appendChild(card);
+  });
+}
+
+function renderBirthdayModule() {
+  renderBirthdayUpcoming();
+  renderBirthdayPeople();
+}
+
+function addBirthdayPerson() {
+  const name = birthdayNameInput.value.trim();
+  const birthDate = birthdayDateInput.value;
+  const calendarType = birthdayCalendarType.value;
+  if (!name) {
+    showToast("请输入姓名");
+    return;
+  }
+  const dt = parseDateInputToNoon(birthDate);
+  if (!dt) {
+    showToast("请选择正确出生日期");
+    return;
+  }
+
+  const person = {
+    id: crypto.randomUUID(),
+    name,
+    birthDate,
+    calendarType
+  };
+  if (calendarType === "lunar") {
+    const lunar = getLunarMonthDay(dt);
+    person.lunarMonth = lunar.month;
+    person.lunarDay = lunar.day;
+  }
+  birthdayPeople.push(person);
+  saveBirthdayPeople();
+  birthdayNameInput.value = "";
+  birthdayDateInput.value = "";
+  updateBirthdayHint();
+  renderBirthdayModule();
+  showToast("生日已保存");
+}
+
 function openHome() {
   weatherPage.classList.add("hidden");
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
+  birthdayPage.classList.add("hidden");
   homePage.classList.remove("hidden");
 }
 
@@ -191,6 +396,7 @@ function openWeather() {
   homePage.classList.add("hidden");
   footballPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
+  birthdayPage.classList.add("hidden");
   weatherPage.classList.remove("hidden");
 }
 
@@ -198,13 +404,24 @@ function openFootball() {
   homePage.classList.add("hidden");
   weatherPage.classList.add("hidden");
   leagueDetailPage.classList.add("hidden");
+  birthdayPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
 }
 
 function openLeagueDetail(leagueKey) {
   currentLeagueKey = leagueKey;
   footballPage.classList.add("hidden");
+  birthdayPage.classList.add("hidden");
   leagueDetailPage.classList.remove("hidden");
+}
+
+function openBirthday() {
+  homePage.classList.add("hidden");
+  weatherPage.classList.add("hidden");
+  footballPage.classList.add("hidden");
+  leagueDetailPage.classList.add("hidden");
+  birthdayPage.classList.remove("hidden");
+  renderBirthdayModule();
 }
 
 async function clearCacheAndReload() {
@@ -298,45 +515,108 @@ async function loadWeatherByLocation() {
   }
 }
 
-function dateRangeParam() {
+function bundleIsSeedOnlyPlaceholder(bundle) {
+  const leagues = bundle?.leagues;
+  if (!leagues) return false;
+  let total = 0;
+  let seeds = 0;
+  for (const L of LEAGUES) {
+    const arr = leagues[L.key]?.matches || [];
+    for (const m of arr) {
+      total += 1;
+      if (String(m?.id || "").startsWith("seed:")) seeds += 1;
+    }
+  }
+  return total > 0 && seeds === total;
+}
+
+async function loadFootballBundleOnce() {
+  if (footballBundleLoadPromise) return footballBundleLoadPromise;
+  footballBundleLoadPromise = (async () => {
+    try {
+      const res = await fetch(FOOTBALL_BUNDLE_URL, { cache: FORCE_REFRESH_ON_THIS_BOOT ? "no-store" : "default" });
+      if (!res.ok) return { leagues: {} };
+      return await res.json();
+    } catch (_err) {
+      return { leagues: {} };
+    }
+  })();
+  return footballBundleLoadPromise;
+}
+
+function nzFootballStr(preferred, fallback) {
+  const p = preferred != null ? String(preferred).trim() : "";
+  if (p !== "") return p;
+  return fallback != null ? String(fallback).trim() : "";
+}
+
+function normalizeBundleMatch(m) {
+  const dateISO = m.dateISO || "";
+  const matchTime = parseMatchDate(dateISO);
+  let isFinished = Boolean(m.isFinished);
+  const hs = m.homeScore != null ? String(m.homeScore).trim() : "";
+  const gs = m.awayScore != null ? String(m.awayScore).trim() : "";
+  if (/^\d+$/.test(hs) && /^\d+$/.test(gs)) isFinished = true;
   const now = new Date();
-  const from = new Date(now);
-  const to = new Date(now);
-  from.setDate(now.getDate() - 30);
-  to.setDate(now.getDate() + 120);
-  const fmt = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-  return `${fmt(from)}-${fmt(to)}`;
-}
-
-async function fetchLeagueFromEspn(league) {
-  const url = new URL(`https://site.api.espn.com/apis/site/v2/sports/soccer/${league.espnCode}/scoreboard`);
-  url.searchParams.set("dates", dateRangeParam());
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`足球接口请求失败: ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data.events) ? data.events : [];
-}
-
-function normalizeEspnEvent(event) {
-  const comp = event?.competitions?.[0];
-  const competitors = Array.isArray(comp?.competitors) ? comp.competitors : [];
-  const home = competitors.find((c) => c.homeAway === "home");
-  const away = competitors.find((c) => c.homeAway === "away");
-  const statusType = comp?.status?.type || event?.status?.type || {};
+  let isUpcoming = Boolean(m.isUpcoming);
+  if (isFinished) {
+    isUpcoming = false;
+  } else if (!isUpcoming) {
+    isUpcoming = matchTime > now;
+  }
   return {
-    id: event?.id || `${home?.team?.displayName || "home"}-${away?.team?.displayName || "away"}-${event?.date || ""}`,
-    dateISO: event?.date || "",
-    matchTime: parseMatchDate(event?.date),
-    home: home?.team?.displayName || "主队",
-    away: away?.team?.displayName || "客队",
-    homeScore: home?.score ?? "",
-    awayScore: away?.score ?? "",
-    isFinished: Boolean(statusType.completed) || statusType.state === "post",
-    isUpcoming: statusType.state === "pre"
+    id: String(m.id || `${m.home || ""}-${m.away || ""}-${dateISO}`),
+    dateISO,
+    matchTime,
+    home: m.home || "主队",
+    away: m.away || "客队",
+    homeScore: isFinished ? hs : "",
+    awayScore: isFinished ? gs : "",
+    isFinished,
+    isUpcoming
   };
 }
 
-function splitAndLimitEspnMatches(matches) {
+function mergeOneFootballMatch(fromBundle, fromSaved) {
+  const home = nzFootballStr(fromSaved.home, fromBundle.home) || fromBundle.home;
+  const away = nzFootballStr(fromSaved.away, fromBundle.away) || fromBundle.away;
+  const dateISO = nzFootballStr(fromSaved.dateISO, fromBundle.dateISO) || fromBundle.dateISO;
+  let homeScore = nzFootballStr(fromSaved.homeScore, fromBundle.homeScore);
+  let awayScore = nzFootballStr(fromSaved.awayScore, fromBundle.awayScore);
+  let isFinished = Boolean(fromSaved.isFinished || fromBundle.isFinished);
+  if (/^\d+$/.test(homeScore) && /^\d+$/.test(awayScore)) isFinished = true;
+  const isUpcoming = !isFinished && (fromSaved.isUpcoming || fromBundle.isUpcoming || parseMatchDate(dateISO) > new Date());
+  return normalizeBundleMatch({
+    id: fromBundle.id,
+    dateISO,
+    home,
+    away,
+    homeScore,
+    awayScore,
+    isFinished,
+    isUpcoming
+  });
+}
+
+function mergeFootballMatches(bundleRows, lsRows) {
+  const map = new Map();
+  for (const raw of bundleRows) {
+    const m = normalizeBundleMatch(raw);
+    map.set(m.id, m);
+  }
+  for (const raw of lsRows) {
+    const s = normalizeBundleMatch(raw);
+    const b = map.get(s.id);
+    if (!b) {
+      map.set(s.id, s);
+    } else {
+      map.set(s.id, mergeOneFootballMatch(b, s));
+    }
+  }
+  return [...map.values()];
+}
+
+function splitAndLimitMatches(matches) {
   const now = new Date();
   const upcoming = [];
   const finished = [];
@@ -357,50 +637,23 @@ function splitAndLimitEspnMatches(matches) {
   };
 }
 
-async function pullLeagueAndCache(league) {
-  const events = await fetchLeagueFromEspn(league);
-  const map = new Map();
-  events.forEach((event) => {
-    const match = normalizeEspnEvent(event);
-    map.set(match.id, match);
-  });
-  const grouped = splitAndLimitEspnMatches([...map.values()]);
-  const finalData = { ...grouped, source: "espn" };
-  setLeagueCache(league.key, finalData);
-  return finalData;
-}
-
 async function getLeagueGroupedMatches(league) {
-  const cached = getLeagueCache(league.key);
-  if (cached) return { ...cached, source: "cache" };
-  return pullLeagueAndCache(league);
-}
-
-async function prefetchFootballCaches() {
-  if (!FORCE_REFRESH_ON_THIS_BOOT) return;
-  if (footballPrefetchPromise) return footballPrefetchPromise;
-  footballPrefetchPromise = (async () => {
-    for (const league of LEAGUES) {
-      try {
-        await pullLeagueAndCache(league);
-      } catch (_err) {
-        // Keep trying remaining leagues.
-      }
-      await new Promise((r) => setTimeout(r, 250));
-    }
-  })();
-  return footballPrefetchPromise;
+  const bundle = await loadFootballBundleOnce();
+  const bundleMatches = bundle.leagues?.[league.key]?.matches || [];
+  const prev = getLeagueCache(league.key);
+  const lsFlat = prev ? [...(prev.upcoming || []), ...(prev.finished || [])] : [];
+  const merged = mergeFootballMatches(bundleMatches, lsFlat);
+  const grouped = splitAndLimitMatches(merged);
+  setLeagueCache(league.key, grouped);
+  return grouped;
 }
 
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
   leagueList.innerHTML = "";
-  footballStatus.textContent = "已加载缓存数据";
-
-  if (FORCE_REFRESH_ON_THIS_BOOT) {
-    footballStatus.textContent = "首次拉取数据中...";
-    await prefetchFootballCaches();
-  }
+  footballStatus.textContent = "正在加载 data/football_bundle.json ...";
+  if (FORCE_REFRESH_ON_THIS_BOOT) footballBundleLoadPromise = null;
+  const bundleSnapshot = await loadFootballBundleOnce();
 
   try {
     const summaries = [];
@@ -440,7 +693,9 @@ async function loadFootballLeagueList() {
       });
       leagueList.appendChild(btn);
     });
-    footballStatus.textContent = "已加载赛事数据";
+    footballStatus.textContent = bundleIsSeedOnlyPlaceholder(bundleSnapshot)
+      ? "当前为占位示例（每联赛约 1 场）。在本机成功运行 sync_football_baidu.py 写入真实数据后，可显示多场（每类最多近 10 场）。"
+      : "已加载（本地包 + 浏览器缓存合并）";
   } catch (err) {
     footballStatus.textContent = "读取足球数据失败。";
     showToast(err.message || "读取足球数据失败");
@@ -454,14 +709,15 @@ async function loadLeagueDetail() {
   leagueDetailTitle.textContent = `${league.name} 赛程`;
   leagueUpcomingList.innerHTML = "";
   leagueFinishedList.innerHTML = "";
-  leagueDetailStatus.textContent = "已加载缓存数据";
+  leagueDetailStatus.textContent = "正在读取本地数据...";
 
   try {
-    if (FORCE_REFRESH_ON_THIS_BOOT) await prefetchFootballCaches();
+    if (FORCE_REFRESH_ON_THIS_BOOT) footballBundleLoadPromise = null;
+    await loadFootballBundleOnce();
     const grouped = await getLeagueGroupedMatches(league);
     if (reqId !== leagueDetailRequestId) return;
     renderLeagueMatches(grouped.upcoming, grouped.finished);
-    leagueDetailStatus.textContent = `缓存数据（未开赛 ${grouped.upcoming.length} 场，已完赛 ${grouped.finished.length} 场）`;
+    leagueDetailStatus.textContent = `本地包 + 缓存（未开赛 ${grouped.upcoming.length}，已完赛 ${grouped.finished.length}）`;
   } catch (err) {
     leagueDetailStatus.textContent = "读取赛事详情失败。";
     showToast(err.message || "读取赛事详情失败");
@@ -479,6 +735,10 @@ function onModuleClick(moduleName) {
     loadFootballLeagueList();
     return;
   }
+  if (moduleName === "birthday") {
+    openBirthday();
+    return;
+  }
   showToast("该模块暂未开发");
 }
 
@@ -487,12 +747,19 @@ document.querySelectorAll(".module-card").forEach((btn) => {
 });
 document.getElementById("backHome").addEventListener("click", openHome);
 document.getElementById("backHomeFromFootball").addEventListener("click", openHome);
+document.getElementById("backHomeFromBirthday").addEventListener("click", openHome);
 document.getElementById("backToFootball").addEventListener("click", () => {
   leagueDetailPage.classList.add("hidden");
   footballPage.classList.remove("hidden");
   loadFootballLeagueList();
 });
 document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
+birthdayCalendarType.addEventListener("change", updateBirthdayHint);
+birthdayDateInput.addEventListener("change", updateBirthdayHint);
+document.getElementById("addBirthdayBtn").addEventListener("click", addBirthdayPerson);
+
+loadBirthdayPeople();
+updateBirthdayHint();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(() => null);

@@ -203,3 +203,91 @@ button:active { transform: scale(0.98); }
   color: #eef3ff;
   font-size: 13px;
 }
+
+.birthday-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.birthday-item {
+  border-radius: 12px;
+  border: 1px solid rgba(182, 204, 255, 0.2);
+  background: rgba(13, 25, 46, 0.78);
+  padding: 10px 12px;
+}
+
+.birthday-item-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.birthday-item-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b9cbef;
+}
+
+.birthday-item-countdown {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #9ed5ff;
+  font-weight: 700;
+}
+
+.birthday-form-card {
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(182, 204, 255, 0.2);
+  background: rgba(13, 25, 46, 0.78);
+  padding: 12px;
+}
+
+.birthday-form-card h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  color: #c5d4f3;
+  margin: 8px 0 4px;
+}
+
+input, select {
+  width: 100%;
+  border: 1px solid rgba(182, 204, 255, 0.34);
+  border-radius: 10px;
+  background: rgba(28, 52, 95, 0.4);
+  color: #eff5ff;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #b9cbef;
+  margin: 8px 0 10px;
+}
+
+.birthday-people-list {
+  display: grid;
+  gap: 8px;
+}
+
+.birthday-person-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(182, 204, 255, 0.16);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.danger-btn {
+  border-color: rgba(255, 120, 120, 0.5);
+  color: #ffd6d6;
+  background: rgba(95, 25, 25, 0.5);
+}

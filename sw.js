@@ -1,5 +1,5 @@
-const CACHE_NAME = "student-evolution-farm-v2";
-const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json"];
+const CACHE_NAME = "student-evolution-farm-v3";
+const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json", "./data/football_bundle.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
