@@ -257,6 +257,32 @@ function footballCacheSavedAtText() {
   }
 }
 
+function footballLiveTotalCount() {
+  let total = 0;
+  for (const league of LEAGUES) {
+    const g = footballLiveLeagueMap.get(league.key);
+    total += footballGroupedTotal(g);
+  }
+  return total;
+}
+
+async function seedFootballFromLocalBundleIfEmpty() {
+  if (footballLiveTotalCount() > 0) return;
+  try {
+    for (const league of LEAGUES) {
+      const grouped = await getLeagueGroupedMatches(league);
+      if (footballGroupedTotal(grouped) > 0) {
+        footballLiveLeagueMap.set(league.key, grouped);
+      }
+    }
+    if (footballLiveTotalCount() > 0) {
+      persistFootballLiveCache();
+    }
+  } catch (_err) {
+    // ignore seed errors, keep empty state if local bundle unavailable
+  }
+}
+
 function footballGroupedTotal(grouped) {
   return (grouped?.upcoming?.length || 0) + (grouped?.finished?.length || 0);
 }
@@ -942,6 +968,7 @@ async function getLeagueGroupedMatches(league) {
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
   leagueList.innerHTML = "";
+  await seedFootballFromLocalBundleIfEmpty();
   const cacheText = footballCacheSavedAtText();
   footballStatus.textContent = cacheText
     ? `已加载本地缓存（更新时间：${cacheText}），点击上方“刷新全部联赛”获取最新数据。`
