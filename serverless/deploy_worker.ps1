@@ -100,9 +100,9 @@ if ($deployExit -ne 0) {
 }
 
 Write-Host ""
-Write-Host "OK. Put this in parent config.js (Worker name is ios-game-football from wrangler.toml):"
-$exampleUrl = "https://ios-game-football.$workersDevAccountSub.workers.dev/football-bundle.json"
-Write-Host ('  window.__IOS_GAME_FOOTBALL_REMOTE__ = "' + $exampleUrl + '";')
+Write-Host "OK. Next steps:"
+Write-Host "  1) set secret: wrangler secret put FOOTBALL_DATA_TOKEN"
+Write-Host ('  2) set config: window.__IOS_GAME_FOOTBALL_WORKER__ = "https://ios-game-football.' + $workersDevAccountSub + '.workers.dev";')
 Write-Host "(If deploy used a different subdomain, copy the URL from the lines above.)"
 Read-Host 'Press Enter to exit'
 exit 0

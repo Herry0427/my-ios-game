@@ -68,7 +68,10 @@
     <header class="top-bar">
       <button id="backHomeFromFootball" class="back-btn">← 返回</button>
       <h2>足球赛程</h2>
-      <p>进入本页自动加载并合并：本地 data 包、浏览器缓存、config.js 中的远程 HTTPS 赛程（可选）。</p>
+      <p>点击刷新后依次请求全部联赛，直接展示实时结果。</p>
+      <section class="weather-actions">
+        <button id="footballRefreshAllBtn">刷新全部联赛</button>
+      </section>
     </header>
 
     <section id="footballStatus" class="status-card">准备获取赛事列表...</section>

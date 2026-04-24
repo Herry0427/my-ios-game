@@ -7,6 +7,7 @@ const locationText = document.getElementById("locationText");
 const weatherStatus = document.getElementById("weatherStatus");
 const weatherList = document.getElementById("weatherList");
 const footballStatus = document.getElementById("footballStatus");
+const footballRefreshAllBtn = document.getElementById("footballRefreshAllBtn");
 const leagueList = document.getElementById("leagueList");
 const leagueDetailTitle = document.getElementById("leagueDetailTitle");
 const leagueDetailStatus = document.getElementById("leagueDetailStatus");
@@ -47,11 +48,15 @@ const FOOTBALL_REMOTE_FETCH_TIMEOUT_MS = 8000;
 /** 可选兜底（一般改根目录 config.js 即可）。须 HTTPS。调试：?footballApi= */
 const FOOTBALL_REMOTE_BUNDLE_URL = "";
 const CACHE_PREFIX = "football_cache_v4_";
+const FOOTBALL_WORKER_BASE = String(window.__IOS_GAME_FOOTBALL_WORKER__ || "").replace(/\/+$/, "");
+const FOOTBALL_DATA_PREFETCH_GAP_MS = 250;
 const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
 const BIRTHDAY_CACHE_KEY = `${CACHE_PREFIX}birthday_people`;
 const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
 const BIRTHDAY_WINDOW_DAYS = 60;
 let birthdayPeople = [];
+let footballRefreshAllRequestId = 0;
+const footballLiveLeagueMap = new Map();
 
 const lunarFormatter = new Intl.DateTimeFormat("zh-Hans-u-ca-chinese", {
   month: "long",
@@ -179,6 +184,123 @@ function formatDateTime(dateISO) {
   const d = new Date(dateISO);
   const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return `${formatDate(d.toISOString())} ${time}`;
+}
+
+function formatYmd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getFootballApiLeagueCache(leagueKey) {
+  return footballLiveLeagueMap.get(leagueKey) || null;
+}
+
+function setFootballApiLeagueCache(leagueKey, data) {
+  footballLiveLeagueMap.set(leagueKey, data);
+}
+
+function footballGroupedTotal(grouped) {
+  return (grouped?.upcoming?.length || 0) + (grouped?.finished?.length || 0);
+}
+
+function isMeaningfulFootballGrouped(grouped) {
+  return footballGroupedTotal(grouped) > 0;
+}
+
+function normalizeFootballDataMatch(m) {
+  return normalizeBundleMatch({
+    id: String(m.id || ""),
+    dateISO: m.utcDate || "",
+    home: m.homeTeam?.shortName || m.homeTeam?.name || "主队",
+    away: m.awayTeam?.shortName || m.awayTeam?.name || "客队",
+    homeScore: m.score?.fullTime?.home ?? "",
+    awayScore: m.score?.fullTime?.away ?? "",
+    isFinished: m.status === "FINISHED",
+    isUpcoming: m.status === "SCHEDULED" || m.status === "TIMED"
+  });
+}
+
+async function fetchLeagueMatchesFromFootballData(leagueKey) {
+  if (!FOOTBALL_WORKER_BASE) {
+    throw new Error("缺少 Worker 地址，请在 config.js 设置 __IOS_GAME_FOOTBALL_WORKER__");
+  }
+  const url = `${FOOTBALL_WORKER_BASE}/league/${encodeURIComponent(leagueKey)}`;
+
+  const res = await fetchWithTimeout(
+    url,
+    {
+      cache: "no-store"
+    },
+    FOOTBALL_REMOTE_FETCH_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    throw new Error(`Worker 请求失败: ${res.status}`);
+  }
+  const fromCache = String(res.headers.get("X-Cache-Status") || "").toUpperCase();
+  if (fromCache === "HIT") {
+    // 仅提示，不打扰
+  }
+  const payload = await res.json();
+  if (!payload || !Array.isArray(payload.upcoming) || !Array.isArray(payload.finished)) {
+    throw new Error("Worker 返回数据格式异常");
+  }
+  return {
+    upcoming: payload.upcoming.map((m) => normalizeBundleMatch(m)),
+    finished: payload.finished.map((m) => normalizeBundleMatch(m))
+  };
+}
+
+function renderFootballLeagueCards(summaries) {
+  leagueList.innerHTML = "";
+  summaries.forEach((league) => {
+    const btn = document.createElement("button");
+    btn.className = "league-card";
+    btn.innerHTML = `
+      <div class="league-card-title">${league.name}</div>
+      <div class="league-card-meta">未开赛 ${league.upcomingCount} 场 · 已完赛 ${league.finishedCount} 场</div>
+    `;
+    btn.addEventListener("click", () => {
+      openLeagueDetail(league.key);
+      loadLeagueDetail();
+    });
+    leagueList.appendChild(btn);
+  });
+}
+
+function getFootballSummariesFromCache() {
+  return LEAGUES.slice().sort((a, b) => a.priority - b.priority).map((league) => {
+    const cached = getFootballApiLeagueCache(league.key);
+    return {
+      ...league,
+      upcomingCount: cached?.upcoming?.length || 0,
+      finishedCount: cached?.finished?.length || 0
+    };
+  });
+}
+
+async function prefetchAllLeaguesFromFootballData() {
+  const reqId = ++footballRefreshAllRequestId;
+  const result = { ok: 0, fail: 0, updated: 0 };
+  for (const league of LEAGUES.slice().sort((a, b) => a.priority - b.priority)) {
+    if (reqId !== footballRefreshAllRequestId) break;
+    try {
+      const latest = await fetchLeagueMatchesFromFootballData(league.key);
+      if (isMeaningfulFootballGrouped(latest)) {
+        setFootballApiLeagueCache(league.key, latest);
+        result.updated += 1;
+      }
+      result.ok += 1;
+    } catch (_err) {
+      result.fail += 1;
+    }
+    if (reqId !== footballRefreshAllRequestId) break;
+    renderFootballLeagueCards(getFootballSummariesFromCache());
+    footballStatus.textContent = `刷新中：成功 ${result.ok}，失败 ${result.fail}（正在拉取下一个联赛）`;
+    await new Promise((resolve) => setTimeout(resolve, FOOTBALL_DATA_PREFETCH_GAP_MS));
+  }
+  return result;
 }
 
 function renderWeather(daily) {
@@ -572,12 +694,17 @@ function isValidFootballBundlePayload(obj) {
 }
 
 async function fetchWithTimeout(url, init, timeoutMs) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("请求超时")), timeoutMs);
+  });
   try {
-    return await fetch(url, { ...init, signal: ctrl.signal });
-  } finally {
-    clearTimeout(id);
+    const requestPromise = fetch(url, ctrl ? { ...init, signal: ctrl.signal } : init);
+    const res = await Promise.race([requestPromise, timeoutPromise]);
+    return res;
+  } catch (err) {
+    if (ctrl) ctrl.abort();
+    throw err;
   }
 }
 
@@ -733,70 +860,37 @@ function splitAndLimitMatches(matches) {
   };
 }
 
+function countGroupedMatches(grouped) {
+  return (grouped?.upcoming?.length || 0) + (grouped?.finished?.length || 0);
+}
+
 async function getLeagueGroupedMatches(league) {
   const bundle = await loadFootballBundleOnce();
   const bundleMatches = bundle.leagues?.[league.key]?.matches || [];
   const prev = getLeagueCache(league.key);
-  const lsFlat = prev ? [...(prev.upcoming || []), ...(prev.finished || [])] : [];
-  const merged = mergeFootballMatches(bundleMatches, lsFlat);
-  const grouped = splitAndLimitMatches(merged);
-  setLeagueCache(league.key, grouped);
-  return grouped;
+  const normalizedBundleMatches = bundleMatches.map((m) => normalizeBundleMatch(m));
+  const latestGrouped = splitAndLimitMatches(normalizedBundleMatches);
+  const latestCount = countGroupedMatches(latestGrouped);
+  const cachedCount = countGroupedMatches(prev);
+
+  // 规则：每次先拉最新；仅当“最新数量 > 缓存数量”时覆盖缓存，否则沿用缓存。
+  if (latestCount > cachedCount) {
+    setLeagueCache(league.key, latestGrouped);
+    return latestGrouped;
+  }
+  if (prev) return prev;
+  setLeagueCache(league.key, latestGrouped);
+  return latestGrouped;
 }
 
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
   leagueList.innerHTML = "";
-  footballStatus.textContent = "正在加载赛程数据...";
-  footballBundleLoadPromise = null;
-  lastFootballRemoteStatus = null;
-  const bundleSnapshot = await loadFootballBundleOnce();
-
+  footballStatus.textContent = "点击上方“刷新全部联赛”开始请求实时数据。";
   try {
-    const summaries = [];
-    for (const league of LEAGUES) {
-      try {
-        const grouped = await getLeagueGroupedMatches(league);
-        summaries.push({
-          ...league,
-          upcomingCount: grouped.upcoming.length,
-          finishedCount: grouped.finished.length,
-          hasData: grouped.upcoming.length + grouped.finished.length > 0
-        });
-      } catch (_err) {
-        summaries.push({ ...league, upcomingCount: 0, finishedCount: 0, hasData: false });
-      }
-    }
-    summaries.sort((a, b) => {
-      if (a.key === "worldcup" || b.key === "worldcup") {
-        if (a.key === "worldcup" && b.key !== "worldcup") return a.hasData ? -1 : 1;
-        if (b.key === "worldcup" && a.key !== "worldcup") return b.hasData ? 1 : -1;
-      }
-      return a.priority - b.priority;
-    });
-
+    const cachedSummaries = getFootballSummariesFromCache();
     if (reqId !== footballListRequestId) return;
-    leagueList.innerHTML = "";
-    summaries.forEach((league) => {
-      const btn = document.createElement("button");
-      btn.className = "league-card";
-      btn.innerHTML = `
-        <div class="league-card-title">${league.name}</div>
-        <div class="league-card-meta">未开赛 ${league.upcomingCount} 场 · 已完赛 ${league.finishedCount} 场</div>
-      `;
-      btn.addEventListener("click", () => {
-        openLeagueDetail(league.key);
-        loadLeagueDetail();
-      });
-      leagueList.appendChild(btn);
-    });
-    let remoteHint = "";
-    if (lastFootballRemoteStatus === "ok") remoteHint = "；已合并远程最新赛程";
-    else if (lastFootballRemoteStatus === "fail") remoteHint = "；远程赛程暂不可用，已用本地包";
-
-    footballStatus.textContent = bundleIsSeedOnlyPlaceholder(bundleSnapshot)
-      ? `当前为占位示例（每联赛约 1 场）。进入本页已自动拉取数据；部署远程赛程接口或更新站点内 data 包后可显示多场（每类最多近 10 场）。${remoteHint}`
-      : `已加载（本地包 + 浏览器缓存合并）${remoteHint}`;
+    renderFootballLeagueCards(cachedSummaries);
   } catch (err) {
     footballStatus.textContent = "读取足球数据失败。";
     showToast(err.message || "读取足球数据失败");
@@ -810,17 +904,35 @@ async function loadLeagueDetail() {
   leagueDetailTitle.textContent = `${league.name} 赛程`;
   leagueUpcomingList.innerHTML = "";
   leagueFinishedList.innerHTML = "";
-  leagueDetailStatus.textContent = "正在读取本地数据...";
+  leagueDetailStatus.textContent = "正在拉取 football-data.org...";
 
   try {
-    await loadFootballBundleOnce();
-    const grouped = await getLeagueGroupedMatches(league);
+    let grouped = getFootballApiLeagueCache(league.key);
+    if (!grouped) {
+      grouped = await fetchLeagueMatchesFromFootballData(league.key);
+      setFootballApiLeagueCache(league.key, grouped);
+    }
     if (reqId !== leagueDetailRequestId) return;
     renderLeagueMatches(grouped.upcoming, grouped.finished);
-    leagueDetailStatus.textContent = `本地包 + 缓存（未开赛 ${grouped.upcoming.length}，已完赛 ${grouped.finished.length}）`;
+    leagueDetailStatus.textContent = `football-data.org（未开赛 ${grouped.upcoming.length}，已完赛 ${grouped.finished.length}）`;
   } catch (err) {
     leagueDetailStatus.textContent = "读取赛事详情失败。";
     showToast(err.message || "读取赛事详情失败");
+  }
+}
+
+async function refreshAllFootballLeagues() {
+  footballRefreshAllBtn.disabled = true;
+  footballStatus.textContent = "开始依次请求全部联赛...";
+  try {
+    const syncResult = await prefetchAllLeaguesFromFootballData();
+    renderFootballLeagueCards(getFootballSummariesFromCache());
+    footballStatus.textContent = `刷新完成：成功 ${syncResult.ok}，失败 ${syncResult.fail}，更新 ${syncResult.updated}`;
+  } catch (err) {
+    footballStatus.textContent = "刷新失败。";
+    showToast(err.message || "刷新失败");
+  } finally {
+    footballRefreshAllBtn.disabled = false;
   }
 }
 
@@ -853,6 +965,7 @@ document.getElementById("backToFootball").addEventListener("click", () => {
   footballPage.classList.remove("hidden");
   loadFootballLeagueList();
 });
+footballRefreshAllBtn.addEventListener("click", refreshAllFootballLeagues);
 document.getElementById("clearCacheReload").addEventListener("click", clearCacheAndReload);
 birthdayCalendarType.addEventListener("change", updateBirthdayHint);
 birthdayDateInput.addEventListener("change", updateBirthdayHint);

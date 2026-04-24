@@ -22,7 +22,10 @@ winget install OpenJS.NodeJS.LTS
 请打开同目录下的文件：NO_NODE_DASHBOARD_DEPLOY.txt（内容与「无Node-控制台部署说明.txt」相同）
 
 【部署成功后】
-编辑上级目录的 config.js，填写你的 Worker 地址，例如：
-window.__IOS_GAME_FOOTBALL_REMOTE__ = "https://你的子域.workers.dev/football-bundle.json";
+1) 先设置 football-data 密钥（在 serverless 目录）：
+wrangler secret put FOOTBALL_DATA_TOKEN
+
+2) 编辑上级目录的 config.js，填写你的 Worker 根地址，例如：
+window.__IOS_GAME_FOOTBALL_WORKER__ = "https://你的子域.workers.dev";
 
 --------------------------------------------
