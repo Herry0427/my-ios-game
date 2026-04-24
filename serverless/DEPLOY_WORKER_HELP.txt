@@ -1,0 +1,28 @@
+--------------------------------------------
+未检测到 npm / 部署失败时可按下面做
+--------------------------------------------
+
+说明：deploy_worker.ps1 会先刷新 PATH，若无 npm 会自动尝试 winget 安装 Node LTS（可能弹出 UAC）。
+若自动安装失败，请按下面手动安装，装完后关闭本窗口再双击 deploy_worker.bat。
+
+若终端问「register a workers.dev subdomain now? (Y/n)」：输入 Y 表示同意注册。
+下一行若问「What would you like your workers.dev subdomain to be?」：这里要填一串子域名，只能用小写字母、数字、连字符「-」，不能下划线「_」（例如用 ios-game 不要用 ios_game）。也不能只填字母 Y。
+新版 deploy_worker.ps1 会自动生成随机子域名并管道输入，避免混淆。
+
+【安装 Node.js】
+打开浏览器访问（整行复制到地址栏）：
+https://nodejs.org/zh-cn/download/
+安装 LTS 版本，勾选 Add to PATH。
+安装完成后关闭本窗口，重新双击 deploy_worker.bat。
+
+【可选】已安装 winget 时，可用管理员 PowerShell 执行：
+winget install OpenJS.NodeJS.LTS
+
+【不装 Node】用 Cloudflare 网页创建 Worker：
+请打开同目录下的文件：NO_NODE_DASHBOARD_DEPLOY.txt（内容与「无Node-控制台部署说明.txt」相同）
+
+【部署成功后】
+编辑上级目录的 config.js，填写你的 Worker 地址，例如：
+window.__IOS_GAME_FOOTBALL_REMOTE__ = "https://你的子域.workers.dev/football-bundle.json";
+
+--------------------------------------------

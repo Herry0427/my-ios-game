@@ -68,7 +68,7 @@
     <header class="top-bar">
       <button id="backHomeFromFootball" class="back-btn">← 返回</button>
       <h2>足球赛程</h2>
-      <p>同源 data 数据包 + 浏览器缓存；电脑运行 tools/sync_football_baidu.py 更新</p>
+      <p>进入本页自动加载并合并：本地 data 包、浏览器缓存、config.js 中的远程 HTTPS 赛程（可选）。</p>
     </header>
 
     <section id="footballStatus" class="status-card">准备获取赛事列表...</section>
@@ -128,6 +128,7 @@
   </section>
 
   <aside id="toast" class="toast hidden"></aside>
+  <script src="./config.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

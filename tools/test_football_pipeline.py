@@ -18,6 +18,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 BUNDLE = os.path.join(DATA, "football_bundle.json")
 CSV_PATH = os.path.join(DATA, "football_raw_cache.csv")
+CONFIG = os.path.join(ROOT, "config.js")
+NO_NODE_TXT = os.path.join(ROOT, "serverless", "NO_NODE_DASHBOARD_DEPLOY.txt")
+DEPLOY_PS1 = os.path.join(ROOT, "serverless", "deploy_worker.ps1")
 SYNC = os.path.join(ROOT, "tools", "sync_football_baidu.py")
 
 EXPECTED_LEAGUES = (
@@ -33,6 +36,21 @@ MATCH_KEYS = frozenset({"id", "dateISO", "home", "away", "homeScore", "awayScore
 
 
 class TestFootballPipeline(unittest.TestCase):
+    def test_config_js_present(self) -> None:
+        self.assertTrue(os.path.isfile(CONFIG), f"missing {CONFIG}")
+        with open(CONFIG, encoding="utf-8") as f:
+            body = f.read()
+        self.assertIn("__IOS_GAME_FOOTBALL_REMOTE__", body)
+
+    def test_serverless_deploy_assets(self) -> None:
+        self.assertTrue(os.path.isfile(NO_NODE_TXT), f"missing {NO_NODE_TXT}")
+        self.assertTrue(os.path.isfile(DEPLOY_PS1), f"missing {DEPLOY_PS1}")
+        with open(DEPLOY_PS1, encoding="utf-8") as f:
+            ps = f.read()
+        self.assertNotIn('Write-Host "[ERROR]', ps, "PS must not use double-quoted [ERROR] strings")
+        self.assertIn("Try-InstallNodeWithWinget", ps)
+        self.assertIn("workersDevAccountSub", ps)
+
     def test_sync_script_self_test_exits_zero(self) -> None:
         r = subprocess.run([sys.executable, SYNC, "--test"], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr or r.stdout)

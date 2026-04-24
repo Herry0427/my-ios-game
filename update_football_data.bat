@@ -1,18 +1,18 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-echo Running sync_football_baidu.py ...
+echo [1/2] sync_football_baidu.py ...
 python tools\sync_football_baidu.py
 if errorlevel 1 goto SYNC_FAIL
 echo.
-echo Running self-tests ...
+echo [2/2] tests ...
 python tools\sync_football_baidu.py --test
 python tools\test_football_pipeline.py
-echo Done. Refresh site. Remote URL: config.js and serverless deploy_worker.bat
+echo Done. Deploy Worker: serverless deploy_worker.bat then set parent config.js
 pause
 exit /b 0
 
 :SYNC_FAIL
-echo Python failed. Install Python 3 and add to PATH.
+echo Python failed.
 pause
 exit /b 1

@@ -36,9 +36,13 @@ let currentLeagueKey = null;
 let footballListRequestId = 0;
 let leagueDetailRequestId = 0;
 let footballBundleLoadPromise = null;
+/** @type {'skip'|'ok'|'fail'|null} */
+let lastFootballRemoteStatus = null;
 
 const MATCH_LIMIT = 10;
 const FOOTBALL_BUNDLE_URL = "./data/football_bundle.json";
+/** 可选兜底（一般改根目录 config.js 即可）。须 HTTPS。调试：?footballApi= */
+const FOOTBALL_REMOTE_BUNDLE_URL = "";
 const CACHE_PREFIX = "football_cache_v4_";
 const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
 const BIRTHDAY_CACHE_KEY = `${CACHE_PREFIX}birthday_people`;
@@ -530,16 +534,91 @@ function bundleIsSeedOnlyPlaceholder(bundle) {
   return total > 0 && seeds === total;
 }
 
+function normalizeHttpsRemoteUrl(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s, location.href);
+    if (u.protocol !== "https:") return "";
+    if (!u.hostname) return "";
+    return u.toString();
+  } catch (_e) {
+    return "";
+  }
+}
+
+function resolveFootballRemoteUrl() {
+  const candidates = [
+    new URLSearchParams(location.search).get("footballApi"),
+    typeof window.__IOS_GAME_FOOTBALL_REMOTE__ === "string" ? window.__IOS_GAME_FOOTBALL_REMOTE__ : "",
+    typeof FOOTBALL_REMOTE_BUNDLE_URL === "string" ? FOOTBALL_REMOTE_BUNDLE_URL : ""
+  ];
+  for (const c of candidates) {
+    const ok = normalizeHttpsRemoteUrl(c);
+    if (ok) return ok;
+  }
+  try {
+    return normalizeHttpsRemoteUrl(localStorage.getItem("ios_game_football_remote"));
+  } catch (_e) {
+    return "";
+  }
+}
+
+function isValidFootballBundlePayload(obj) {
+  return Boolean(obj && typeof obj === "object" && obj.leagues && typeof obj.leagues === "object" && !obj.error);
+}
+
+function mergeFootballBundleDeep(base, overlay) {
+  const out = { leagues: {}, generatedAt: overlay?.generatedAt || base?.generatedAt };
+  for (const L of LEAGUES) {
+    const key = L.key;
+    const map = new Map();
+    for (const m of base?.leagues?.[key]?.matches || []) {
+      map.set(String(m.id), { ...m });
+    }
+    for (const m of overlay?.leagues?.[key]?.matches || []) {
+      const id = String(m.id);
+      map.set(id, { ...(map.get(id) || {}), ...m });
+    }
+    const arr = [...map.values()].sort((a, b) => (a.dateISO || "").localeCompare(b.dateISO || ""));
+    out.leagues[key] = { matches: arr };
+  }
+  return out;
+}
+
 async function loadFootballBundleOnce() {
   if (footballBundleLoadPromise) return footballBundleLoadPromise;
   footballBundleLoadPromise = (async () => {
+    lastFootballRemoteStatus = "skip";
+    let base = { leagues: {} };
     try {
       const res = await fetch(FOOTBALL_BUNDLE_URL, { cache: FORCE_REFRESH_ON_THIS_BOOT ? "no-store" : "default" });
-      if (!res.ok) return { leagues: {} };
-      return await res.json();
+      if (res.ok) base = await res.json();
     } catch (_err) {
-      return { leagues: {} };
+      base = { leagues: {} };
     }
+
+    const remoteUrl = resolveFootballRemoteUrl();
+    if (remoteUrl) {
+      try {
+        const r2 = await fetch(remoteUrl, { mode: "cors", cache: "no-store" });
+        if (r2.ok) {
+          const live = await r2.json();
+          if (isValidFootballBundlePayload(live)) {
+            base = mergeFootballBundleDeep(base, live);
+            lastFootballRemoteStatus = "ok";
+          } else {
+            lastFootballRemoteStatus = "fail";
+          }
+        } else {
+          lastFootballRemoteStatus = "fail";
+        }
+      } catch (_err) {
+        lastFootballRemoteStatus = "fail";
+      }
+    }
+
+    return base;
   })();
   return footballBundleLoadPromise;
 }
@@ -651,8 +730,9 @@ async function getLeagueGroupedMatches(league) {
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
   leagueList.innerHTML = "";
-  footballStatus.textContent = "正在加载 data/football_bundle.json ...";
-  if (FORCE_REFRESH_ON_THIS_BOOT) footballBundleLoadPromise = null;
+  footballStatus.textContent = "正在加载赛程数据...";
+  footballBundleLoadPromise = null;
+  lastFootballRemoteStatus = null;
   const bundleSnapshot = await loadFootballBundleOnce();
 
   try {
@@ -693,9 +773,13 @@ async function loadFootballLeagueList() {
       });
       leagueList.appendChild(btn);
     });
+    let remoteHint = "";
+    if (lastFootballRemoteStatus === "ok") remoteHint = "；已合并远程最新赛程";
+    else if (lastFootballRemoteStatus === "fail") remoteHint = "；远程赛程暂不可用，已用本地包";
+
     footballStatus.textContent = bundleIsSeedOnlyPlaceholder(bundleSnapshot)
-      ? "当前为占位示例（每联赛约 1 场）。在本机成功运行 sync_football_baidu.py 写入真实数据后，可显示多场（每类最多近 10 场）。"
-      : "已加载（本地包 + 浏览器缓存合并）";
+      ? `当前为占位示例（每联赛约 1 场）。进入本页已自动拉取数据；部署远程赛程接口或更新站点内 data 包后可显示多场（每类最多近 10 场）。${remoteHint}`
+      : `已加载（本地包 + 浏览器缓存合并）${remoteHint}`;
   } catch (err) {
     footballStatus.textContent = "读取足球数据失败。";
     showToast(err.message || "读取足球数据失败");
@@ -712,7 +796,6 @@ async function loadLeagueDetail() {
   leagueDetailStatus.textContent = "正在读取本地数据...";
 
   try {
-    if (FORCE_REFRESH_ON_THIS_BOOT) footballBundleLoadPromise = null;
     await loadFootballBundleOnce();
     const grouped = await getLeagueGroupedMatches(league);
     if (reqId !== leagueDetailRequestId) return;
