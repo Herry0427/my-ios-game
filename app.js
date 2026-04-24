@@ -50,6 +50,7 @@ const FOOTBALL_REMOTE_BUNDLE_URL = "";
 const CACHE_PREFIX = "football_cache_v4_";
 const FOOTBALL_WORKER_BASE = String(window.__IOS_GAME_FOOTBALL_WORKER__ || "").replace(/\/+$/, "");
 const FOOTBALL_DATA_PREFETCH_GAP_MS = 250;
+const FOOTBALL_LIVE_CACHE_KEY = `${CACHE_PREFIX}live_leagues_v1`;
 const WEATHER_CACHE_KEY = `${CACHE_PREFIX}weather`;
 const BIRTHDAY_CACHE_KEY = `${CACHE_PREFIX}birthday_people`;
 const FORCE_REFRESH_ON_THIS_BOOT = new URLSearchParams(location.search).has("refresh");
@@ -57,6 +58,7 @@ const BIRTHDAY_WINDOW_DAYS = 60;
 let birthdayPeople = [];
 let footballRefreshAllRequestId = 0;
 const footballLiveLeagueMap = new Map();
+let footballLiveCacheMeta = { savedAt: 0 };
 
 const lunarFormatter = new Intl.DateTimeFormat("zh-Hans-u-ca-chinese", {
   month: "long",
@@ -199,6 +201,60 @@ function getFootballApiLeagueCache(leagueKey) {
 
 function setFootballApiLeagueCache(leagueKey, data) {
   footballLiveLeagueMap.set(leagueKey, data);
+  persistFootballLiveCache();
+}
+
+function persistFootballLiveCache() {
+  try {
+    const leagues = {};
+    for (const league of LEAGUES) {
+      const grouped = footballLiveLeagueMap.get(league.key);
+      if (!grouped) continue;
+      leagues[league.key] = {
+        upcoming: Array.isArray(grouped.upcoming) ? grouped.upcoming : [],
+        finished: Array.isArray(grouped.finished) ? grouped.finished : []
+      };
+    }
+    footballLiveCacheMeta.savedAt = Date.now();
+    localStorage.setItem(
+      FOOTBALL_LIVE_CACHE_KEY,
+      JSON.stringify({
+        savedAt: footballLiveCacheMeta.savedAt,
+        leagues
+      })
+    );
+  } catch (_err) {
+    // ignore
+  }
+}
+
+function loadFootballLiveCacheFromStorage() {
+  try {
+    const raw = localStorage.getItem(FOOTBALL_LIVE_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    const leagues = parsed?.leagues || {};
+    for (const league of LEAGUES) {
+      const grouped = leagues[league.key];
+      if (!grouped) continue;
+      footballLiveLeagueMap.set(league.key, {
+        upcoming: Array.isArray(grouped.upcoming) ? grouped.upcoming.map((m) => normalizeBundleMatch(m)) : [],
+        finished: Array.isArray(grouped.finished) ? grouped.finished.map((m) => normalizeBundleMatch(m)) : []
+      });
+    }
+    footballLiveCacheMeta.savedAt = Number(parsed?.savedAt || 0);
+  } catch (_err) {
+    // ignore
+  }
+}
+
+function footballCacheSavedAtText() {
+  if (!footballLiveCacheMeta.savedAt) return "";
+  try {
+    return new Date(footballLiveCacheMeta.savedAt).toLocaleString();
+  } catch (_err) {
+    return "";
+  }
 }
 
 function footballGroupedTotal(grouped) {
@@ -886,7 +942,10 @@ async function getLeagueGroupedMatches(league) {
 async function loadFootballLeagueList() {
   const reqId = ++footballListRequestId;
   leagueList.innerHTML = "";
-  footballStatus.textContent = "点击上方“刷新全部联赛”开始请求实时数据。";
+  const cacheText = footballCacheSavedAtText();
+  footballStatus.textContent = cacheText
+    ? `已加载本地缓存（更新时间：${cacheText}），点击上方“刷新全部联赛”获取最新数据。`
+    : "点击上方“刷新全部联赛”开始请求实时数据。";
   try {
     const cachedSummaries = getFootballSummariesFromCache();
     if (reqId !== footballListRequestId) return;
@@ -924,11 +983,14 @@ async function loadLeagueDetail() {
 async function refreshAllFootballLeagues() {
   footballRefreshAllBtn.disabled = true;
   footballStatus.textContent = "开始依次请求全部联赛...";
+  const beforeSummaries = getFootballSummariesFromCache();
   try {
     const syncResult = await prefetchAllLeaguesFromFootballData();
     renderFootballLeagueCards(getFootballSummariesFromCache());
-    footballStatus.textContent = `刷新完成：成功 ${syncResult.ok}，失败 ${syncResult.fail}，更新 ${syncResult.updated}`;
+    const cacheText = footballCacheSavedAtText();
+    footballStatus.textContent = `刷新完成：成功 ${syncResult.ok}，失败 ${syncResult.fail}，更新 ${syncResult.updated}${cacheText ? `（缓存时间：${cacheText}）` : ""}`;
   } catch (err) {
+    renderFootballLeagueCards(beforeSummaries);
     footballStatus.textContent = "刷新失败。";
     showToast(err.message || "刷新失败");
   } finally {
@@ -972,6 +1034,7 @@ birthdayDateInput.addEventListener("change", updateBirthdayHint);
 document.getElementById("addBirthdayBtn").addEventListener("click", addBirthdayPerson);
 
 loadBirthdayPeople();
+loadFootballLiveCacheFromStorage();
 updateBirthdayHint();
 
 if ("serviceWorker" in navigator) {
