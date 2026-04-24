@@ -41,6 +41,9 @@ let lastFootballRemoteStatus = null;
 
 const MATCH_LIMIT = 10;
 const FOOTBALL_BUNDLE_URL = "./data/football_bundle.json";
+/** 本地赛程包与远程包请求超时（毫秒），避免弱网/跨境下 fetch 一直挂起导致页面卡在「正在加载赛程数据」 */
+const FOOTBALL_BUNDLE_FETCH_TIMEOUT_MS = 15000;
+const FOOTBALL_REMOTE_FETCH_TIMEOUT_MS = 8000;
 /** 可选兜底（一般改根目录 config.js 即可）。须 HTTPS。调试：?footballApi= */
 const FOOTBALL_REMOTE_BUNDLE_URL = "";
 const CACHE_PREFIX = "football_cache_v4_";
@@ -568,6 +571,16 @@ function isValidFootballBundlePayload(obj) {
   return Boolean(obj && typeof obj === "object" && obj.leagues && typeof obj.leagues === "object" && !obj.error);
 }
 
+async function fetchWithTimeout(url, init, timeoutMs) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 function mergeFootballBundleDeep(base, overlay) {
   const out = { leagues: {}, generatedAt: overlay?.generatedAt || base?.generatedAt };
   for (const L of LEAGUES) {
@@ -592,7 +605,11 @@ async function loadFootballBundleOnce() {
     lastFootballRemoteStatus = "skip";
     let base = { leagues: {} };
     try {
-      const res = await fetch(FOOTBALL_BUNDLE_URL, { cache: FORCE_REFRESH_ON_THIS_BOOT ? "no-store" : "default" });
+      const res = await fetchWithTimeout(
+        FOOTBALL_BUNDLE_URL,
+        { cache: FORCE_REFRESH_ON_THIS_BOOT ? "no-store" : "default" },
+        FOOTBALL_BUNDLE_FETCH_TIMEOUT_MS
+      );
       if (res.ok) base = await res.json();
     } catch (_err) {
       base = { leagues: {} };
@@ -601,7 +618,7 @@ async function loadFootballBundleOnce() {
     const remoteUrl = resolveFootballRemoteUrl();
     if (remoteUrl) {
       try {
-        const r2 = await fetch(remoteUrl, { mode: "cors", cache: "no-store" });
+        const r2 = await fetchWithTimeout(remoteUrl, { mode: "cors", cache: "no-store" }, FOOTBALL_REMOTE_FETCH_TIMEOUT_MS);
         if (r2.ok) {
           const live = await r2.json();
           if (isValidFootballBundlePayload(live)) {
