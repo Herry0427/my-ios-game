@@ -1,9 +1,0 @@
-﻿league_key,id,dateISO,home,away,homeScore,awayScore,isFinished,isUpcoming,title
-bundesliga,seed:bun-demo,2026-04-26T21:30:00+08:00,德甲示例,客队,,,false,true,
-epl,seed:epl-demo,2026-04-26T23:30:00+08:00,本地数据示例,运行 sync 后替换,,,false,true,
-laliga,seed:lla-demo,2026-04-27T03:00:00+08:00,西甲示例,客队,,,false,true,
-ligue1,seed:l1-demo,2026-04-27T03:05:00+08:00,法甲示例,客队,,,false,true,
-seriea,seed:sea-demo,2026-04-28T02:45:00+08:00,意甲示例,客队,,,false,true,
-ucl,seed:ucl-finished,2026-04-10T03:00:00+08:00,已完赛示例,客队,2,1,true,false,
-ucl,seed:ucl-demo,2026-04-30T03:00:00+08:00,欧冠示例,客队,,,false,true,
-worldcup,seed:wc-demo,2026-06-15T21:00:00+08:00,示例主队,示例客队,,,false,true,

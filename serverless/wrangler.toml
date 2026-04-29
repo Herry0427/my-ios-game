@@ -1,7 +1,0 @@
-# Cloudflare Workers：在 serverless 目录执行
-#   npm i -g wrangler && wrangler login && wrangler deploy
-# 可选密钥（百度验证页时）：
-#   wrangler secret put BAIDU_COOKIE
-name = "ios-game-football"
-main = "cloudflare-worker-football.mjs"
-compatibility_date = "2024-09-01"
