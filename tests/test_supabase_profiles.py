@@ -69,9 +69,10 @@ def main() -> int:
         return 0
 
     test_id = f"e2e_myarcade_{uuid.uuid4().hex[:12]}"
+    unique_nick = f"E2E_{test_id[:10]}"
     payload_row = {
         "id": test_id,
-        "nickname": "E2E_TEST",
+        "nickname": unique_nick,
         "highScore": 999001,
         "unlockedSkins": ["default", "ghost"],
         "currentSkin": "ghost",

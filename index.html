@@ -125,14 +125,47 @@
       background: rgba(200, 20, 40, 0.5); animation: deathFlash 0.4s ease-out forwards;
     }
     @keyframes deathFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
-    .dpad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; max-width: 320px; width: 100%; margin: 10px auto 0; padding-bottom: calc(10px + var(--safe-bottom)); }
-    .dpad-btn {
-      min-height: 72px; border-radius: 16px; border: 2px solid rgba(0, 255, 204, 0.45);
-      background: linear-gradient(180deg, rgba(28, 38, 55, 0.98), rgba(10, 15, 25, 0.99)); color: var(--neon-cyan);
-      font-size: 1.5rem; font-weight: 800; cursor: pointer; user-select: none; transition: transform 0.08s;
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: 1fr min(72px, 22vmin) 1fr;
+      grid-template-rows: 1fr min(72px, 22vmin) 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 280px;
+      min-height: 228px;
+      margin: 10px auto 0;
+      padding-bottom: calc(10px + var(--safe-bottom));
+      align-items: center;
+      justify-items: center;
+      touch-action: manipulation;
     }
-    .dpad-btn:active, .dpad-btn.pressed { transform: scale(0.9) translateY(2px); filter: brightness(1.12); }
-    .dpad-placeholder { visibility: hidden; pointer-events: none; }
+    .dpad-cell-empty { min-width: 8px; min-height: 8px; pointer-events: none; }
+    .dpad-fab {
+      width: 72px; height: 72px; min-width: 72px; min-height: 72px; max-width: 72px; max-height: 72px;
+      padding: 0; box-sizing: border-box; border-radius: 20px; aspect-ratio: 1;
+      border: 2px solid rgba(0, 255, 204, 0.5);
+      background: linear-gradient(180deg, rgba(36, 50, 72, 0.99), rgba(12, 18, 28, 0.99));
+      color: var(--neon-cyan);
+      font-size: 1.4rem; font-weight: 800; cursor: pointer; user-select: none;
+      touch-action: manipulation;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.38), inset 0 2px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.06s ease;
+    }
+    .dpad-fab:active, .dpad-fab.pressed {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45), inset 0 4px 12px rgba(0, 0, 0, 0.45);
+      filter: brightness(0.88);
+    }
+    .dpad-center {
+      width: 52px; height: 52px; min-width: 52px; min-height: 52px; border-radius: 50%;
+      padding: 0; box-sizing: border-box; aspect-ratio: 1;
+      border: 2px solid rgba(255, 0, 170, 0.35);
+      background: linear-gradient(160deg, rgba(40, 24, 50, 0.95), rgba(12, 8, 20, 0.98));
+      color: rgba(255, 0, 170, 0.75);
+      font-size: 1.1rem; font-weight: 800; cursor: default; user-select: none; pointer-events: none;
+      touch-action: manipulation;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
     .config-hint { margin-top: 16px; font-size: 0.7rem; color: var(--text-dim); text-align: center; line-height: 1.5; }
     .modal-root { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center;
       padding: 24px; background: rgba(0, 0, 0, 0.72); opacity: 0; visibility: hidden; transition: opacity 0.35s; }
@@ -174,6 +207,7 @@
       <h2>PLAYER NAME<br/>输入你的昵称</h2>
       <input id="nickname-input" type="text" maxlength="16" placeholder="NICKNAME" autocomplete="username" />
       <p id="nickname-cloud-warn" class="nick-warn" hidden></p>
+      <p id="nickname-dup-msg" class="nick-warn" hidden></p>
       <div style="text-align:center"><button type="button" id="nickname-confirm">START</button></div>
     </div>
   </div>
@@ -239,16 +273,16 @@
         <p>请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始</p>
       </div>
     </div>
-    <div class="dpad" id="snake-dpad">
-      <div class="dpad-placeholder"></div>
-      <div><button type="button" class="dpad-btn" data-dir="up">▲</button></div>
-      <div class="dpad-placeholder"></div>
-      <div><button type="button" class="dpad-btn" data-dir="left">◀</button></div>
-      <div class="dpad-placeholder"></div>
-      <div><button type="button" class="dpad-btn" data-dir="right">▶</button></div>
-      <div class="dpad-placeholder"></div>
-      <div><button type="button" class="dpad-btn" data-dir="down">▼</button></div>
-      <div class="dpad-placeholder"></div>
+    <div class="dpad-grid" id="snake-dpad">
+      <div class="dpad-cell-empty" aria-hidden="true"></div>
+      <div class="dpad-cell"><button type="button" class="dpad-fab" data-dir="up" aria-label="上">▲</button></div>
+      <div class="dpad-cell-empty" aria-hidden="true"></div>
+      <div class="dpad-cell"><button type="button" class="dpad-fab" data-dir="left" aria-label="左">◀</button></div>
+      <div class="dpad-cell"><span class="dpad-center" id="dpad-center" role="presentation">◇</span></div>
+      <div class="dpad-cell"><button type="button" class="dpad-fab" data-dir="right" aria-label="右">▶</button></div>
+      <div class="dpad-cell-empty" aria-hidden="true"></div>
+      <div class="dpad-cell"><button type="button" class="dpad-fab" data-dir="down" aria-label="下">▼</button></div>
+      <div class="dpad-cell-empty" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -266,7 +300,8 @@
   var SB_URL = 'https://qfplpzosjcvvyhcotodz.supabase.co';
   var SB_KEY = 'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB';
 
-  var STORAGE_ID = 'myArcadeHub_profileId';
+  var STORAGE_USERID = 'userId';
+  var LEGACY_PROFILE_ID = 'myArcadeHub_profileId';
   var STORAGE_NAME = 'myArcadeHub_nickname';
 
   var SKIN_ORDER = ['default','ghost','gold','rainbow','flame','cosmic'];
@@ -345,7 +380,7 @@
     if (!c) { if (el) el.textContent = '离线'; return; }
     setSync(true);
     try {
-      var id = getProfileId();
+      var id = getUserId();
       var r = await c.from('profiles').select('highScore, nickname, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
       if (r.error) throw r.error;
       var row = r.data;
@@ -364,7 +399,7 @@
   async function persistRound(finalScore, prevUnlockedSnapshot, activeSkin) {
     var c = getSb();
     if (!c) return { ok:false, reason:'no_client', newUnlocks:[] };
-    var id = getProfileId();
+    var id = getUserId();
     var name = getNickname() || 'Player';
     var selRemote = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
     var rh = selRemote.data ? num(selRemote.data.highScore) : 0;
@@ -401,25 +436,45 @@
   }
 
   async function upsertNicknameOnly(nm) {
-    var c = getSb(); if (!c) return;
+    var c = getSb();
+    if (!c) return { ok: true };
     setSync(true);
     try {
-      var id = getProfileId();
+      var id = getUserId();
       var ex = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
       var hs = ex.data ? num(ex.data.highScore) : 0;
       var us = (ex.data && ex.data.unlockedSkins) ? ex.data.unlockedSkins : mergeUnlockedFromScore(hs, ['default']);
       var cs = (ex.data && ex.data.currentSkin) ? ex.data.currentSkin : 'default';
-      await c.from('profiles').upsert({
+      var res = await c.from('profiles').upsert({
         id: id, nickname: nm, highScore: hs, unlockedSkins: us, currentSkin: cs, updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
+      if (res.error) throw res.error;
       await fetchProfile();
-    } catch (e) { console.warn(e); }
-    finally { setSync(false); }
+      return { ok: true };
+    } catch (e) {
+      console.warn(e);
+      var code = e && (e.code || (e.error && e.error.code));
+      var msg = String((e && e.message) || e || '');
+      var dup = code === '23505' || /duplicate key|unique constraint/i.test(msg);
+      return { ok: false, duplicate: dup };
+    } finally { setSync(false); }
   }
 
-  function getProfileId() {
-    var id = localStorage.getItem(STORAGE_ID);
-    if (!id) { id = crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).slice(2); localStorage.setItem(STORAGE_ID, id); }
+  function getUserId() {
+    var id = localStorage.getItem(STORAGE_USERID);
+    if (!id) {
+      var leg = localStorage.getItem(LEGACY_PROFILE_ID);
+      if (leg) {
+        id = leg;
+        localStorage.setItem(STORAGE_USERID, id);
+        try { localStorage.removeItem(LEGACY_PROFILE_ID); } catch (e) {}
+      } else {
+        id = crypto.randomUUID
+          ? crypto.randomUUID()
+          : 'u-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        localStorage.setItem(STORAGE_USERID, id);
+      }
+    }
     return id;
   }
   function hasNickname() { var n = localStorage.getItem(STORAGE_NAME); return !!(n && String(n).trim()); }
@@ -436,7 +491,12 @@
     if (!c) { listEl.innerHTML = '<div class="lb-empty">未连接 SB_KEY</div>'; return; }
     setSync(true);
     try {
-      var r = await c.from('profiles').select('nickname, highScore').order('highScore', { ascending: false }).limit(10);
+      // profiles.id 主键 = 每设备 userId 一行，按 highScore 降序即每人最高分榜
+      var r = await c
+        .from('profiles')
+        .select('id, nickname, highScore')
+        .order('highScore', { ascending: false })
+        .limit(10);
       if (r.error) throw r.error;
       var rows = r.data || [];
       if (!rows.length) { listEl.innerHTML = '<div class="lb-empty">暂无数据</div>'; return; }
@@ -691,7 +751,7 @@
     document.getElementById('snake-ready-overlay').classList.add('visible');
   };
 
-  document.querySelectorAll('#snake-dpad .dpad-btn').forEach(function (btn) {
+  document.querySelectorAll('#snake-dpad .dpad-fab').forEach(function (btn) {
     var d = btn.getAttribute('data-dir');
     var map = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
     function ap() { var v = map[d]; if (v) setDir(v[0], v[1]); }
@@ -729,11 +789,39 @@
   document.getElementById('placeholder-back').onclick = function () { showScreen('home-screen'); };
 
   document.getElementById('nickname-confirm').onclick = async function () {
+    var dupEl = document.getElementById('nickname-dup-msg');
+    if (dupEl) { dupEl.hidden = true; dupEl.textContent = ''; }
     var inp = document.getElementById('nickname-input');
-    var raw = inp && inp.value.trim() ? inp.value.trim() : '玩家' + ((Math.random()*9000+1000)|0);
-    localStorage.setItem(STORAGE_NAME, raw.slice(0,16));
+    var raw = inp && inp.value.trim() ? inp.value.trim().slice(0, 16) : '玩家' + ((Math.random() * 9000 + 1000) | 0);
+    var c = getSb();
+    if (c) {
+      var avail = await c.rpc('is_nickname_available', { p_nick: raw, p_uid: getUserId() });
+      if (avail.error) {
+        if (dupEl) {
+          dupEl.textContent = '昵称校验失败，请稍后重试';
+          dupEl.hidden = false;
+        }
+        return;
+      }
+      if (avail.data === false) {
+        if (dupEl) {
+          dupEl.textContent = '该昵称已被大触抢先，换一个吧';
+          dupEl.hidden = false;
+        }
+        return;
+      }
+    }
+    localStorage.setItem(STORAGE_NAME, raw);
     document.getElementById('nickname-modal').classList.remove('visible');
-    await upsertNicknameOnly(raw);
+    var saved = await upsertNicknameOnly(raw);
+    if (!saved.ok && dupEl) {
+      dupEl.textContent = saved.duplicate
+        ? '该昵称已被大触抢先，换一个吧'
+        : '保存失败，请检查网络后重试';
+      dupEl.hidden = false;
+      document.getElementById('nickname-modal').classList.add('visible');
+      localStorage.removeItem(STORAGE_NAME);
+    }
     cloudBanner();
   };
 
@@ -747,6 +835,7 @@
   resize();
 
   if (resolveSbKey()) document.getElementById('supabase-hint').style.display = 'none';
+  getUserId();
   cloudBanner();
   document.getElementById('display-name').textContent = getNickname() || '——';
   if (!hasNickname()) document.getElementById('nickname-modal').classList.add('visible');
