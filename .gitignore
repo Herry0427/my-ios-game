@@ -4,3 +4,5 @@ node_modules/
 dist/
 .vscode/
 __pycache__/
+.env
+supabase_local.env
