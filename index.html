@@ -2015,6 +2015,42 @@
     });
   }
 
+  function setReadyHint(text) {
+    var p = document.querySelector('#snake-ready-overlay p');
+    if (!p) return;
+    p.innerHTML = text || '请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始';
+  }
+
+  function rebuildSnakeForRevive() {
+    if (!snake.length) {
+      resetSnake();
+      return;
+    }
+    var minX = GRID, minY = GRID, maxX = 0, maxY = 0;
+    snake.forEach(function (s) {
+      if (s.x < minX) minX = s.x;
+      if (s.y < minY) minY = s.y;
+      if (s.x > maxX) maxX = s.x;
+      if (s.y > maxY) maxY = s.y;
+    });
+    var w = maxX - minX;
+    var h = maxY - minY;
+    if (w >= GRID || h >= GRID) {
+      resetSnake();
+      return;
+    }
+    var targetMinX = Math.floor((GRID - 1 - w) / 2);
+    var targetMinY = Math.floor((GRID - 1 - h) / 2);
+    var dx = targetMinX - minX;
+    var dy = targetMinY - minY;
+    snake = snake.map(function (s) {
+      return { x: s.x + dx, y: s.y + dy };
+    });
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    hud();
+  }
+
   function die(reason) {
     playing = false;
     phase = 'dead';
@@ -2043,12 +2079,11 @@
         yesBtn.onclick = noBtn.onclick = null;
         walletCalabash--;
         updateHubWalletUI();
-        nextDir = { x: -dir.x, y: -dir.y };
-        dir = { x: nextDir.x, y: nextDir.y };
-        playing = true;
-        phase = 'playing';
-        lastTick = performance.now();
-        loopId = requestAnimationFrame(loop);
+        rebuildSnakeForRevive();
+        playing = false;
+        phase = 'ready';
+        setReadyHint('已消耗<strong>1个金葫芦</strong>，位置已刷新，请按方向键继续');
+        document.getElementById('snake-ready-overlay').classList.add('visible');
         syncProfileFull();
         draw();
       };
@@ -2117,6 +2152,7 @@
   function beginPlay(dx, dy) {
     if (phase !== 'ready') return;
     phase = 'playing'; playing = true;
+    setReadyHint('');
     document.getElementById('snake-ready-overlay').classList.remove('visible');
     if (!(dir.x === -dx && dir.y === -dy)) nextDir = {x:dx,y:dy};
     lastTick = performance.now();
@@ -2148,6 +2184,7 @@
     unlockBaselineRound = unlockedSkins.slice();
     document.getElementById('snake-lobby-overlay').classList.add('visible');
     document.getElementById('snake-ready-overlay').classList.remove('visible');
+    setReadyHint('');
     refreshMapBoxClass();
     layoutSnakeScreen();
     requestAnimationFrame(function () { layoutSnakeScreen(); });
