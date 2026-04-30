@@ -615,7 +615,21 @@
     </div>
   </div>
 
-  <section id="home-screen" class="screen hub-screen active">
+  <section id="lobby-screen" class="screen active">
+    <h1 class="arcade-title">ARCADE HUB</h1>
+    <p class="arcade-sub">我的私人空间</p>
+    <div class="grid-menu" style="margin-top:10px">
+      <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
+      <button type="button" class="tile-btn coming" disabled>学生养成农场 <span class="tile-badge">预留</span></button>
+      <button type="button" class="tile-btn coming" disabled>美食菜谱 <span class="tile-badge">预留</span></button>
+      <button type="button" class="tile-btn coming" disabled>足球赛程 <span class="tile-badge">预留</span></button>
+    </div>
+  </section>
+
+  <section id="snake-home-screen" class="screen hub-screen">
+    <div class="snake-topbar">
+      <button type="button" class="back-btn" id="snake-home-back">◀ 返回大厅</button>
+    </div>
     <div class="welcome-bar">
       <div class="hi">Welcome, <span id="display-name">——</span></div>
       <div class="cloud-line">云端最高分: <strong id="cloud-high">—</strong></div>
@@ -625,10 +639,13 @@
       <span>🍐 金葫芦 <strong id="hub-calabash">0</strong></span>
       <span>📦 宝箱 <strong id="hub-crates">0</strong></span>
     </div>
-    <h1 class="arcade-title">My Arcade Hub</h1>
-    <p class="arcade-sub">蛇币 · 仓库 · 商店 · 云端同步</p>
+    <h1 class="arcade-title">Snake Module</h1>
+    <p class="arcade-sub">模块首页：资产、商店、仓库、排行榜</p>
     <div class="grid-menu">
-      <button type="button" class="tile-btn" id="btn-snake">经典贪吃蛇 <span class="tile-badge">开局</span></button>
+      <button type="button" class="tile-btn" id="btn-snake-game">开始游戏 <span class="tile-badge">PLAY</span></button>
+      <button type="button" class="tile-btn" id="btn-snake-warehouse">皮肤仓库 <span class="tile-badge">WAREHOUSE</span></button>
+      <button type="button" class="tile-btn" id="btn-snake-shop">道具商店 <span class="tile-badge">SHOP</span></button>
+      <button type="button" class="tile-btn" id="btn-snake-leaderboard">排行榜 <span class="tile-badge">TOP</span></button>
     </div>
     <p class="config-hint" id="supabase-hint">请在源码中填写 <code>SB_KEY</code>（Publishable），详见注释。</p>
   </section>
@@ -662,7 +679,7 @@
 
   <section id="leaderboard-screen" class="screen hub-screen">
     <div class="snake-topbar">
-      <button type="button" class="back-btn" id="lb-back">◀ 返回大厅</button>
+      <button type="button" class="back-btn" id="lb-back">◀ 返回</button>
     </div>
     <h2 class="arcade-title" style="font-size:clamp(0.9rem,3.5vw,1rem);margin-top:8px;flex-shrink:0">名人堂 TOP 10</h2>
     <div class="lb-scroll">
@@ -672,7 +689,7 @@
 
   <section id="snake-screen" class="screen">
     <div class="snake-topbar">
-      <button type="button" class="back-btn" id="snake-back">◀ 返回大厅</button>
+      <button type="button" class="back-btn" id="snake-back">◀ 返回</button>
       <div class="snake-score-hud">长度 <strong id="snake-live-score">3</strong></div>
     </div>
     <div class="snake-play-area" id="snake-play-area">
@@ -705,13 +722,6 @@
     <div class="snake-topbar"><button type="button" class="back-btn" id="placeholder-back">◀ 返回大厅</button></div>
     <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">即将推出</div>
   </section>
-
-  <nav id="hub-bottom-nav" class="hub-bottom-nav" aria-label="底部导航">
-    <button type="button" class="hub-nav-btn active" data-hub="home-screen"><span class="hub-nav-ico">🏠</span><span class="hub-nav-txt">首页</span></button>
-    <button type="button" class="hub-nav-btn" data-hub="shop-screen"><span class="hub-nav-ico">🛒</span><span class="hub-nav-txt">商店</span></button>
-    <button type="button" class="hub-nav-btn" data-hub="warehouse-screen"><span class="hub-nav-ico">📦</span><span class="hub-nav-txt">仓库</span></button>
-    <button type="button" class="hub-nav-btn" data-hub="leaderboard-screen"><span class="hub-nav-ico">🏆</span><span class="hub-nav-txt">排行</span></button>
-  </nav>
 
   <script>
 (function () {
@@ -1339,20 +1349,41 @@
   function hasNickname() { var n = localStorage.getItem(STORAGE_NAME); return !!(n && String(n).trim()); }
   function getNickname() { return (localStorage.getItem(STORAGE_NAME) || '').trim(); }
 
-  function showScreen(id) {
+  var currentView = 'lobby';
+  var VIEW_TO_SCREEN = {
+    lobby: 'lobby-screen',
+    snake_home: 'snake-home-screen',
+    snake_game: 'snake-screen',
+    snake_shop: 'shop-screen',
+    snake_warehouse: 'warehouse-screen',
+    snake_leaderboard: 'leaderboard-screen'
+  };
+
+  function activateScreen(screenId) {
     document.querySelectorAll('.screen').forEach(function (el) {
-      el.classList.toggle('active', el.id === id);
+      el.classList.toggle('active', el.id === screenId);
     });
-    if (id !== 'shop-screen' && id !== 'warehouse-screen') ecoPreviewStop();
-    var hubScreens = ['home-screen', 'shop-screen', 'warehouse-screen', 'leaderboard-screen'];
-    setHubNavVisible(hubScreens.indexOf(id) >= 0);
-    setHubNavActive(id);
-    if (id === 'shop-screen') renderShop();
-    if (id === 'warehouse-screen') renderWarehouse();
-    if (id === 'leaderboard-screen') fetchLb();
-    if (id === 'snake-screen' && window.snakeBoot) window.snakeBoot();
   }
-  window.showScreen = showScreen;
+
+  function stopSnakeGameLoop() {
+    playing = false;
+    phase = 'lobby';
+    if (loopId) cancelAnimationFrame(loopId);
+    loopId = null;
+  }
+
+  function goToView(view) {
+    currentView = view;
+    var screenId = VIEW_TO_SCREEN[view] || 'lobby-screen';
+    activateScreen(screenId);
+    if (view !== 'snake_shop' && view !== 'snake_warehouse') ecoPreviewStop();
+    if (view !== 'snake_game') stopSnakeGameLoop();
+    if (view === 'snake_home') fetchProfile();
+    if (view === 'snake_shop') renderShop();
+    if (view === 'snake_warehouse') renderWarehouse();
+    if (view === 'snake_leaderboard') fetchLb();
+    if (view === 'snake_game' && window.snakeBoot) window.snakeBoot();
+  }
 
   async function fetchLb() {
     var c = getSb(); var listEl = document.getElementById('lb-list');
@@ -1373,17 +1404,6 @@
       }).join('');
     } catch (e) { listEl.innerHTML = '<div class="lb-empty">加载失败</div>'; }
     finally { setSync(false); }
-  }
-
-  function setHubNavVisible(on) {
-    var nav = document.getElementById('hub-bottom-nav');
-    if (nav) nav.classList.toggle('hidden', !on);
-  }
-
-  function setHubNavActive(id) {
-    document.querySelectorAll('.hub-nav-btn').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-hub') === id);
-    });
   }
 
   function randomLockedSkinId() {
@@ -2161,15 +2181,15 @@
     setDir(map[e.key][0], map[e.key][1]);
   });
 
-  document.getElementById('btn-snake').onclick = function () { showScreen('snake-screen'); };
-  document.getElementById('lb-back').onclick = function () { showScreen('home-screen'); };
-  document.getElementById('shop-back').onclick = function () { showScreen('home-screen'); };
-  document.getElementById('wh-back').onclick = function () { showScreen('home-screen'); };
-  document.querySelectorAll('.hub-nav-btn').forEach(function (b) {
-    b.onclick = function () {
-      showScreen(b.getAttribute('data-hub'));
-    };
-  });
+  document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };
+  document.getElementById('snake-home-back').onclick = function () { goToView('lobby'); };
+  document.getElementById('btn-snake-game').onclick = function () { goToView('snake_game'); };
+  document.getElementById('btn-snake-warehouse').onclick = function () { goToView('snake_warehouse'); };
+  document.getElementById('btn-snake-shop').onclick = function () { goToView('snake_shop'); };
+  document.getElementById('btn-snake-leaderboard').onclick = function () { goToView('snake_leaderboard'); };
+  document.getElementById('lb-back').onclick = function () { goToView('snake_home'); };
+  document.getElementById('shop-back').onclick = function () { goToView('snake_home'); };
+  document.getElementById('wh-back').onclick = function () { goToView('snake_home'); };
   document.querySelectorAll('#wh-tabs button').forEach(function (t) {
     t.onclick = function () {
       document.querySelectorAll('#wh-tabs button').forEach(function (x) {
@@ -2185,8 +2205,8 @@
     };
   });
   document.getElementById('snake-back').onclick = function () {
-    playing = false; phase = 'lobby'; if (loopId) cancelAnimationFrame(loopId);
-    showScreen('home-screen'); fetchProfile();
+    stopSnakeGameLoop();
+    goToView('snake_home');
   };
   document.getElementById('go-replay').onclick = function () {
     document.getElementById('gameover-modal').classList.remove('visible');
@@ -2194,9 +2214,9 @@
   };
   document.getElementById('go-home').onclick = function () {
     document.getElementById('gameover-modal').classList.remove('visible');
-    showScreen('home-screen'); fetchProfile();
+    goToView('snake_home');
   };
-  document.getElementById('placeholder-back').onclick = function () { showScreen('home-screen'); };
+  document.getElementById('placeholder-back').onclick = function () { goToView('lobby'); };
 
   document.getElementById('nickname-confirm').onclick = async function () {
     var dupEl = document.getElementById('nickname-dup-msg');
@@ -2250,11 +2270,10 @@
   if (resolveSbKey()) document.getElementById('supabase-hint').style.display = 'none';
   getUserId();
   cloudBanner();
-  setHubNavVisible(true);
-  setHubNavActive('home-screen');
   document.getElementById('display-name').textContent = getNickname() || '——';
   if (!hasNickname()) document.getElementById('nickname-modal').classList.add('visible');
   else fetchProfile();
+  goToView('lobby');
 })();
   </script>
 </body>
