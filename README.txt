@@ -12,5 +12,7 @@ my-ios-game — PWA 街机壳 + Supabase 云端。
 
 自测：配置 SUPABASE_ANON_KEY 后执行 python tests/test_supabase_profiles.py（写库后自动删测试行）
 
+贪吃蛇皮肤：profiles.unlockedSkins（text[]）、currentSkin；阈值 27/96/168/222/328；迁移见 migrations/002_*.sql（RLS 已关闭）
+
 一键拉取并推送：双击 run_push.bat
 仅同步逻辑：sync-to-github.ps1 / push_once.ps1

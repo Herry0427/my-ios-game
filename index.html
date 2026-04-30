@@ -18,1400 +18,739 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg-deep: #06060d;
-      --bg-panel: rgba(12, 18, 28, 0.94);
-      --neon-cyan: #00ffcc;
-      --neon-magenta: #ff00aa;
-      --neon-green: #39ff14;
-      --neon-red: #ff3355;
-      --text-dim: #6a7a8a;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
+      --bg-deep: #06060d; --bg-panel: rgba(12, 18, 28, 0.94); --neon-cyan: #00ffcc; --neon-magenta: #ff00aa;
+      --neon-green: #39ff14; --neon-red: #ff3355; --text-dim: #6a7a8a;
+      --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px); --safe-right: env(safe-area-inset-right, 0px);
       --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
       font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      min-height: 100dvh;
-      background: var(--bg-deep);
-      color: var(--neon-cyan);
-      overflow-x: hidden;
-    }
+    html, body { margin: 0; min-height: 100dvh; background: var(--bg-deep); color: var(--neon-cyan); overflow-x: hidden; }
     body {
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
-      padding-left: var(--safe-left);
-      padding-right: var(--safe-right);
-      background-image:
-        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(0, 255, 204, 0.08), transparent 50%),
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+      background-image: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(0, 255, 204, 0.08), transparent 50%),
         linear-gradient(180deg, #080810 0%, #06060d 40%, #030308 100%);
     }
-
-    /* Full-viewport screens with smooth crossfade */
     .screen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      padding: 12px 16px calc(20px + var(--safe-bottom));
-      padding-top: calc(12px + var(--safe-top));
-      overflow-y: auto;
-      z-index: 1;
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      padding: 12px 16px calc(20px + var(--safe-bottom)); padding-top: calc(12px + var(--safe-top));
+      overflow-y: auto; z-index: 1; opacity: 0; visibility: hidden; pointer-events: none;
       transform: scale(0.985) translateY(8px);
-      transition:
-        opacity 0.45s var(--ease-out),
-        transform 0.45s var(--ease-out),
-        visibility 0s linear 0.45s;
+      transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out), visibility 0s linear 0.45s;
     }
-    .screen.active {
-      z-index: 2;
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      transform: scale(1) translateY(0);
-      transition:
-        opacity 0.45s var(--ease-out),
-        transform 0.45s var(--ease-out),
-        visibility 0s linear 0s;
-    }
-
-    /* Sync strip — 非阻断 */
+    .screen.active { z-index: 2; opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1) translateY(0);
+      transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out), visibility 0s linear 0s; }
     .sync-strip {
-      position: fixed;
-      top: calc(var(--safe-top) + 6px);
-      right: calc(var(--safe-right) + 8px);
-      z-index: 10050;
-      display: none;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: var(--bg-panel);
-      border: 1px solid rgba(0, 255, 204, 0.35);
-      font-size: 0.65rem;
-      color: var(--neon-cyan);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 255, 204, 0.15);
-      animation: syncPulse 1.2s ease-in-out infinite;
+      position: fixed; top: calc(var(--safe-top) + 6px); right: calc(var(--safe-right) + 8px); z-index: 10050;
+      display: none; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--bg-panel);
+      border: 1px solid rgba(0, 255, 204, 0.35); font-size: 0.65rem; color: var(--neon-cyan);
     }
     .sync-strip.visible { display: flex; }
-    @keyframes syncPulse {
-      0%, 100% { opacity: 0.85; }
-      50% { opacity: 1; }
-    }
-
     .welcome-bar {
-      background: var(--bg-panel);
-      border: 1px solid rgba(0, 255, 204, 0.28);
-      border-radius: 14px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
-      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35), 0 0 18px rgba(0, 255, 204, 0.06);
-      transition: transform 0.3s var(--ease-out), box-shadow 0.3s;
+      background: var(--bg-panel); border: 1px solid rgba(0, 255, 204, 0.28); border-radius: 14px; padding: 14px 18px; margin-bottom: 14px;
     }
-    .welcome-bar .hi {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #e8f4ff;
-      margin-bottom: 6px;
-      letter-spacing: 0.02em;
-    }
-    .welcome-bar .hi span { color: var(--neon-magenta); text-shadow: 0 0 12px rgba(255, 0, 170, 0.35); }
-    .welcome-bar .cloud-line {
-      font-size: 0.9rem;
-      color: var(--text-dim);
-    }
-    .welcome-bar .cloud-line strong {
-      color: var(--neon-green);
-      font-size: 1.15rem;
-      text-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
-    }
-
-    .arcade-title {
-      font-size: clamp(1.25rem, 4.5vw, 1.65rem);
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-shadow: 0 0 20px rgba(0, 255, 204, 0.5), 0 0 40px rgba(255, 0, 170, 0.25);
-      margin: 4px 0 4px;
-      text-align: center;
-    }
-    .arcade-sub {
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 0.82rem;
-      margin-bottom: 16px;
-    }
-
-    .grid-menu {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      max-width: 520px;
-      margin: 0 auto;
-      width: 100%;
-    }
-    @media (min-width: 420px) {
-      .grid-menu { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    }
-
+    .welcome-bar .hi { font-size: 1rem; font-weight: 700; color: #e8f4ff; margin-bottom: 6px; }
+    .welcome-bar .hi span { color: var(--neon-magenta); }
+    .welcome-bar .cloud-line { font-size: 0.9rem; color: var(--text-dim); }
+    .welcome-bar .cloud-line strong { color: var(--neon-green); font-size: 1.15rem; }
+    .arcade-title { font-size: clamp(1.2rem, 4.5vw, 1.6rem); font-weight: 800; letter-spacing: 0.1em; text-align: center; text-shadow: 0 0 20px rgba(0, 255, 204, 0.45); }
+    .arcade-sub { text-align: center; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 14px; }
+    .grid-menu { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 520px; margin: 0 auto; width: 100%; }
+    @media (min-width: 420px) { .grid-menu { grid-template-columns: repeat(3, 1fr); } }
     .tile-btn {
-      position: relative;
-      min-height: 96px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 2px solid rgba(0, 255, 204, 0.35);
-      background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98));
-      color: var(--neon-cyan);
-      font-size: 0.88rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      cursor: pointer;
-      transition: transform 0.14s var(--ease-out), box-shadow 0.25s, border-color 0.25s, filter 0.2s;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      min-height: 92px; padding: 12px; border-radius: 14px; border: 2px solid rgba(0, 255, 204, 0.35);
+      background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98)); color: var(--neon-cyan);
+      font-size: 0.86rem; font-weight: 700; cursor: pointer; transition: transform 0.12s;
     }
-    .tile-btn:active { transform: scale(0.94); filter: brightness(1.08); }
-    .tile-btn:focus-visible {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 24px rgba(0, 255, 204, 0.28);
-      outline: none;
-    }
-    .tile-btn.coming {
-      border-color: rgba(106, 122, 138, 0.4);
-      color: var(--text-dim);
-      cursor: not-allowed;
-      opacity: 0.72;
-    }
-    .tile-btn.coming:active { transform: none; filter: none; }
-    .tile-badge {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 0.65rem;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: rgba(57, 255, 20, 0.15);
-      color: var(--neon-green);
-    }
-    .tile-btn.coming .tile-badge {
-      background: rgba(106, 122, 138, 0.2);
-      color: var(--text-dim);
-    }
-
-    /* Leaderboard */
-    #leaderboard-screen .lb-list {
-      flex: 1;
-      max-width: 420px;
-      width: 100%;
-      margin: 16px auto 0;
-      background: var(--bg-panel);
-      border: 1px solid rgba(0, 255, 204, 0.22);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.35);
-    }
-    .lb-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 0.9rem;
-      transition: background 0.2s;
-    }
-    .lb-row:last-child { border-bottom: 0; }
+    .tile-btn:active { transform: scale(0.94); }
+    .tile-btn.coming { border-color: rgba(106, 122, 138, 0.4); color: var(--text-dim); cursor: not-allowed; opacity: 0.72; }
+    .tile-badge { display: inline-block; margin-top: 6px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); }
+    #leaderboard-screen .lb-list { flex: 1; max-width: 420px; width: 100%; margin: 16px auto 0; background: var(--bg-panel);
+      border: 1px solid rgba(0, 255, 204, 0.22); border-radius: 14px; overflow: hidden; }
+    .lb-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.88rem; }
     .lb-row .rank { color: var(--neon-magenta); font-weight: 800; width: 2rem; }
     .lb-row .name { flex: 1; color: #e0eef8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lb-row .pts { color: var(--neon-green); font-weight: 700; }
-    .lb-empty { text-align: center; color: var(--text-dim); padding: 32px 16px; font-size: 0.9rem; }
-
-    /* Snake */
-    #snake-screen { padding-bottom: 0; }
-    .snake-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 8px;
-      flex-shrink: 0;
-    }
-    .back-btn {
-      flex-shrink: 0;
-      padding: 10px 14px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--neon-cyan);
-      background: var(--bg-panel);
-      border: 1px solid rgba(0, 255, 204, 0.35);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.12s var(--ease-out), box-shadow 0.2s;
-    }
+    .lb-empty { text-align: center; color: var(--text-dim); padding: 28px 12px; }
+    .snake-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-shrink: 0; }
+    .back-btn { padding: 10px 12px; font-size: 0.86rem; font-weight: 600; color: var(--neon-cyan); background: var(--bg-panel);
+      border: 1px solid rgba(0, 255, 204, 0.35); border-radius: 10px; cursor: pointer; }
     .back-btn:active { transform: scale(0.94); }
-    .snake-score-hud {
-      flex: 1;
-      text-align: right;
-      font-size: 0.82rem;
-      color: var(--text-dim);
-    }
-    .snake-score-hud strong { color: var(--neon-green); font-size: 1.05rem; }
-
-    .snake-stage-wrap {
-      position: relative;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 0;
-      padding: 4px 0;
-    }
+    .snake-score-hud { flex: 1; text-align: right; font-size: 0.8rem; color: var(--text-dim); }
+    .snake-score-hud strong { color: var(--neon-green); }
+    .snake-stage-wrap { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
     #snake-canvas {
-      width: 100%;
-      max-width: min(100vw - 32px, 400px);
-      aspect-ratio: 1;
-      border-radius: 12px;
-      border: 2px solid rgba(0, 255, 204, 0.3);
-      box-shadow:
-        0 0 0 1px rgba(255, 0, 170, 0.15),
-        0 0 40px rgba(0, 255, 204, 0.12),
-        inset 0 0 60px rgba(0, 0, 0, 0.5);
-      background: #0d1118;
-      touch-action: none;
-      transition: box-shadow 0.3s;
+      width: 100%; max-width: min(100vw - 32px, 400px); aspect-ratio: 1; border-radius: 12px; border: 2px solid rgba(0, 255, 204, 0.3);
+      background: #0d1118; touch-action: none;
     }
-
-    .snake-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      border-radius: 12px;
-      max-width: min(100vw - 32px, 400px);
-      margin: 0 auto;
-      width: 100%;
-      aspect-ratio: 1;
-      background: rgba(6, 8, 14, 0.82);
-      border: 2px solid rgba(0, 255, 204, 0.25);
-      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
-      pointer-events: auto;
-      z-index: 5;
-      opacity: 0;
-      visibility: hidden;
-      transform: scale(0.96);
-      transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out), visibility 0s linear 0.35s;
+    .snake-lobby, .snake-ready, .snake-face {
+      position: absolute; inset: 0; max-width: min(100vw - 32px, 400px); width: 100%; margin: 0 auto; aspect-ratio: 1;
+      background: rgba(5, 8, 16, 0.9); border: 2px solid rgba(0, 255, 204, 0.28); border-radius: 12px; z-index: 5;
+      display: none; flex-direction: column; align-items: center; padding: 10px 8px; overflow: hidden;
     }
-    .snake-overlay.visible {
-      opacity: 1;
-      visibility: visible;
-      transform: scale(1);
-      transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out), visibility 0s linear 0s;
+    .snake-lobby.visible, .snake-ready.visible, .snake-face.visible { display: flex; }
+    .lobby-title { font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 8px; text-align: center; }
+    .skin-strip { display: flex; gap: 8px; overflow-x: auto; max-width: 100%; padding: 4px 0 8px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .skin-card {
+      flex: 0 0 100px; height: 108px; scroll-snap-align: start; border-radius: 10px; border: 2px solid rgba(0, 255, 204, 0.35);
+      background: rgba(12, 18, 30, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 0.6rem; color: #b8c8d8; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .snake-overlay h3 {
-      font-size: 0.62rem;
-      color: var(--neon-cyan);
-      text-align: center;
-      line-height: 1.8;
-      margin: 0 0 14px;
-      letter-spacing: 0.06em;
+    .skin-card.selected { border-color: var(--neon-magenta); box-shadow: 0 0 16px rgba(255, 0, 170, 0.35); color: #fff; }
+    .skin-card.locked { opacity: 0.45; cursor: not-allowed; }
+    .skin-card .lock { font-size: 1.1rem; }
+    .lobby-diff { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
+    .lobby-diff button {
+      font-size: 0.65rem; padding: 8px 10px; border-radius: 8px; border: 2px solid rgba(0, 255, 204, 0.4);
+      background: rgba(15, 22, 35, 0.95); color: var(--neon-cyan); cursor: pointer;
     }
-    .diff-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 14px;
+    .lobby-diff button.sel { border-color: var(--neon-magenta); color: #fff; background: linear-gradient(145deg, rgba(80, 20, 60, 0.9), rgba(30, 12, 40, 0.95)); }
+    .btn-start {
+      margin-top: auto; width: 100%; max-width: 280px; padding: 14px; font-size: 0.95rem; font-weight: 800;
+      border-radius: 14px; border: 2px solid var(--neon-green); color: #0a0a0a; background: linear-gradient(180deg, #5cff7a, #1a8a3a);
+      cursor: pointer; box-shadow: 0 4px 20px rgba(57, 255, 20, 0.25);
     }
-    .diff-btn {
-      font-family: inherit;
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 2px solid rgba(0, 255, 204, 0.4);
-      background: rgba(15, 22, 35, 0.95);
-      color: var(--neon-cyan);
-      cursor: pointer;
-      transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    .btn-start:active { transform: scale(0.97); }
+    .snake-ready { justify-content: center; z-index: 4; }
+    .snake-ready p { font-size: 0.7rem; text-align: center; line-height: 1.7; color: var(--neon-cyan); padding: 0 8px; }
+    #snake-screen.death-shake { animation: deathShake 0.5s ease-out; }
+    @keyframes deathShake {
+      0%, 100% { transform: translate(0,0); } 10% { transform: translate(-7px,4px) rotate(-0.5deg); }
+      20% { transform: translate(6px,-3px) rotate(0.4deg); } 30% { transform: translate(-5px,2px); }
+      40% { transform: translate(4px,3px); } 50% { transform: translate(-3px,-2px); }
     }
-    .diff-btn:active { transform: scale(0.94); }
-    .diff-btn.selected {
-      border-color: var(--neon-magenta);
-      color: #fff;
-      background: linear-gradient(145deg, rgba(80, 20, 60, 0.9), rgba(30, 12, 40, 0.95));
-      box-shadow: 0 0 18px rgba(255, 0, 170, 0.35);
-    }
-
     #snake-screen.death-flash::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 10040;
-      background: rgba(255, 30, 60, 0.45);
-      animation: deathFlash 0.35s ease-out forwards;
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 10040;
+      background: rgba(200, 20, 40, 0.5); animation: deathFlash 0.4s ease-out forwards;
     }
-    @keyframes deathFlash {
-      0% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-
-    .dpad {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      max-width: 320px;
-      width: 100%;
-      margin: 10px auto 0;
-      padding-bottom: calc(10px + var(--safe-bottom));
-    }
-    .dpad .cell { min-height: 56px; }
+    @keyframes deathFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+    .dpad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; max-width: 320px; width: 100%; margin: 10px auto 0; padding-bottom: calc(10px + var(--safe-bottom)); }
     .dpad-btn {
-      width: 100%;
-      height: 100%;
-      min-height: 72px;
-      border-radius: 16px;
-      border: 2px solid rgba(0, 255, 204, 0.45);
-      background: linear-gradient(180deg, rgba(28, 38, 55, 0.98), rgba(10, 15, 25, 0.99));
-      color: var(--neon-cyan);
-      font-size: 1.5rem;
-      font-weight: 800;
-      cursor: pointer;
-      user-select: none;
-      -webkit-user-select: none;
-      transition:
-        transform 0.07s ease-out,
-        background 0.12s,
-        box-shadow 0.12s,
-        border-color 0.12s,
-        filter 0.12s;
-      box-shadow: 0 7px 0 rgba(0, 0, 0, 0.42), 0 0 18px rgba(0, 255, 204, 0.1);
+      min-height: 72px; border-radius: 16px; border: 2px solid rgba(0, 255, 204, 0.45);
+      background: linear-gradient(180deg, rgba(28, 38, 55, 0.98), rgba(10, 15, 25, 0.99)); color: var(--neon-cyan);
+      font-size: 1.5rem; font-weight: 800; cursor: pointer; user-select: none; transition: transform 0.08s;
     }
-    .dpad-btn:active, .dpad-btn.pressed {
-      transform: scale(0.9) translateY(3px);
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 0 28px rgba(0, 255, 204, 0.45);
-      background: linear-gradient(180deg, rgba(55, 72, 98, 0.98), rgba(18, 26, 42, 0.99));
-      border-color: rgba(0, 255, 204, 0.85);
-      filter: brightness(1.15);
+    .dpad-btn:active, .dpad-btn.pressed { transform: scale(0.9) translateY(2px); filter: brightness(1.12); }
+    .dpad-placeholder { visibility: hidden; pointer-events: none; }
+    .config-hint { margin-top: 16px; font-size: 0.7rem; color: var(--text-dim); text-align: center; line-height: 1.5; }
+    .modal-root { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: rgba(0, 0, 0, 0.72); opacity: 0; visibility: hidden; transition: opacity 0.35s; }
+    .modal-root.visible { opacity: 1; visibility: visible; }
+    .modal-pixel { width: 100%; max-width: 360px; padding: 24px; background: #1a1028; border: 4px solid #00ffcc;
+      font-family: "Press Start 2P", monospace; }
+    .modal-pixel h2 { font-size: 0.5rem; line-height: 1.9; color: #ffee55; text-align: center; margin: 0 0 16px; }
+    .modal-pixel input { width: 100%; padding: 12px; font-family: "Press Start 2P", monospace; font-size: 0.42rem;
+      border: 3px solid #ff00aa; background: #0d0812; color: #7dffbe; margin-bottom: 14px; }
+    .modal-pixel button { font-family: "Press Start 2P", monospace; font-size: 0.4rem; padding: 12px 16px; border: 3px solid #00ffcc;
+      background: linear-gradient(180deg, #2a5a4a, #153828); color: #bfff90; cursor: pointer; }
+    .gameover-modal, .achv-modal {
+      position: fixed; inset: 0; z-index: 15500; display: flex; align-items: center; justify-content: center; padding: 20px;
+      background: rgba(0, 0, 0, 0.65); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.35s;
     }
-    .dpad-placeholder { pointer-events: none; visibility: hidden; min-height: 1px; }
-
-    .placeholder-inner {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: var(--text-dim);
-      padding: 40px 20px;
+    .gameover-modal.visible, .achv-modal.visible { opacity: 1; visibility: visible; pointer-events: auto; }
+    .gameover-card, .achv-card {
+      width: 100%; max-width: 360px; padding: 24px; border-radius: 18px; background: var(--bg-panel);
+      border: 2px solid rgba(255, 0, 85, 0.45); text-align: center;
     }
-    .placeholder-inner h2 {
-      color: var(--neon-magenta);
-      text-shadow: 0 0 16px rgba(255, 0, 170, 0.4);
-    }
-
-    .config-hint {
-      margin-top: 20px;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      text-align: center;
-      line-height: 1.5;
-    }
-    .config-hint code { color: var(--neon-magenta); font-size: 0.65rem; word-break: break-all; }
-
-    /* Pixel nickname modal */
-    .modal-root {
-      position: fixed;
-      inset: 0;
-      z-index: 20000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(0, 0, 0, 0.72);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.4s var(--ease-out), visibility 0s linear 0.4s;
-    }
-    .modal-root.visible {
-      opacity: 1;
-      visibility: visible;
-      transition: opacity 0.4s var(--ease-out), visibility 0s linear 0s;
-    }
-    .modal-pixel {
-      width: 100%;
-      max-width: 360px;
-      padding: 28px 22px;
-      background: #1a1028;
-      border: 4px solid #00ffcc;
-      box-shadow:
-        0 0 0 3px #2a1838,
-        0 0 40px rgba(0, 255, 204, 0.25),
-        inset 0 0 0 2px rgba(255, 255, 255, 0.06);
-      font-family: "Press Start 2P", monospace;
-      transform: scale(0.92);
-      transition: transform 0.45s var(--ease-out);
-    }
-    .modal-root.visible .modal-pixel { transform: scale(1); }
-    .modal-pixel h2 {
-      font-size: 0.55rem;
-      line-height: 1.9;
-      color: #ffee55;
-      text-align: center;
-      margin: 0 0 20px;
-      text-shadow: 2px 2px 0 #6b1030;
-    }
-    .modal-pixel input {
-      width: 100%;
-      padding: 14px 12px;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.45rem;
-      border: 3px solid #ff00aa;
-      background: #0d0812;
-      color: #7dffbe;
-      margin-bottom: 18px;
-      outline: none;
-      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
-    }
-    .modal-pixel input::placeholder { color: #4a5568; }
-    .modal-pixel .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    .modal-pixel button {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.42rem;
-      padding: 14px 18px;
-      border: 3px solid #00ffcc;
-      background: linear-gradient(180deg, #2a5a4a, #153828);
-      color: #bfff90;
-      cursor: pointer;
-      transition: transform 0.1s, filter 0.15s;
-    }
-    .modal-pixel button:active { transform: scale(0.95); filter: brightness(1.15); }
-
-    /* Game over modal (shared shell) */
-    .gameover-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 15000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.55);
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: opacity 0.35s var(--ease-out), visibility 0s linear 0.35s;
-    }
-    .gameover-modal.visible {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      transition: opacity 0.35s var(--ease-out), visibility 0s linear 0s;
-    }
-    .gameover-card {
-      width: 100%;
-      max-width: 340px;
-      padding: 28px 22px;
-      border-radius: 18px;
-      background: var(--bg-panel);
-      border: 2px solid rgba(255, 0, 85, 0.45);
-      box-shadow: 0 0 40px rgba(255, 0, 85, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.4);
-      text-align: center;
-      transform: scale(0.92) translateY(12px);
-      transition: transform 0.4s var(--ease-out);
-    }
-    .gameover-modal.visible .gameover-card {
-      transform: scale(1) translateY(0);
-    }
-    .gameover-card h3 {
-      margin: 0 0 8px;
-      font-size: 1.35rem;
-      color: var(--neon-red);
-      text-shadow: 0 0 16px rgba(255, 51, 85, 0.5);
-    }
-    .gameover-card .go-score { font-size: 2rem; font-weight: 800; color: var(--neon-green); margin: 12px 0; }
-    .gameover-card .go-record {
-      font-size: 0.9rem;
-      color: var(--neon-magenta);
-      margin-bottom: 8px;
-      min-height: 1.4em;
-    }
-    .gameover-card .go-sync {
-      font-size: 0.78rem;
-      color: #ffb020;
-      margin-bottom: 14px;
-      line-height: 1.45;
-      min-height: 1.2em;
-    }
+    .achv-card { border-color: rgba(0, 255, 204, 0.55); box-shadow: 0 0 40px rgba(0, 255, 204, 0.15); }
+    .achv-card h3 { font-size: 1.2rem; color: var(--neon-green); margin: 0 0 12px; }
+    .achv-card p { color: #c8d8e8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 18px; }
     .cloud-off-banner {
-      display: none;
-      position: fixed;
-      top: calc(var(--safe-top) + 6px);
-      left: 12px;
-      right: 12px;
-      z-index: 10060;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 2px solid rgba(255, 120, 40, 0.65);
-      background: rgba(45, 18, 8, 0.96);
-      color: #ffb898;
-      font-size: 0.72rem;
-      line-height: 1.55;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      display: none; position: fixed; top: calc(var(--safe-top) + 6px); left: 12px; right: 12px; z-index: 10060;
+      padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255, 120, 40, 0.65); background: rgba(45, 18, 8, 0.96);
+      color: #ffb898; font-size: 0.7rem; line-height: 1.5;
     }
     .cloud-off-banner.visible { display: block; }
-    .modal-pixel .nick-warn {
-      font-family: "SF Pro Display", -apple-system, sans-serif;
-      font-size: 0.62rem;
-      line-height: 1.65;
-      color: #ff6688;
-      text-align: center;
-      margin: 0 0 14px;
-      max-width: 100%;
-    }
-    .gameover-card .go-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .gameover-card .go-actions button {
-      padding: 14px;
-      border-radius: 12px;
-      border: 2px solid rgba(0, 255, 204, 0.4);
-      background: rgba(15, 22, 35, 0.95);
-      color: var(--neon-cyan);
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.12s;
-    }
-    .gameover-card .go-actions button:active { transform: scale(0.96); }
-    .gameover-card .go-actions button.primary {
-      border-color: var(--neon-magenta);
-      color: #fff;
-      background: linear-gradient(145deg, rgba(90, 24, 70, 0.95), rgba(35, 12, 45, 0.98));
-    }
+    .nick-warn { font-family: sans-serif !important; font-size: 0.58rem !important; color: #ff6688 !important; text-align: center; margin: 0 0 12px !important; }
   </style>
 </head>
 <body>
-  <div id="cloud-off-banner" class="cloud-off-banner" role="status">
-    <strong>云端未连接</strong>：当前「昵称 / 得分」只会保存在本机浏览器，<strong>不会</strong>出现在 Supabase 表里。请在本页源码 <code>SUPABASE_CONFIG.anonKey</code> 填入 Dashboard → API 的 <code>anon public</code>，或在控制台执行 <code>localStorage.setItem('myArcadeHub_sb_anon','密钥')</code> 后<strong>刷新页面</strong>。
-  </div>
-  <div id="sync-strip" class="sync-strip" aria-live="polite">
-    <span>📡</span><span>数据同步中…</span>
-  </div>
+  <div id="cloud-off-banner" class="cloud-off-banner" role="status"></div>
+  <div id="sync-strip" class="sync-strip"><span>📡</span><span>数据同步中…</span></div>
 
-  <!-- Nickname onboarding -->
   <div id="nickname-modal" class="modal-root" aria-modal="true" role="dialog">
     <div class="modal-pixel">
       <h2>PLAYER NAME<br/>输入你的昵称</h2>
       <input id="nickname-input" type="text" maxlength="16" placeholder="NICKNAME" autocomplete="username" />
       <p id="nickname-cloud-warn" class="nick-warn" hidden></p>
-      <div class="modal-actions">
-        <button type="button" id="nickname-confirm">START</button>
-      </div>
+      <div style="text-align:center"><button type="button" id="nickname-confirm">START</button></div>
     </div>
   </div>
 
-  <!-- Game over -->
-  <div id="gameover-modal" class="gameover-modal" aria-modal="true" role="dialog">
+  <div id="achv-modal" class="achv-modal" aria-modal="true">
+    <div class="achv-card">
+      <h3 id="achv-title">🎉 恭喜解锁</h3>
+      <p id="achv-body"></p>
+      <button type="button" id="achv-ok" style="padding:12px 24px;border-radius:12px;border:2px solid var(--neon-cyan);background:rgba(15,22,35,0.95);color:var(--neon-cyan);font-weight:700;cursor:pointer;width:100%">太棒了</button>
+    </div>
+  </div>
+
+  <div id="gameover-modal" class="gameover-modal" aria-modal="true">
     <div class="gameover-card">
-      <h3>游戏结束</h3>
-      <div class="go-score" id="go-score-display">0</div>
-      <div class="go-record" id="go-record-msg"></div>
-      <div class="go-sync" id="go-sync-msg"></div>
-      <div class="go-actions">
-        <button type="button" class="primary" id="go-replay">再玩一局</button>
-        <button type="button" id="go-home">返回大厅</button>
+      <h3 style="margin:0 0 8px;color:var(--neon-red)">游戏结束</h3>
+      <div style="font-size:2rem;font-weight:800;color:var(--neon-green)" id="go-score-display">0</div>
+      <div class="go-record" id="go-record-msg" style="font-size:0.88rem;color:var(--neon-magenta);margin:8px 0"></div>
+      <div id="go-sync-msg" style="font-size:0.75rem;color:#ffb020;margin-bottom:12px"></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button type="button" id="go-replay" style="padding:14px;border-radius:12px;border:2px solid var(--neon-magenta);background:linear-gradient(145deg,rgba(90,24,70,0.95),rgba(35,12,45,0.98));color:#fff;font-weight:700">再玩一局</button>
+        <button type="button" id="go-home" style="padding:14px;border-radius:12px;border:2px solid rgba(0,255,204,0.4);background:rgba(15,22,35,0.95);color:var(--neon-cyan);font-weight:700">返回大厅</button>
       </div>
     </div>
   </div>
 
-  <!-- HOME -->
-  <section id="home-screen" class="screen active" aria-labelledby="home-title">
+  <section id="home-screen" class="screen active">
     <div class="welcome-bar">
-      <div class="hi" id="welcome-line">Welcome, <span id="display-name">——</span></div>
+      <div class="hi">Welcome, <span id="display-name">——</span></div>
       <div class="cloud-line">云端最高分: <strong id="cloud-high">—</strong></div>
     </div>
-    <h1 id="home-title" class="arcade-title">My Arcade Hub</h1>
-    <p class="arcade-sub">赛博街机厅 · 云端同步</p>
+    <h1 class="arcade-title">My Arcade Hub</h1>
+    <p class="arcade-sub">赛博街机厅 · 皮肤与云端同步</p>
     <div class="grid-menu">
-      <button type="button" class="tile-btn" id="btn-snake" data-target="snake">
-        经典贪吃蛇
-        <span class="tile-badge">Active</span>
-      </button>
-      <button type="button" class="tile-btn" id="btn-leaderboard">
-        名人堂
-        <span class="tile-badge">Leaderboard</span>
-      </button>
-      <button type="button" class="tile-btn coming" disabled aria-disabled="true">
-        待开发
-        <span class="tile-badge">Coming Soon</span>
-      </button>
+      <button type="button" class="tile-btn" id="btn-snake">经典贪吃蛇 <span class="tile-badge">Skins</span></button>
+      <button type="button" class="tile-btn" id="btn-leaderboard">名人堂 <span class="tile-badge">TOP10</span></button>
+      <button type="button" class="tile-btn coming" disabled>待开发 <span class="tile-badge">Soon</span></button>
     </div>
-    <p class="config-hint" id="supabase-hint">
-      请在 <code>index.html</code> 的 <code>SUPABASE_CONFIG.anonKey</code> 填入 Dashboard → API 中的 <code>anon public</code> 密钥；或在本机控制台执行一次
-      <code>localStorage.setItem('myArcadeHub_sb_anon','你的anon密钥')</code> 后刷新。
-    </p>
+    <p class="config-hint" id="supabase-hint">请在源码中填写 <code>SB_KEY</code>（Publishable），详见注释。</p>
   </section>
 
-  <!-- LEADERBOARD -->
-  <section id="leaderboard-screen" class="screen" aria-label="名人堂">
+  <section id="leaderboard-screen" class="screen">
     <div class="snake-topbar">
       <button type="button" class="back-btn" id="lb-back">◀ 返回大厅</button>
     </div>
-    <h2 class="arcade-title" style="font-size: 1rem; margin-top: 8px;">名人堂 TOP 10</h2>
-    <div class="lb-list" id="lb-list">
-      <div class="lb-empty" id="lb-loading">加载中…</div>
-    </div>
+    <h2 class="arcade-title" style="font-size:1rem;margin-top:8px">名人堂 TOP 10</h2>
+    <div class="lb-list" id="lb-list"><div class="lb-empty">加载中…</div></div>
   </section>
 
-  <!-- SNAKE -->
-  <section id="snake-screen" class="screen" aria-label="经典贪吃蛇">
+  <section id="snake-screen" class="screen">
     <div class="snake-topbar">
       <button type="button" class="back-btn" id="snake-back">◀ 返回大厅</button>
-      <div class="snake-score-hud">
-        长度 <strong id="snake-live-score">3</strong>
-      </div>
+      <div class="snake-score-hud">长度 <strong id="snake-live-score">3</strong></div>
     </div>
     <div class="snake-stage-wrap">
-      <canvas id="snake-canvas" width="400" height="400" aria-label="游戏区域"></canvas>
-      <div id="snake-ready-overlay" class="snake-overlay visible">
-        <h3>选择难度后<br />按方向键 或 点击控制盘 开始</h3>
-        <div class="diff-row" id="diff-buttons">
-          <button type="button" class="diff-btn selected" data-diff="novice">新手 · 慢</button>
-          <button type="button" class="diff-btn" data-diff="pro">高手 · 中</button>
-          <button type="button" class="diff-btn" data-diff="master">大神 · 快</button>
-        </div>
+      <canvas id="snake-canvas" width="400" height="400"></canvas>
+      <div id="snake-lobby-overlay" class="snake-lobby">
+        <div class="lobby-title">选择皮肤与难度</div>
+        <div class="skin-strip" id="skin-strip"></div>
+        <div class="lobby-diff" id="lobby-diff"></div>
+        <button type="button" class="btn-start" id="snake-btn-start">开始游戏</button>
+      </div>
+      <div id="snake-ready-overlay" class="snake-ready">
+        <p>请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始</p>
       </div>
     </div>
-    <div class="dpad" id="snake-dpad" role="group" aria-label="方向控制">
-      <div class="cell dpad-placeholder"></div>
-      <div class="cell"><button type="button" class="dpad-btn" data-dir="up" aria-label="上">▲</button></div>
-      <div class="cell dpad-placeholder"></div>
-      <div class="cell"><button type="button" class="dpad-btn" data-dir="left" aria-label="左">◀</button></div>
-      <div class="cell dpad-placeholder"></div>
-      <div class="cell"><button type="button" class="dpad-btn" data-dir="right" aria-label="右">▶</button></div>
-      <div class="cell dpad-placeholder"></div>
-      <div class="cell"><button type="button" class="dpad-btn" data-dir="down" aria-label="下">▼</button></div>
-      <div class="cell dpad-placeholder"></div>
+    <div class="dpad" id="snake-dpad">
+      <div class="dpad-placeholder"></div>
+      <div><button type="button" class="dpad-btn" data-dir="up">▲</button></div>
+      <div class="dpad-placeholder"></div>
+      <div><button type="button" class="dpad-btn" data-dir="left">◀</button></div>
+      <div class="dpad-placeholder"></div>
+      <div><button type="button" class="dpad-btn" data-dir="right">▶</button></div>
+      <div class="dpad-placeholder"></div>
+      <div><button type="button" class="dpad-btn" data-dir="down">▼</button></div>
+      <div class="dpad-placeholder"></div>
     </div>
   </section>
 
-  <!-- PLACEHOLDER -->
-  <section id="placeholder-screen" class="screen" aria-label="即将推出">
-    <div class="snake-topbar">
-      <button type="button" class="back-btn" id="placeholder-back">◀ 返回大厅</button>
-    </div>
-    <div class="placeholder-inner">
-      <h2>模块开发中</h2>
-      <p>该游戏尚未解锁，敬请期待后续更新。</p>
-    </div>
+  <section id="placeholder-screen" class="screen">
+    <div class="snake-topbar"><button type="button" class="back-btn" id="placeholder-back">◀ 返回大厅</button></div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">即将推出</div>
   </section>
+
 
   <script>
 (function () {
   'use strict';
 
-  /**
-   * 此处必须是同一页面里的「anon public」JWT（eyJ...），不是 Management Token（sbp_...）。
-   * sbp_ 只能给 Python 迁移用；填错则 getSupabase() 为空，网页永远不会写 profiles。
-   */
-  const DEFAULT_SUPABASE_URL = 'https://qfplpzosjcvvyhcotodz.supabase.co';
-  const SUPABASE_CONFIG = {
-    url: DEFAULT_SUPABASE_URL,
-    /** 浏览器端：Dashboard → Publishable key（勿填 Secret） */
-    anonKey: 'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB'
+  /** SB_URL / SB_KEY：Supabase JS createClient；可用 localStorage.myArcadeHub_sb_key 覆盖密钥 */
+  var SB_URL = 'https://qfplpzosjcvvyhcotodz.supabase.co';
+  var SB_KEY = 'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB';
+
+  var STORAGE_ID = 'myArcadeHub_profileId';
+  var STORAGE_NAME = 'myArcadeHub_nickname';
+
+  var SKIN_ORDER = ['default','ghost','gold','rainbow','flame','cosmic'];
+  var SKIN_META = {
+    default: { label:'默认', ms:0 },
+    ghost: { label:'幽灵', ms:27 },
+    gold: { label:'土豪金', ms:96 },
+    rainbow: { label:'霓虹彩虹', ms:168 },
+    flame: { label:'烈焰', ms:222 },
+    cosmic: { label:'宇宙星空', ms:328 }
+  };
+  var DIFF = {
+    novice: { label:'新手', start:175, min:96, eat:1 },
+    pro: { label:'专家', start:125, min:72, eat:2 },
+    master:{ label:'疯子', start:82, min:48, eat:2 }
   };
 
-  const STORAGE_PROFILE_ID = 'myArcadeHub_profileId';
-  const STORAGE_NICKNAME = 'myArcadeHub_nickname';
-
-  const DIFF = {
-    novice: { start: 175, min: 96, eatDelta: 1 },
-    pro: { start: 125, min: 72, eatDelta: 2 },
-    master: { start: 82, min: 48, eatDelta: 2 }
-  };
-
-  function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(function (el) {
-      el.classList.toggle('active', el.id === screenId);
-    });
-    if (screenId === 'snake-screen' && window.snakeGame && typeof window.snakeGame.onEnter === 'function') {
-      window.snakeGame.onEnter();
-    }
-  }
-  window.showScreen = showScreen;
-
-  function setSyncing(on) {
-    var strip = document.getElementById('sync-strip');
-    if (strip) strip.classList.toggle('visible', !!on);
-  }
-
-  function randomUUID() {
-    if (crypto.randomUUID) return crypto.randomUUID();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (Math.random() * 16) | 0;
-      var v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
-
-  function getProfileId() {
-    var id = localStorage.getItem(STORAGE_PROFILE_ID);
-    if (!id) {
-      id = randomUUID();
-      localStorage.setItem(STORAGE_PROFILE_ID, id);
-    }
-    return id;
-  }
-
-  function hasNickname() {
-    var n = localStorage.getItem(STORAGE_NICKNAME);
-    return !!(n && String(n).trim());
-  }
-
-  function getNickname() {
-    return (localStorage.getItem(STORAGE_NICKNAME) || '').trim();
-  }
-
-  function setNickname(name) {
-    localStorage.setItem(STORAGE_NICKNAME, String(name).trim().slice(0, 16));
-  }
-
-  function updateWelcomeUI() {
-    var nameEl = document.getElementById('display-name');
-    var n = getNickname();
-    if (nameEl) nameEl.textContent = n || '——';
-  }
-
-  var supabaseClient = null;
-
-  function resolveSupabaseUrl() {
-    var ls = localStorage.getItem('myArcadeHub_sb_url');
-    if (ls && ls.trim()) return ls.trim();
-    var u = SUPABASE_CONFIG.url;
-    if (!u || u.indexOf('YOUR_') === 0) return DEFAULT_SUPABASE_URL;
-    return u;
-  }
-
-  function resolveSupabaseAnon() {
-    var ls = localStorage.getItem('myArcadeHub_sb_anon');
-    if (ls && ls.trim()) return ls.trim();
-    var k = (SUPABASE_CONFIG.anonKey || '').trim();
-    if (!k || k.indexOf('YOUR_') === 0) return '';
-    return k;
-  }
-
-  function isCloudConfigured() {
-    return resolveSupabaseAnon().length > 0;
-  }
-
-  function updateCloudOffBanner() {
-    var bar = document.getElementById('cloud-off-banner');
-    if (bar) bar.classList.toggle('visible', !isCloudConfigured());
-  }
-
-  function updateNicknameModalWarn() {
-    var w = document.getElementById('nickname-cloud-warn');
-    if (!w) return;
-    if (isCloudConfigured()) {
-      w.hidden = true;
-      w.textContent = '';
-      return;
-    }
-    w.hidden = false;
-    w.textContent =
-      '未检测到有效的 Supabase anon 密钥：点 START 后昵称仅保存在本机，不会在数据库里新建档案。';
-  }
-
-  function getSupabase() {
-    if (supabaseClient) return supabaseClient;
-    var url = resolveSupabaseUrl();
-    var key = resolveSupabaseAnon();
-    if (!key) return null;
-    if (typeof supabase === 'undefined' || !supabase.createClient) return null;
-    supabaseClient = supabase.createClient(url, key);
-    return supabaseClient;
-  }
-
-  var cloudHighScore = 0;
-
-  function numberOrZero(v) {
-    if (v == null || v === '') return 0;
-    var n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  async function fetchCloudHighScore() {
-    var client = getSupabase();
-    var el = document.getElementById('cloud-high');
-    if (!client) {
-      if (el) el.textContent = '离线';
-      updateWelcomeUI();
-      return;
-    }
-    setSyncing(true);
-    try {
-      var id = getProfileId();
-      var res = await client.from('profiles').select('highScore, nickname').eq('id', id).maybeSingle();
-      if (res.error) throw res.error;
-      var row = res.data;
-      cloudHighScore = row ? numberOrZero(row.highScore) : 0;
-      if (el) el.textContent = String(cloudHighScore);
-      if (row && row.nickname && String(row.nickname).trim()) {
-        setNickname(row.nickname);
-      }
-      updateWelcomeUI();
-    } catch (e) {
-      console.warn('fetchCloudHighScore', e);
-      if (el) el.textContent = '—';
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  async function upsertProfileNickname(name) {
-    var client = getSupabase();
-    if (!client) {
-      console.warn('[MyArcadeHub] 跳过昵称同步：未配置 anon，profiles 表不会出现新行。');
-      return;
-    }
-    setSyncing(true);
-    try {
-      var id = getProfileId();
-      var existing = await client.from('profiles').select('highScore').eq('id', id).maybeSingle();
-      if (existing.error) throw existing.error;
-      var hs = existing.data ? numberOrZero(existing.data.highScore) : 0;
-      var payload = {
-        id: id,
-        nickname: name,
-        highScore: hs,
-        updated_at: new Date().toISOString()
-      };
-      var res = await client.from('profiles').upsert(payload, { onConflict: 'id' });
-      if (res.error) throw res.error;
-      await fetchCloudHighScore();
-    } catch (e) {
-      console.warn('upsertProfileNickname', e);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  /**
-   * 每局结束写入云端：合并本地缓存与数据库当前值，避免覆盖出错；
-   * highScore = max(本局长度, 库中高分, 内存 cloudHighScore)，并刷新 updated_at。
-   */
-  async function persistGameResultToCloud(finalLength) {
-    var client = getSupabase();
-    if (!client) {
-      if (typeof console !== 'undefined' && console.info) {
-        console.info('[MyArcadeHub] 未配置 Supabase anon，本局未写入数据库。请在 index.html 填写 anonKey 或 localStorage myArcadeHub_sb_anon');
-      }
-      return { ok: false, reason: 'no_client' };
-    }
-    var id = getProfileId();
-    var nickname = getNickname() || 'Player';
-    var localCached = numberOrZero(cloudHighScore);
-    setSyncing(true);
-    try {
-      var remoteRow = await client.from('profiles').select('highScore').eq('id', id).maybeSingle();
-      if (remoteRow.error) throw remoteRow.error;
-      var remoteBest = remoteRow.data ? numberOrZero(remoteRow.data.highScore) : 0;
-      var newHigh = Math.max(numberOrZero(finalLength), remoteBest, localCached);
-      var res = await client.from('profiles').upsert(
-        {
-          id: id,
-          nickname: nickname,
-          highScore: newHigh,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'id' }
-      );
-      if (res.error) throw res.error;
-      cloudHighScore = newHigh;
-      var el = document.getElementById('cloud-high');
-      if (el) el.textContent = String(cloudHighScore);
-      return { ok: true, improved: numberOrZero(finalLength) > Math.max(remoteBest, localCached) };
-    } catch (e) {
-      console.warn('persistGameResultToCloud', e);
-      return { ok: false, error: e };
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  async function fetchLeaderboard() {
-    var client = getSupabase();
-    var listEl = document.getElementById('lb-list');
-    if (!client) {
-      if (listEl) {
-        listEl.innerHTML =
-          '<div class="lb-empty">未连接云端：请在 <code style="font-size:0.75rem;">index.html</code> 填写 <code style="font-size:0.75rem;">SUPABASE_CONFIG.anonKey</code>（Dashboard → API → anon public），或控制台执行 <code style="font-size:0.65rem;word-break:break-all;">localStorage.setItem(\'myArcadeHub_sb_anon\',\'…\')</code> 后刷新</div>';
-      }
-      return;
-    }
-    setSyncing(true);
-    try {
-      var res = await client
-        .from('profiles')
-        .select('nickname, highScore')
-        .order('highScore', { ascending: false })
-        .limit(10);
-      if (res.error) throw res.error;
-      var rows = res.data || [];
-      if (!listEl) return;
-      if (rows.length === 0) {
-        listEl.innerHTML = '<div class="lb-empty">暂无数据</div>';
-        return;
-      }
-      listEl.innerHTML = rows.map(function (r, i) {
-        var name = (r.nickname && String(r.nickname).trim()) || '匿名';
-        var sc = numberOrZero(r.highScore);
-        return (
-          '<div class="lb-row"><span class="rank">' + (i + 1) + '</span>' +
-          '<span class="name">' + escapeHtml(name) + '</span>' +
-          '<span class="pts">' + sc + '</span></div>'
-        );
-      }).join('');
-    } catch (e) {
-      console.warn('fetchLeaderboard', e);
-      if (listEl) listEl.innerHTML = '<div class="lb-empty">加载失败</div>';
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  /* --- Nickname modal --- */
-  function openNicknameModal() {
-    var m = document.getElementById('nickname-modal');
-    var input = document.getElementById('nickname-input');
-    if (m) m.classList.add('visible');
-    updateNicknameModalWarn();
-    if (input) {
-      input.value = '';
-      setTimeout(function () { input.focus(); }, 350);
-    }
-  }
-
-  function closeNicknameModal() {
-    var m = document.getElementById('nickname-modal');
-    if (m) m.classList.remove('visible');
-  }
-
-  async function submitNickname() {
-    var input = document.getElementById('nickname-input');
-    var raw = input ? input.value.trim() : '';
-    if (!raw) {
-      raw = '玩家' + Math.floor(Math.random() * 9000 + 1000);
-    }
-    setNickname(raw);
-    updateWelcomeUI();
-    closeNicknameModal();
-    await upsertProfileNickname(raw);
-    updateCloudOffBanner();
-  }
-
-  document.getElementById('nickname-confirm').addEventListener('click', function () { submitNickname(); });
-  document.getElementById('nickname-input').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      submitNickname();
-    }
-  });
-
-  /* --- Snake --- */
-  var GRID = 20;
-  var CELL = 400 / GRID;
+  var GRID = 20, CELL = 400 / GRID;
   var canvas = document.getElementById('snake-canvas');
   var ctx = canvas && canvas.getContext('2d');
   var snakeScreen = document.getElementById('snake-screen');
-  var dir = { x: 1, y: 0 };
-  var nextDir = { x: 1, y: 0 };
-  var snake = [];
-  var food = { x: 10, y: 10 };
-  var loopId = null;
-  var tickMs = DIFF.pro.start;
-  var playing = false;
-  var phase = 'ready';
-  var lastTick = 0;
-  var selectedDiff = 'novice';
-  var eatDelta = 2;
 
-  function getDiffSettings() {
-    return DIFF[selectedDiff] || DIFF.pro;
+  var sbClient = null;
+  function resolveSbKey() {
+    var ls = localStorage.getItem('myArcadeHub_sb_key');
+    if (ls && ls.trim()) return ls.trim();
+    var k = (SB_KEY || '').trim();
+    if (!k || k.indexOf('YOUR_') === 0) return '';
+    return k;
+  }
+  function getSb() {
+    if (sbClient) return sbClient;
+    var k = resolveSbKey();
+    if (!k || typeof supabase === 'undefined') return null;
+    sbClient = supabase.createClient(SB_URL, k);
+    return sbClient;
   }
 
-  function syncDiffButtons() {
-    document.querySelectorAll('#diff-buttons .diff-btn').forEach(function (b) {
-      b.classList.toggle('selected', b.getAttribute('data-diff') === selectedDiff);
+  var cloudHigh = 0;
+  var unlockedSkins = ['default'];
+  var cloudCurrentSkin = 'default';
+  var unlockBaselineRound = ['default'];
+
+  function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
+
+  function mergeUnlockedFromScore(score, baseArr) {
+    var s = {};
+    (baseArr && baseArr.length ? baseArr : ['default']).forEach(function (x) { s[x] = 1; });
+    SKIN_ORDER.forEach(function (id) {
+      if (SKIN_META[id].ms > 0 && score >= SKIN_META[id].ms) s[id] = 1;
+    });
+    return SKIN_ORDER.filter(function (id) { return s[id]; });
+  }
+
+  function isSkinUnlocked(id, arr) {
+    if (id === 'default') return true;
+    return (arr || unlockedSkins).indexOf(id) >= 0;
+  }
+
+  function setSync(on) {
+    var el = document.getElementById('sync-strip');
+    if (el) el.classList.toggle('visible', !!on);
+  }
+
+  function cloudBanner() {
+    var bar = document.getElementById('cloud-off-banner');
+    if (!bar) return;
+    if (resolveSbKey()) { bar.classList.remove('visible'); return; }
+    bar.innerHTML = '<strong>云端未连接</strong>：请填写源码顶部 <code>SB_KEY</code>（Publishable），或 <code>localStorage.myArcadeHub_sb_key</code> 后刷新。';
+    bar.classList.add('visible');
+  }
+
+  async function fetchProfile() {
+    var c = getSb();
+    var el = document.getElementById('cloud-high');
+    if (!c) { if (el) el.textContent = '离线'; return; }
+    setSync(true);
+    try {
+      var id = getProfileId();
+      var r = await c.from('profiles').select('highScore, nickname, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
+      if (r.error) throw r.error;
+      var row = r.data;
+      cloudHigh = row ? num(row.highScore) : 0;
+      if (el) el.textContent = String(cloudHigh);
+      if (row && row.nickname) localStorage.setItem(STORAGE_NAME, String(row.nickname).trim());
+      if (row && row.unlockedSkins && row.unlockedSkins.length) unlockedSkins = row.unlockedSkins.slice();
+      else unlockedSkins = mergeUnlockedFromScore(cloudHigh, ['default']);
+      if (row && row.currentSkin) cloudCurrentSkin = row.currentSkin;
+      document.getElementById('display-name').textContent = getNickname() || '——';
+    } catch (e) {
+      console.warn(e); if (el) el.textContent = '—';
+    } finally { setSync(false); }
+  }
+
+  async function persistRound(finalScore, prevUnlockedSnapshot, activeSkin) {
+    var c = getSb();
+    if (!c) return { ok:false, reason:'no_client', newUnlocks:[] };
+    var id = getProfileId();
+    var name = getNickname() || 'Player';
+    var selRemote = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
+    var rh = selRemote.data ? num(selRemote.data.highScore) : 0;
+    var ru = (selRemote.data && selRemote.data.unlockedSkins) ? selRemote.data.unlockedSkins.slice() : ['default'];
+    var mergedHigh = Math.max(finalScore, rh, cloudHigh);
+    var mergedUnlock = mergeUnlockedFromScore(mergedHigh, ru);
+    var beforeSet = {};
+    prevUnlockedSnapshot.forEach(function (x) { beforeSet[x] = 1; });
+    var newUnlocks = mergedUnlock.filter(function (sid) {
+      return sid !== 'default' && !beforeSet[sid];
+    });
+    var curSkin = activeSkin || cloudCurrentSkin || 'default';
+    if (!isSkinUnlocked(curSkin, mergedUnlock)) curSkin = 'default';
+
+    setSync(true);
+    try {
+      var up = await c.from('profiles').upsert({
+        id: id,
+        nickname: name,
+        highScore: mergedHigh,
+        unlockedSkins: mergedUnlock,
+        currentSkin: curSkin,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+      if (up.error) throw up.error;
+      cloudHigh = mergedHigh;
+      unlockedSkins = mergedUnlock;
+      cloudCurrentSkin = curSkin;
+      document.getElementById('cloud-high').textContent = String(cloudHigh);
+      return { ok:true, improved: finalScore > rh, newUnlocks: newUnlocks };
+    } catch (e) {
+      console.warn(e); return { ok:false, error: e, newUnlocks: newUnlocks };
+    } finally { setSync(false); }
+  }
+
+  async function upsertNicknameOnly(nm) {
+    var c = getSb(); if (!c) return;
+    setSync(true);
+    try {
+      var id = getProfileId();
+      var ex = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
+      var hs = ex.data ? num(ex.data.highScore) : 0;
+      var us = (ex.data && ex.data.unlockedSkins) ? ex.data.unlockedSkins : mergeUnlockedFromScore(hs, ['default']);
+      var cs = (ex.data && ex.data.currentSkin) ? ex.data.currentSkin : 'default';
+      await c.from('profiles').upsert({
+        id: id, nickname: nm, highScore: hs, unlockedSkins: us, currentSkin: cs, updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+      await fetchProfile();
+    } catch (e) { console.warn(e); }
+    finally { setSync(false); }
+  }
+
+  function getProfileId() {
+    var id = localStorage.getItem(STORAGE_ID);
+    if (!id) { id = crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).slice(2); localStorage.setItem(STORAGE_ID, id); }
+    return id;
+  }
+  function hasNickname() { var n = localStorage.getItem(STORAGE_NAME); return !!(n && String(n).trim()); }
+  function getNickname() { return (localStorage.getItem(STORAGE_NAME) || '').trim(); }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function (el) { el.classList.toggle('active', el.id === id); });
+    if (id === 'snake-screen' && window.snakeBoot) window.snakeBoot();
+  }
+  window.showScreen = showScreen;
+
+  async function fetchLb() {
+    var c = getSb(); var listEl = document.getElementById('lb-list');
+    if (!c) { listEl.innerHTML = '<div class="lb-empty">未连接 SB_KEY</div>'; return; }
+    setSync(true);
+    try {
+      var r = await c.from('profiles').select('nickname, highScore').order('highScore', { ascending: false }).limit(10);
+      if (r.error) throw r.error;
+      var rows = r.data || [];
+      if (!rows.length) { listEl.innerHTML = '<div class="lb-empty">暂无数据</div>'; return; }
+      listEl.innerHTML = rows.map(function (x, i) {
+        return '<div class="lb-row"><span class="rank">'+(i+1)+'</span><span class="name">'+(x.nickname||'匿名')+'</span><span class="pts">'+num(x.highScore)+'</span></div>';
+      }).join('');
+    } catch (e) { listEl.innerHTML = '<div class="lb-empty">加载失败</div>'; }
+    finally { setSync(false); }
+  }
+
+  var phase = 'lobby';
+  var playing = false;
+  var dir = {x:1,y:0}, nextDir = {x:1,y:0};
+  var snake = [], food = {x:10,y:10};
+  var loopId = null, tickMs = 140, eatD = 2, lastTick = 0;
+  var selDiff = 'novice';
+  var activeSkin = 'default';
+  var ghostTrail = [], embers = [], goldFlashUntil = 0;
+
+  function getDiff() { return DIFF[selDiff] || DIFF.novice; }
+
+  function buildLobby() {
+    var strip = document.getElementById('skin-strip');
+    var diffEl = document.getElementById('lobby-diff');
+    strip.innerHTML = '';
+    SKIN_ORDER.forEach(function (sid, i) {
+      var meta = SKIN_META[sid];
+      var ok = isSkinUnlocked(sid);
+      var card = document.createElement('div');
+      card.className = 'skin-card' + (ok ? '' : ' locked') + (sid === activeSkin ? ' selected' : '');
+      card.dataset.skin = sid;
+      if (ok) {
+        card.innerHTML = '<div style="font-weight:800;color:var(--neon-cyan)">' + meta.label + '</div><div style="opacity:0.7;margin-top:4px;font-size:0.55rem">'+sid+'</div>';
+        card.onclick = function () {
+          activeSkin = sid;
+          Array.prototype.forEach.call(strip.children, function (c) {
+            c.classList.toggle('selected', c.dataset.skin === sid && !c.classList.contains('locked'));
+          });
+        };
+      } else {
+        card.innerHTML = '<span class="lock">🔒</span><div style="margin-top:4px;font-size:0.55rem">需'+meta.ms+'分</div>';
+      }
+      strip.appendChild(card);
+    });
+    diffEl.innerHTML = '';
+    ['novice','pro','master'].forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = DIFF[k].label; b.className = selDiff === k ? 'sel' : '';
+      b.onclick = function () {
+        selDiff = k; tickMs = DIFF[k].start; eatD = DIFF[k].eat;
+        Array.prototype.forEach.call(diffEl.children, function (x, j) {
+          var keys = ['novice','pro','master'];
+          x.className = selDiff === keys[j] ? 'sel' : '';
+        });
+      };
+      diffEl.appendChild(b);
     });
   }
 
-  function resetGame() {
-    snake = [
-      { x: 5, y: 10 },
-      { x: 4, y: 10 },
-      { x: 3, y: 10 }
-    ];
-    dir = { x: 1, y: 0 };
-    nextDir = { x: 1, y: 0 };
-    var ds = getDiffSettings();
-    tickMs = ds.start;
-    eatDelta = ds.eatDelta;
+  function resetSnake() {
+    snake = [{x:5,y:10},{x:4,y:10},{x:3,y:10}];
+    dir = {x:1,y:0}; nextDir = {x:1,y:0};
+    tickMs = getDiff().start; eatD = getDiff().eat;
     spawnFood();
-    updateHud();
+    ghostTrail = []; embers = []; goldFlashUntil = 0;
+    hud();
   }
 
   function spawnFood() {
-    var occupied = {};
-    snake.forEach(function (s) { occupied[s.x + ',' + s.y] = true; });
-    var tries = 0;
-    do {
-      food = {
-        x: Math.floor(Math.random() * GRID),
-        y: Math.floor(Math.random() * GRID)
-      };
-      tries++;
-    } while (occupied[food.x + ',' + food.y] && tries < 500);
+    var occ = {}; snake.forEach(function (s) { occ[s.x+','+s.y]=1; });
+    var t = 0; do {
+      food = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) }; t++;
+    } while (occ[food.x+','+food.y] && t < 400);
   }
 
-  function updateHud() {
-    var el = document.getElementById('snake-live-score');
-    if (el) el.textContent = String(snake.length);
+  function hud() { document.getElementById('snake-live-score').textContent = String(snake.length); }
+
+  function step() {
+    dir.x = nextDir.x; dir.y = nextDir.y;
+    var head = snake[0];
+    var nx = head.x + dir.x, ny = head.y + dir.y;
+    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) { die(); return; }
+    snake.unshift({x:nx,y:ny});
+    var ate = nx === food.x && ny === food.y;
+    if (ate) {
+      spawnFood();
+      var d = getDiff();
+      tickMs = Math.max(d.min, tickMs - eatD);
+      if (activeSkin === 'gold') goldFlashUntil = performance.now() + 220;
+    } else snake.pop();
+    for (var i = 1; i < snake.length; i++) {
+      if (snake[i].x === nx && snake[i].y === ny) { die(); return; }
+    }
+    if (activeSkin === 'ghost') {
+      ghostTrail.push({x:nx,y:ny,t:performance.now()});
+      while (ghostTrail.length > 8) ghostTrail.shift();
+    }
+    if (activeSkin === 'flame' && playing) {
+      embers.push({x:nx,y:ny}); if (embers.length > 14) embers.shift();
+    }
+    hud();
+  }
+
+  function die() {
+    playing = false; phase = 'dead';
+    if (loopId) cancelAnimationFrame(loopId); loopId = null;
+    if (snakeScreen) { snakeScreen.classList.add('death-shake'); snakeScreen.classList.add('death-flash'); }
+    setTimeout(function () {
+      if (snakeScreen) { snakeScreen.classList.remove('death-shake'); snakeScreen.classList.remove('death-flash'); }
+    }, 500);
+    var score = snake.length;
+    var prevSnap = unlockBaselineRound.slice();
+    var prevBest = num(cloudHigh);
+    draw();
+    Promise.resolve(persistRound(score, prevSnap, activeSkin)).then(function (sync) {
+      var pending = (sync && sync.newUnlocks && sync.newUnlocks.length) ? sync.newUnlocks.slice() : [];
+      var sc = score;
+      function openGO() {
+        document.getElementById('go-score-display').textContent = String(sc);
+        var msg = document.getElementById('go-record-msg');
+        var syncEl = document.getElementById('go-sync-msg');
+        if (sync && sync.ok && sync.improved) msg.textContent = '🏆 打破个人纪录！';
+        else if (prevBest > 0) msg.textContent = '云端纪录 ' + prevBest + ' · 差距 ' + Math.max(0, prevBest - sc);
+        else msg.textContent = '继续加油！';
+        if (sync && sync.ok) syncEl.textContent = '✓ 云端已同步（含皮肤进度）';
+        else if (sync && sync.reason === 'no_client') syncEl.textContent = '⚠️ 未配置 SB_KEY';
+        else syncEl.textContent = sync && sync.error ? '⚠️ 同步失败' : '';
+        document.getElementById('gameover-modal').classList.add('visible');
+      }
+      function chain() {
+        if (!pending.length) { openGO(); return; }
+        var sid = pending.shift();
+        document.getElementById('achv-body').innerHTML = '🎉 恭喜！你已觉醒 <strong style="color:var(--neon-magenta)">' + SKIN_META[sid].label + '</strong> ！';
+        document.getElementById('achv-modal').classList.add('visible');
+        var okBtn = document.getElementById('achv-ok');
+        okBtn.onclick = function () {
+          document.getElementById('achv-modal').classList.remove('visible');
+          okBtn.onclick = null;
+          chain();
+        };
+      }
+      if (pending.length) chain();
+      else openGO();
+    });
   }
 
   function draw() {
-    if (!ctx || !canvas) return;
-    var w = canvas.width;
-    var h = canvas.height;
-    ctx.fillStyle = '#0a0e14';
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(0, 255, 204, 0.06)';
-    ctx.lineWidth = 1;
-    for (var i = 0; i <= GRID; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * CELL, 0);
-      ctx.lineTo(i * CELL, h);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL);
-      ctx.lineTo(w, i * CELL);
-      ctx.stroke();
+    if (!ctx) return;
+    var w = canvas.width, h = canvas.height;
+    ctx.fillStyle = '#0a0e14'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = 'rgba(0,255,204,0.06)';
+    for (var g = 0; g <= GRID; g++) {
+      ctx.beginPath(); ctx.moveTo(g*CELL,0); ctx.lineTo(g*CELL,h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,g*CELL); ctx.lineTo(w,g*CELL); ctx.stroke();
     }
-    ctx.shadowColor = '#ff3355';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#ff3355';
-    ctx.beginPath();
-    ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL * 0.32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    if (performance.now() < goldFlashUntil && activeSkin === 'gold') {
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.35)'; ctx.fillRect(0,0,w,h);
+    }
+    ctx.fillStyle = '#ff3355'; ctx.beginPath();
+    ctx.arc(food.x*CELL+CELL/2, food.y*CELL+CELL/2, CELL*0.32, 0, Math.PI*2); ctx.fill();
+
+    var skin = activeSkin;
+    var t = performance.now();
+    if (skin === 'ghost') {
+      ghostTrail.forEach(function (tr) {
+        var age = (t - tr.t) / 450;
+        var a = Math.max(0, 0.32 - age * 0.32);
+        ctx.fillStyle = 'rgba(80,255,120,'+a+')';
+        ctx.fillRect(tr.x*CELL+1, tr.y*CELL+1, CELL-2, CELL-2);
+      });
+    }
     snake.forEach(function (seg, idx) {
-      var g = idx === 0 ? '#5cff4a' : '#39ff14';
-      ctx.fillStyle = g;
-      ctx.shadowColor = '#39ff14';
-      ctx.shadowBlur = idx === 0 ? 10 : 6;
       var pad = 1;
-      ctx.fillRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
-      ctx.shadowBlur = 0;
-    });
-  }
-
-  function step() {
-    dir.x = nextDir.x;
-    dir.y = nextDir.y;
-    var head = snake[0];
-    var nx = head.x + dir.x;
-    var ny = head.y + dir.y;
-    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) {
-      endGame();
-      return;
-    }
-    snake.unshift({ x: nx, y: ny });
-    if (nx === food.x && ny === food.y) {
-      spawnFood();
-      var ds = getDiffSettings();
-      tickMs = Math.max(ds.min, tickMs - eatDelta);
-    } else {
-      snake.pop();
-    }
-    for (var i = 1; i < snake.length; i++) {
-      if (snake[i].x === nx && snake[i].y === ny) {
-        endGame();
+      if (skin === 'rainbow') {
+        ctx.fillStyle = 'hsl('+(((t/22|0)+idx*28)%360)+',88%,58%)';
+      } else if (skin === 'gold') {
+        var grd = ctx.createLinearGradient(seg.x*CELL, seg.y*CELL, seg.x*CELL+CELL, seg.y*CELL+CELL);
+        grd.addColorStop(0,'#ffeaa7'); grd.addColorStop(1,'#b8860b');
+        ctx.fillStyle = grd;
+      } else if (skin === 'cosmic') {
+        ctx.fillStyle = 'rgba(70,35,110,0.5)';
+        ctx.fillRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2);
+        var sp = ((idx * 11 + (t/70|0)) % 4);
+        ctx.fillStyle = sp ? 'rgba(255,255,255,0.85)' : 'rgba(180,200,255,0.45)';
+        ctx.fillRect(seg.x*CELL+CELL*0.25, seg.y*CELL+CELL*0.3, 3, 3);
         return;
+      } else if (skin === 'flame') {
+        ctx.fillStyle = idx === 0 ? '#ff6600' : '#ff2200';
+      } else if (skin === 'ghost') {
+        ctx.fillStyle = 'rgba(60,255,100,0.42)';
+      } else {
+        ctx.fillStyle = idx === 0 ? '#5cff4a' : '#39ff14';
       }
-    }
-    updateHud();
-  }
-
-  var gameoverModal = document.getElementById('gameover-modal');
-
-  function endGame() {
-    playing = false;
-    phase = 'dead';
-    if (loopId) cancelAnimationFrame(loopId);
-    loopId = null;
-    var score = snake.length;
-    var prevBest = numberOrZero(cloudHighScore);
-    var broke = score > prevBest;
-
-    if (snakeScreen) snakeScreen.classList.add('death-flash');
-    setTimeout(function () {
-      if (snakeScreen) snakeScreen.classList.remove('death-flash');
-    }, 400);
-
-    draw();
-
-    Promise.resolve(persistGameResultToCloud(score)).then(function (sync) {
-      var improved = !!(sync && sync.ok && sync.improved);
-      showGameOverModal(score, improved, prevBest, sync);
+      if (skin !== 'cosmic') ctx.fillRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2);
+      if (skin === 'flame' && idx === 0) {
+        ctx.fillStyle = 'rgba(255,200,80,0.9)'; ctx.beginPath();
+        ctx.arc(seg.x*CELL+CELL/2, seg.y*CELL+CELL/2, 5, 0, Math.PI*2); ctx.fill();
+      }
     });
-  }
-
-  function showGameOverModal(score, brokeRecord, prevBest, syncResult) {
-    var scEl = document.getElementById('go-score-display');
-    var msgEl = document.getElementById('go-record-msg');
-    var syncEl = document.getElementById('go-sync-msg');
-    if (scEl) scEl.textContent = String(score);
-    if (msgEl) {
-      if (brokeRecord) {
-        msgEl.textContent = '🏆 打破个人纪录！';
-      } else if (prevBest > 0) {
-        msgEl.textContent = '云端纪录 ' + prevBest + ' · 差距 ' + Math.max(0, prevBest - score);
-      } else {
-        msgEl.textContent = '继续加油，刷新纪录！';
-      }
+    if (skin === 'flame') {
+      embers.forEach(function (em, ei) {
+        ctx.fillStyle = 'rgba(255,50,40,'+(0.25 + (ei%3)*0.08)+')';
+        ctx.fillRect(em.x*CELL+2, em.y*CELL+CELL*0.75, CELL-4, 2);
+      });
     }
-    if (syncEl) {
-      if (!syncResult || !syncResult.ok) {
-        if (syncResult && syncResult.reason === 'no_client') {
-          syncEl.textContent =
-            '⚠️ 本局成绩未写入云端：未配置 anon 密钥（与「名人堂无数据」同理）。配置后需刷新页面。';
-        } else if (syncResult && syncResult.error) {
-          syncEl.textContent =
-            '⚠️ 云端写入失败（详见控制台）。请检查网络、RLS 与表结构。';
-        } else {
-          syncEl.textContent = '';
-        }
-      } else {
-        syncEl.textContent = '✓ 已与云端同步（profiles）';
-      }
-    }
-    if (gameoverModal) gameoverModal.classList.add('visible');
   }
 
-  function hideGameOverModal() {
-    if (gameoverModal) gameoverModal.classList.remove('visible');
-  }
-
-  function gameLoop(ts) {
+  function loop(ts) {
     if (!playing) return;
-    if (ts - lastTick >= tickMs) {
-      lastTick = ts;
-      step();
-      draw();
-    }
-    loopId = requestAnimationFrame(gameLoop);
+    if (ts - lastTick >= tickMs) { lastTick = ts; step(); }
+    draw();
+    loopId = requestAnimationFrame(loop);
   }
 
-  function startLoop() {
-    lastTick = performance.now();
-    loopId = requestAnimationFrame(gameLoop);
-  }
-
-  function beginPlayingFromReady(dx, dy) {
+  function beginPlay(dx, dy) {
     if (phase !== 'ready') return;
-    phase = 'playing';
-    playing = true;
-    var ov = document.getElementById('snake-ready-overlay');
-    if (ov) ov.classList.remove('visible');
-    if (dx !== 0 || dy !== 0) {
-      if (!(dir.x === -dx && dir.y === -dy)) {
-        nextDir = { x: dx, y: dy };
-      }
-    }
-    if (loopId) cancelAnimationFrame(loopId);
-    startLoop();
+    phase = 'playing'; playing = true;
+    document.getElementById('snake-ready-overlay').classList.remove('visible');
+    if (!(dir.x === -dx && dir.y === -dy)) nextDir = {x:dx,y:dy};
+    lastTick = performance.now();
+    loopId = requestAnimationFrame(loop);
   }
 
-  function setDirection(dx, dy) {
-    if (phase === 'ready') {
-      beginPlayingFromReady(dx, dy);
-      return;
-    }
+  function setDir(dx, dy) {
+    if (phase === 'ready') { beginPlay(dx, dy); return; }
     if (!playing) return;
     if (dir.x === -dx && dir.y === -dy) return;
     if (nextDir.x === -dx && nextDir.y === -dy) return;
-    nextDir = { x: dx, y: dy };
+    nextDir = {x:dx,y:dy};
   }
 
-  document.querySelectorAll('#diff-buttons .diff-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      selectedDiff = btn.getAttribute('data-diff') || 'pro';
-      syncDiffButtons();
-      var ds = getDiffSettings();
-      tickMs = ds.start;
-      eatDelta = ds.eatDelta;
-    });
-  });
-
-  window.snakeGame = {
-    onEnter: function () {
-      hideGameOverModal();
-      phase = 'ready';
-      playing = false;
-      if (loopId) cancelAnimationFrame(loopId);
-      loopId = null;
-      selectedDiff = 'novice';
-      syncDiffButtons();
-      resetGame();
-      var ov = document.getElementById('snake-ready-overlay');
-      if (ov) ov.classList.add('visible');
-      draw();
-    }
+  window.snakeBoot = function () {
+    document.getElementById('gameover-modal').classList.remove('visible');
+    document.getElementById('achv-modal').classList.remove('visible');
+    phase = 'lobby'; playing = false;
+    if (loopId) cancelAnimationFrame(loopId); loopId = null;
+    activeSkin = isSkinUnlocked(cloudCurrentSkin) ? cloudCurrentSkin : 'default';
+    selDiff = 'novice';
+    resetSnake();
+    buildLobby();
+    unlockBaselineRound = unlockedSkins.slice();
+    document.getElementById('snake-lobby-overlay').classList.add('visible');
+    document.getElementById('snake-ready-overlay').classList.remove('visible');
+    draw();
   };
 
-  document.getElementById('go-replay').addEventListener('click', function () {
-    hideGameOverModal();
-    if (window.snakeGame && window.snakeGame.onEnter) window.snakeGame.onEnter();
-  });
-
-  document.getElementById('go-home').addEventListener('click', function () {
-    hideGameOverModal();
-    playing = false;
+  document.getElementById('snake-btn-start').onclick = function () {
+    if (!isSkinUnlocked(activeSkin)) return;
+    unlockBaselineRound = unlockedSkins.slice();
     phase = 'ready';
-    if (loopId) cancelAnimationFrame(loopId);
-    loopId = null;
-    showScreen('home-screen');
-    fetchCloudHighScore();
-  });
-
-  document.getElementById('btn-snake').addEventListener('click', function () {
-    showScreen('snake-screen');
-  });
-
-  document.getElementById('btn-leaderboard').addEventListener('click', function () {
-    var listEl = document.getElementById('lb-list');
-    if (listEl) listEl.innerHTML = '<div class="lb-empty" id="lb-loading">加载中…</div>';
-    showScreen('leaderboard-screen');
-    fetchLeaderboard();
-  });
-
-  document.getElementById('lb-back').addEventListener('click', function () {
-    showScreen('home-screen');
-  });
-
-  document.getElementById('snake-back').addEventListener('click', function () {
-    hideGameOverModal();
-    playing = false;
-    phase = 'ready';
-    if (loopId) cancelAnimationFrame(loopId);
-    loopId = null;
-    showScreen('home-screen');
-    fetchCloudHighScore();
-  });
-
-  document.getElementById('placeholder-back').addEventListener('click', function () {
-    showScreen('home-screen');
-  });
+    document.getElementById('snake-lobby-overlay').classList.remove('visible');
+    document.getElementById('snake-ready-overlay').classList.add('visible');
+  };
 
   document.querySelectorAll('#snake-dpad .dpad-btn').forEach(function (btn) {
     var d = btn.getAttribute('data-dir');
-    var map = {
-      up: [0, -1],
-      down: [0, 1],
-      left: [-1, 0],
-      right: [1, 0]
-    };
-    function apply() {
-      var v = map[d];
-      if (v) setDirection(v[0], v[1]);
-    }
-    btn.addEventListener('touchstart', function (e) {
-      e.preventDefault();
-      btn.classList.add('pressed');
-      apply();
-    }, { passive: false });
+    var map = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+    function ap() { var v = map[d]; if (v) setDir(v[0], v[1]); }
+    btn.addEventListener('touchstart', function (e) { e.preventDefault(); btn.classList.add('pressed'); ap(); }, { passive:false });
     btn.addEventListener('touchend', function () { btn.classList.remove('pressed'); });
-    btn.addEventListener('touchcancel', function () { btn.classList.remove('pressed'); });
-    btn.addEventListener('mousedown', function () {
-      btn.classList.add('pressed');
-      apply();
-    });
+    btn.addEventListener('mousedown', function () { btn.classList.add('pressed'); ap(); });
     btn.addEventListener('mouseup', function () { btn.classList.remove('pressed'); });
     btn.addEventListener('mouseleave', function () { btn.classList.remove('pressed'); });
     btn.addEventListener('click', function (e) { e.preventDefault(); });
   });
 
-  function onSnakeKeydown(e) {
+  document.addEventListener('keydown', function (e) {
     if (!document.getElementById('snake-screen').classList.contains('active')) return;
-    var k = e.key;
-    var map = {
-      ArrowUp: [0, -1],
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-      w: [0, -1],
-      W: [0, -1],
-      s: [0, 1],
-      S: [0, 1],
-      a: [-1, 0],
-      A: [-1, 0],
-      d: [1, 0],
-      D: [1, 0]
-    };
-    if (!map[k]) return;
+    var map = { ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],W:[0,-1],s:[0,1],S:[0,1],a:[-1,0],A:[-1,0],d:[1,0],D:[1,0] };
+    if (!map[e.key]) return;
     e.preventDefault();
-    setDirection(map[k][0], map[k][1]);
-  }
-  document.addEventListener('keydown', onSnakeKeydown);
+    setDir(map[e.key][0], map[e.key][1]);
+  });
 
-  function resizeCanvas() {
+  document.getElementById('btn-snake').onclick = function () { showScreen('snake-screen'); };
+  document.getElementById('btn-leaderboard').onclick = function () { showScreen('leaderboard-screen'); fetchLb(); };
+  document.getElementById('lb-back').onclick = function () { showScreen('home-screen'); };
+  document.getElementById('snake-back').onclick = function () {
+    playing = false; phase = 'lobby'; if (loopId) cancelAnimationFrame(loopId);
+    showScreen('home-screen'); fetchProfile();
+  };
+  document.getElementById('go-replay').onclick = function () {
+    document.getElementById('gameover-modal').classList.remove('visible');
+    window.snakeBoot();
+  };
+  document.getElementById('go-home').onclick = function () {
+    document.getElementById('gameover-modal').classList.remove('visible');
+    showScreen('home-screen'); fetchProfile();
+  };
+  document.getElementById('placeholder-back').onclick = function () { showScreen('home-screen'); };
+
+  document.getElementById('nickname-confirm').onclick = async function () {
+    var inp = document.getElementById('nickname-input');
+    var raw = inp && inp.value.trim() ? inp.value.trim() : '玩家' + ((Math.random()*9000+1000)|0);
+    localStorage.setItem(STORAGE_NAME, raw.slice(0,16));
+    document.getElementById('nickname-modal').classList.remove('visible');
+    await upsertNicknameOnly(raw);
+    cloudBanner();
+  };
+
+  function resize() {
     if (!canvas) return;
-    var size = Math.min(canvas.parentElement.clientWidth || 400, 400);
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-    CELL = 400 / GRID;
-    draw();
+    var sz = Math.min(canvas.parentElement.clientWidth||400, 400);
+    canvas.style.width = sz+'px'; canvas.style.height = sz+'px';
+    CELL = 400 / GRID; draw();
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  window.addEventListener('resize', resize);
+  resize();
 
-  if (resolveSupabaseAnon()) {
-    var hint = document.getElementById('supabase-hint');
-    if (hint) hint.style.display = 'none';
-  }
-
-  syncDiffButtons();
-  updateWelcomeUI();
-  updateCloudOffBanner();
-
-  if (!hasNickname()) {
-    openNicknameModal();
-  } else {
-    fetchCloudHighScore();
-  }
+  if (resolveSbKey()) document.getElementById('supabase-hint').style.display = 'none';
+  cloudBanner();
+  document.getElementById('display-name').textContent = getNickname() || '——';
+  if (!hasNickname()) document.getElementById('nickname-modal').classList.add('visible');
+  else fetchProfile();
 })();
   </script>
 </body>
