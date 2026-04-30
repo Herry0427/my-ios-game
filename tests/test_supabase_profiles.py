@@ -70,12 +70,20 @@ def main() -> int:
 
     test_id = f"e2e_myarcade_{uuid.uuid4().hex[:12]}"
     unique_nick = f"E2E_{test_id[:10]}"
-    payload_row = {
+    payload_min = {
         "id": test_id,
         "nickname": unique_nick,
         "highScore": 999001,
         "unlockedSkins": ["default", "ghost"],
         "currentSkin": "ghost",
+    }
+    payload_row = {
+        **payload_min,
+        "coins": 120,
+        "calabashCount": 1,
+        "crates": 2,
+        "unlockedMaps": ["classic", "forest"],
+        "currentMap": "forest",
     }
 
     headers_base = {
@@ -88,12 +96,27 @@ def main() -> int:
     upsert_headers = {**headers_base, "Prefer": "resolution=merge-duplicates,return=representation"}
 
     upsert_url = f"{base}/rest/v1/profiles"
+    economy_ok = True
     try:
         code, body = http_json("POST", upsert_url, upsert_headers, [payload_row])
     except HTTPError as e:
         err = e.read().decode("utf-8", errors="replace") if e.fp else ""
-        print(f"FAIL: upsert HTTP {e.code}\n{err}", file=sys.stderr)
-        return 1
+        if e.code == 400 and ("calabashCount" in err or "coins" in err or "schema cache" in err):
+            print(
+                "WARN: 远程库尚未应用 migrations/004_warehouse_economy.sql，"
+                "回退基础字段测试。请运行: python supabase_migrate.py",
+                file=sys.stderr,
+            )
+            economy_ok = False
+            try:
+                code, body = http_json("POST", upsert_url, upsert_headers, [payload_min])
+            except HTTPError as e2:
+                err2 = e2.read().decode("utf-8", errors="replace") if e2.fp else ""
+                print(f"FAIL: upsert HTTP {e2.code}\n{err2}", file=sys.stderr)
+                return 1
+        else:
+            print(f"FAIL: upsert HTTP {e.code}\n{err}", file=sys.stderr)
+            return 1
     except URLError as e:
         print(f"FAIL: network {e}", file=sys.stderr)
         return 1
@@ -102,10 +125,12 @@ def main() -> int:
         print(f"FAIL: upsert status {code} body={body}", file=sys.stderr)
         return 1
 
-    sel = (
-        f"{base}/rest/v1/profiles?id=eq.{test_id}"
-        "&select=id,nickname,highScore,unlockedSkins,currentSkin"
+    sel_fields = (
+        "id,nickname,highScore,unlockedSkins,currentSkin,coins,calabashCount,crates,unlockedMaps,currentMap"
+        if economy_ok
+        else "id,nickname,highScore,unlockedSkins,currentSkin"
     )
+    sel = f"{base}/rest/v1/profiles?id=eq.{test_id}&select={sel_fields}"
     try:
         code2, rows = http_json("GET", sel, headers_base, None)
     except HTTPError as e:
@@ -133,6 +158,28 @@ def main() -> int:
         print(f"FAIL: currentSkin {row.get('currentSkin')}", file=sys.stderr)
         _delete_row(base, anon, test_id)
         return 1
+    if economy_ok:
+        if int(row.get("coins", -1)) != 120:
+            print(f"FAIL: coins {row.get('coins')}", file=sys.stderr)
+            _delete_row(base, anon, test_id)
+            return 1
+        if int(row.get("calabashCount", -1)) != 1:
+            print(f"FAIL: calabashCount {row.get('calabashCount')}", file=sys.stderr)
+            _delete_row(base, anon, test_id)
+            return 1
+        if int(row.get("crates", -1)) != 2:
+            print(f"FAIL: crates {row.get('crates')}", file=sys.stderr)
+            _delete_row(base, anon, test_id)
+            return 1
+        maps = row.get("unlockedMaps")
+        if not isinstance(maps, list) or "forest" not in maps:
+            print(f"FAIL: unlockedMaps {maps}", file=sys.stderr)
+            _delete_row(base, anon, test_id)
+            return 1
+        if row.get("currentMap") != "forest":
+            print(f"FAIL: currentMap {row.get('currentMap')}", file=sys.stderr)
+            _delete_row(base, anon, test_id)
+            return 1
 
     if not _delete_row(base, anon, test_id):
         print(f"WARN: delete failed id={test_id}", file=sys.stderr)
@@ -143,7 +190,10 @@ def main() -> int:
         print(f"FAIL: still exists {rows2}", file=sys.stderr)
         return 1
 
-    print(f"OK: profiles（含 unlockedSkins/currentSkin/bigint）通过 test_id={test_id}")
+    print(
+        f"OK: profiles 通过 test_id={test_id}"
+        + ("（含 004 经济字段）" if economy_ok else "（基础字段；请应用 004 以测蛇币/宝箱）")
+    )
     return 0
 
 

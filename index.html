@@ -124,7 +124,6 @@
       border: 2px solid rgba(0, 255, 204, 0.3);
       background: #0d1118;
       touch-action: none;
-      vertical-align: top;
     }
     .snake-lobby, .snake-ready, .snake-face {
       position: absolute;
@@ -287,6 +286,278 @@
     }
     .cloud-off-banner.visible { display: block; }
     .nick-warn { font-family: sans-serif !important; font-size: 0.58rem !important; color: #ff6688 !important; text-align: center; margin: 0 0 12px !important; }
+
+    .wallet-strip {
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center;
+      margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; background: var(--bg-panel);
+      border: 1px solid rgba(255, 200, 80, 0.28); font-size: 0.82rem; color: #e8f4ff;
+    }
+    .wallet-strip strong { color: #ffd56a; font-size: 1.05rem; }
+    .hub-bottom-nav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 9995;
+      display: flex; justify-content: space-around; align-items: stretch;
+      padding: 6px 8px calc(10px + var(--safe-bottom)); gap: 4px;
+      background: rgba(6, 8, 14, 0.92); border-top: 1px solid rgba(0, 255, 204, 0.2);
+      backdrop-filter: blur(12px);
+    }
+    .hub-bottom-nav.hidden { display: none !important; }
+    .hub-nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; padding: 8px 6px; border: none; border-radius: 12px;
+      background: transparent; color: var(--text-dim); font-size: 0.62rem; cursor: pointer; max-width: 92px;
+    }
+    .hub-nav-btn .hub-nav-ico { font-size: 1.35rem; line-height: 1; }
+    .hub-nav-btn.active { color: var(--neon-cyan); background: rgba(0, 255, 204, 0.08); }
+    .hub-screen.screen { padding-bottom: calc(78px + var(--safe-bottom)); }
+    #shop-screen.screen, #warehouse-screen.screen {
+      min-height: 100dvh; overflow: hidden;
+      padding-top: calc(12px + var(--safe-top));
+      padding-bottom: calc(78px + var(--safe-bottom));
+    }
+    .eco-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 8px; }
+    .eco-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 14px;
+      max-width: 560px; margin: 12px auto 20px;
+    }
+    .eco-card {
+      position: relative;
+      border-radius: 14px;
+      border: 2px solid rgba(0, 255, 204, 0.28);
+      background: rgba(15, 22, 35, 0.92);
+      padding: 10px 10px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.15s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+    .eco-card:active { transform: scale(0.98); }
+    .eco-card.equipped {
+      border-color: #39ff14;
+      box-shadow: 0 0 0 2px rgba(57, 255, 20, 0.35), 0 0 18px rgba(57, 255, 20, 0.22);
+    }
+    .eco-card.equipped .eco-use-badge {
+      display: block;
+    }
+    .eco-use-badge {
+      display: none;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      z-index: 4;
+      font-size: 0.58rem;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 6px;
+      background: linear-gradient(145deg, #1a5a20, #0d3014);
+      color: #b8ffc4;
+      border: 1px solid rgba(57, 255, 20, 0.55);
+      pointer-events: none;
+    }
+    .eco-card.locked { cursor: default; }
+    .eco-card.locked .eco-preview-stack { filter: grayscale(0.15); }
+    .eco-lock-mask {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.52);
+      pointer-events: none;
+    }
+    .eco-card.locked .eco-lock-mask { display: block; }
+    .eco-lock-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.6rem;
+      z-index: 4;
+      opacity: 0.95;
+      pointer-events: none;
+      text-shadow: 0 2px 8px #000;
+    }
+    .eco-preview-stack {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      max-height: 112px;
+      margin: 0 auto 8px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(6, 10, 18, 0.95);
+      border: 1px solid rgba(0, 255, 204, 0.15);
+    }
+    canvas.skin-preview, canvas.map-thumb {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .eco-preview-stack--gold::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 12px;
+      background: linear-gradient(125deg, transparent 40%, rgba(255, 230, 150, 0.35) 50%, transparent 60%);
+      background-size: 200% 200%;
+      animation: goldGlintSweep 2.4s ease-in-out infinite;
+    }
+    @keyframes goldGlintSweep {
+      0%, 100% { background-position: 100% 50%; opacity: 0.3; }
+      50% { background-position: 0% 50%; opacity: 0.85; }
+    }
+    .eco-card .eco-title { font-weight: 800; color: #e8f4ff; font-size: 0.82rem; margin-bottom: 4px; }
+    .eco-card .eco-meta { font-size: 0.68rem; color: var(--text-dim); line-height: 1.35; }
+    .eco-price { color: #ffd56a; font-weight: 800; margin-top: 6px; font-size: 0.88rem; }
+    .item-visual-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      max-height: 112px;
+      margin: 0 auto 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, rgba(30, 22, 40, 0.9), rgba(8, 8, 14, 0.98));
+      border: 1px solid rgba(120, 80, 200, 0.25);
+    }
+    .item-calabash-svg {
+      width: 72%;
+      height: auto;
+      filter: drop-shadow(0 0 10px rgba(255, 220, 120, 0.65)) drop-shadow(0 0 22px rgba(255, 200, 60, 0.35));
+      animation: calabashFloat 2.8s ease-in-out infinite;
+    }
+    .item-calabash-svg .cb-outline { stroke: #f3ffbd; stroke-width: 1.2; }
+    .item-calabash-svg .cb-glass { fill: url(#cbGlassGrad); }
+    .item-calabash-svg .cb-neck { fill: #4b7d2f; }
+    .item-calabash-svg .cb-leaf { fill: #8de05a; }
+    @keyframes calabashFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .crate-visual {
+      position: relative;
+      width: 64%;
+      height: 58%;
+      border-radius: 8px;
+      background: linear-gradient(165deg, #4a3020, #2a1810);
+      border: 3px solid #6a4030;
+      box-shadow: inset 0 2px 0 rgba(255, 200, 160, 0.15);
+      animation: crateSway 3.2s ease-in-out infinite;
+    }
+    .crate-visual .crate-core {
+      position: absolute;
+      inset: 14% 10%;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 214, 170, 0.2);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.14), transparent 34%),
+        repeating-linear-gradient(90deg, rgba(255,200,150,0.08) 0 6px, transparent 6px 12px),
+        linear-gradient(165deg, #4a3020, #2a1810);
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25);
+    }
+    .crate-visual .crate-band {
+      position: absolute;
+      top: 50%;
+      left: 8%;
+      right: 8%;
+      height: 6px;
+      transform: translateY(-50%);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #b3875d, #6f4e35);
+      box-shadow: 0 0 8px rgba(255, 190, 120, 0.2);
+    }
+    .crate-visual .crate-lock {
+      position: absolute;
+      width: 12px;
+      height: 10px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 3px;
+      border: 2px solid #9c744d;
+      background: #5b3d28;
+    }
+    .crate-visual::before {
+      content: "";
+      position: absolute;
+      inset: -16px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(140, 60, 220, 0.35) 0%, transparent 65%);
+      animation: smokePulse 2.2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .crate-visual::after {
+      content: "";
+      position: absolute;
+      inset: -28px -20px;
+      background:
+        radial-gradient(ellipse at 30% 80%, rgba(160, 80, 255, 0.22), transparent 45%),
+        radial-gradient(ellipse at 70% 60%, rgba(100, 40, 200, 0.2), transparent 50%);
+      animation: smokeDrift 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes crateSway {
+      0%, 100% { transform: translateX(0) rotate(0); }
+      50% { transform: translateX(4px) rotate(1.5deg); }
+    }
+    @keyframes smokePulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
+    @keyframes smokeDrift {
+      0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+      50% { transform: translate(-6px, -4px); opacity: 1; }
+    }
+    .shop-buy {
+      margin-top: 10px; padding: 10px; border-radius: 10px; border: 2px solid var(--neon-green);
+      background: linear-gradient(180deg, rgba(60, 180, 90, 0.35), rgba(20, 60, 40, 0.5));
+      color: #bfff90; font-weight: 800; font-size: 0.78rem; cursor: pointer; width: 100%;
+    }
+    .shop-buy:disabled { opacity: 0.45; cursor: not-allowed; }
+    .shop-buy.ding { animation: shopDing 0.45s ease; }
+    @keyframes shopDing {
+      0% { transform: scale(1); filter: brightness(1); }
+      35% { transform: scale(1.06); filter: brightness(1.35); box-shadow: 0 0 24px rgba(255, 215, 80, 0.55); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .coin-flash { animation: coinFlash 0.55s ease; }
+    @keyframes coinFlash {
+      0% { color: #ffd56a; transform: scale(1); }
+      40% { color: #fff; transform: scale(1.25); }
+      100% { color: #ffd56a; transform: scale(1); }
+    }
+    .wh-tabs { display: flex; gap: 8px; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+    .wh-tabs button {
+      padding: 10px 16px; border-radius: 999px; border: 2px solid rgba(0, 255, 204, 0.35);
+      background: rgba(15, 22, 35, 0.95); color: var(--neon-cyan); font-weight: 700; font-size: 0.78rem; cursor: pointer;
+    }
+    .wh-tabs button.sel { border-color: var(--neon-magenta); color: #fff; background: linear-gradient(145deg, rgba(70, 24, 55, 0.95), rgba(30, 12, 35, 0.98)); }
+    .crate-modal-card { border-color: rgba(255, 200, 80, 0.55) !important; }
+    .crate-icon-big { font-size: 4rem; line-height: 1; margin: 8px 0; transition: transform 0.3s var(--ease-out); display:flex; justify-content:center; }
+    .crate-icon-big .item-visual-wrap { width: 126px; max-height: 126px; margin: 0; border-color: rgba(160,120,220,0.35); }
+    .crate-shake { animation: crateShake 0.65s ease; }
+    @keyframes crateShake {
+      0%, 100% { transform: rotate(0); }
+      15% { transform: rotate(-7deg) translateX(-3px); }
+      30% { transform: rotate(8deg) translateX(4px); }
+      45% { transform: rotate(-5deg); }
+      60% { transform: rotate(6deg); }
+    }
+    .snake-canvas-box.map-lava::after {
+      content: ""; pointer-events: none; position: absolute; inset: 0; border-radius: 12px; z-index: 3;
+      background: linear-gradient(180deg, rgba(255, 80, 40, 0.12), transparent 40%, rgba(255, 40, 20, 0.18));
+      animation: lavaHeat 2.2s ease-in-out infinite;
+    }
+    @keyframes lavaHeat {
+      0%, 100% { opacity: 0.65; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(-3px); }
+    }
+    .revive-card { border-color: rgba(255, 215, 80, 0.45) !important; }
   </style>
 </head>
 <body>
@@ -311,6 +582,26 @@
     </div>
   </div>
 
+  <div id="revive-modal" class="gameover-modal" aria-modal="true">
+    <div class="gameover-card revive-card">
+      <h3 style="margin:0 0 8px;color:#ffd56a">金葫芦续命</h3>
+      <p style="color:#c8d8e8;font-size:0.88rem;line-height:1.6;margin:8px 0">消耗 <strong>1</strong> 个金葫芦原地复活，蛇头朝向反向继续。</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+        <button type="button" id="revive-yes" style="padding:14px;border-radius:12px;border:2px solid #ffd56a;background:linear-gradient(145deg,rgba(90,70,30,0.95),rgba(45,35,12,0.98));color:#fff;font-weight:700">续命</button>
+        <button type="button" id="revive-no" style="padding:14px;border-radius:12px;border:2px solid rgba(0,255,204,0.35);background:rgba(15,22,35,0.95);color:var(--neon-cyan);font-weight:700">放弃</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crate-modal" class="gameover-modal" aria-modal="true">
+    <div class="gameover-card crate-modal-card" id="crate-card">
+      <h3 style="margin:0 0 4px;color:#ffd56a">神秘宝箱</h3>
+      <div class="crate-icon-big" id="crate-icon"><div class="item-visual-wrap" style="position:relative">🎁</div></div>
+      <p id="crate-reveal-text" style="color:#c8d8e8;font-size:0.9rem;min-height:2.5em"></p>
+      <button type="button" id="crate-ok" style="padding:12px 24px;border-radius:12px;border:2px solid #ffd56a;width:100%;font-weight:700;cursor:pointer;background:rgba(40,32,12,0.9);color:#ffe8a0">收下</button>
+    </div>
+  </div>
+
   <div id="gameover-modal" class="gameover-modal" aria-modal="true">
     <div class="gameover-card">
       <h3 style="margin:0 0 8px;color:var(--neon-red)">游戏结束</h3>
@@ -324,22 +615,52 @@
     </div>
   </div>
 
-  <section id="home-screen" class="screen active">
+  <section id="home-screen" class="screen hub-screen active">
     <div class="welcome-bar">
       <div class="hi">Welcome, <span id="display-name">——</span></div>
       <div class="cloud-line">云端最高分: <strong id="cloud-high">—</strong></div>
     </div>
+    <div class="wallet-strip" id="wallet-strip">
+      <span>🪙 蛇币 <strong id="hub-coins">0</strong></span>
+      <span>🍐 金葫芦 <strong id="hub-calabash">0</strong></span>
+      <span>📦 宝箱 <strong id="hub-crates">0</strong></span>
+    </div>
     <h1 class="arcade-title">My Arcade Hub</h1>
-    <p class="arcade-sub">赛博街机厅 · 皮肤与云端同步</p>
+    <p class="arcade-sub">蛇币 · 仓库 · 商店 · 云端同步</p>
     <div class="grid-menu">
-      <button type="button" class="tile-btn" id="btn-snake">经典贪吃蛇 <span class="tile-badge">Skins</span></button>
-      <button type="button" class="tile-btn" id="btn-leaderboard">名人堂 <span class="tile-badge">TOP10</span></button>
-      <button type="button" class="tile-btn coming" disabled>待开发 <span class="tile-badge">Soon</span></button>
+      <button type="button" class="tile-btn" id="btn-snake">经典贪吃蛇 <span class="tile-badge">开局</span></button>
     </div>
     <p class="config-hint" id="supabase-hint">请在源码中填写 <code>SB_KEY</code>（Publishable），详见注释。</p>
   </section>
 
-  <section id="leaderboard-screen" class="screen">
+  <section id="shop-screen" class="screen hub-screen">
+    <div class="snake-topbar">
+      <button type="button" class="back-btn" id="shop-back">◀ 返回</button>
+      <div class="snake-score-hud">🪙 <strong id="shop-wallet-display">0</strong></div>
+    </div>
+    <h2 class="arcade-title" style="font-size:clamp(1rem,4vw,1.35rem);margin-top:4px;flex-shrink:0">商店</h2>
+    <div class="eco-scroll" id="shop-scroll"><div class="eco-grid" id="shop-grid"></div></div>
+  </section>
+
+  <section id="warehouse-screen" class="screen hub-screen">
+    <div class="snake-topbar">
+      <button type="button" class="back-btn" id="wh-back">◀ 返回</button>
+      <div class="snake-score-hud">📦 <strong id="wh-crates-h">0</strong></div>
+    </div>
+    <h2 class="arcade-title" style="font-size:clamp(1rem,4vw,1.35rem);margin-top:4px">仓库</h2>
+    <div class="wh-tabs" id="wh-tabs">
+      <button type="button" data-wh="skins" class="sel">皮肤</button>
+      <button type="button" data-wh="maps">地图</button>
+      <button type="button" data-wh="items">道具</button>
+    </div>
+    <div class="eco-scroll" id="wh-scroll">
+      <div class="eco-grid" id="wh-grid-skins"></div>
+      <div class="eco-grid" id="wh-grid-maps" style="display:none"></div>
+      <div class="eco-grid" id="wh-grid-items" style="display:none"></div>
+    </div>
+  </section>
+
+  <section id="leaderboard-screen" class="screen hub-screen">
     <div class="snake-topbar">
       <button type="button" class="back-btn" id="lb-back">◀ 返回大厅</button>
     </div>
@@ -358,8 +679,9 @@
       <div class="snake-canvas-box" id="snake-canvas-box">
         <canvas id="snake-canvas" width="400" height="400"></canvas>
         <div id="snake-lobby-overlay" class="snake-lobby">
-          <div class="lobby-title">选择皮肤与难度</div>
-          <div class="skin-strip" id="skin-strip"></div>
+          <div class="lobby-title">当前配置（在仓库中更换）</div>
+          <div id="lobby-current-loadout" style="font-size:0.62rem;color:#b8c8d8;margin-bottom:8px;text-align:center;line-height:1.5"></div>
+          <div class="lobby-title">选择难度</div>
           <div class="lobby-diff" id="lobby-diff"></div>
           <button type="button" class="btn-start" id="snake-btn-start">开始游戏</button>
         </div>
@@ -384,6 +706,12 @@
     <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">即将推出</div>
   </section>
 
+  <nav id="hub-bottom-nav" class="hub-bottom-nav" aria-label="底部导航">
+    <button type="button" class="hub-nav-btn active" data-hub="home-screen"><span class="hub-nav-ico">🏠</span><span class="hub-nav-txt">首页</span></button>
+    <button type="button" class="hub-nav-btn" data-hub="shop-screen"><span class="hub-nav-ico">🛒</span><span class="hub-nav-txt">商店</span></button>
+    <button type="button" class="hub-nav-btn" data-hub="warehouse-screen"><span class="hub-nav-ico">📦</span><span class="hub-nav-txt">仓库</span></button>
+    <button type="button" class="hub-nav-btn" data-hub="leaderboard-screen"><span class="hub-nav-ico">🏆</span><span class="hub-nav-txt">排行</span></button>
+  </nav>
 
   <script>
 (function () {
@@ -397,14 +725,63 @@
   var LEGACY_PROFILE_ID = 'myArcadeHub_profileId';
   var STORAGE_NAME = 'myArcadeHub_nickname';
 
-  var SKIN_ORDER = ['default','ghost','gold','rainbow','flame','cosmic'];
+  /** ========= 经济 / 掉落（只改这些常数即可调平衡） =========
+   * 每 1 点「长度分」= SC_PER_LEN 蛇币；局末 CRATE_DROP_PROB 概率掉未开启宝箱。
+   * 开箱 CRATE_ROLLS：累计概率桶 — coins | calabash | skin | map */
+  var SC_PER_LEN = 10;
+  var CRATE_DROP_PROB = 0.05;
+  /** 开箱权重：四项概率之和应为 1（ coins / calabash / skin / map ） */
+  var CRATE_ROLLS = [
+    { prob: 0.4, kind: 'coins', note: '蛇币 100~300' },
+    { prob: 0.4, kind: 'calabash', note: '金葫芦 x1' },
+    { prob: 0.15, kind: 'skin', note: '随机未解锁皮肤' },
+    { prob: 0.05, kind: 'map', note: '随机未解锁地图' }
+  ];
+  var SHOP_CALABASH_PRICE = 500;
+  var SHOP_MAP_PRICE = 8000;
+  /** 商店皮肤定价（扩展皮肤集，默认回退 2500） */
+  var SHOP_SKIN_PRICES = {
+    ghost: 2000, gold: 2800, rainbow: 3500, flame: 4200, cosmic: 5000,
+    china: 2600, bee: 2400, ocean: 2600, jade: 3000, candy: 2600,
+    cyber: 3600, ice: 3200, sunset: 3400, plasma: 3800, pixel: 3000,
+    shadow: 4200, mint: 2600, aurora: 4400, magma: 4600, neon: 4100
+  };
+
+  var MAP_ORDER = ['classic', 'forest', 'lava'];
+  var MAP_META = {
+    classic: { label: '经典', bg: 'dark grid' },
+    forest: { label: '森林', bg: '深绿像素林' },
+    lava: { label: '熔岩', bg: '暗红热气' }
+  };
+
+  var SKIN_ORDER = [
+    'default','ghost','gold','rainbow','flame','cosmic',
+    'china','bee','ocean','jade','candy',
+    'cyber','ice','sunset','plasma','pixel',
+    'shadow','mint','aurora','magma','neon'
+  ];
   var SKIN_META = {
     default: { label:'默认', ms:0 },
     ghost: { label:'幽灵', ms:27 },
     gold: { label:'土豪金', ms:96 },
     rainbow: { label:'霓虹彩虹', ms:168 },
     flame: { label:'烈焰', ms:222 },
-    cosmic: { label:'宇宙星空', ms:328 }
+    cosmic: { label:'宇宙星空', ms:328 },
+    china: { label:'中国红', ms:0 },
+    bee: { label:'小蜜蜂', ms:0 },
+    ocean: { label:'深海蓝', ms:0 },
+    jade: { label:'翡翠', ms:0 },
+    candy: { label:'糖果', ms:0 },
+    cyber: { label:'赛博紫', ms:0 },
+    ice: { label:'冰晶', ms:0 },
+    sunset: { label:'落日', ms:0 },
+    plasma: { label:'等离子', ms:0 },
+    pixel: { label:'像素迷彩', ms:0 },
+    shadow: { label:'暗影', ms:0 },
+    mint: { label:'薄荷', ms:0 },
+    aurora: { label:'极光', ms:0 },
+    magma: { label:'岩浆核', ms:0 },
+    neon: { label:'霓虹夜', ms:0 }
   };
   var DIFF = {
     novice: { label:'新手', start:175, min:96, eat:1 },
@@ -419,6 +796,225 @@
   var canvas = document.getElementById('snake-canvas');
   var ctx = canvas && canvas.getContext('2d');
   var snakeScreen = document.getElementById('snake-screen');
+
+  /** 资源解耦：主循环只调 ASSETS_LIB，不写具体颜色/路径 */
+  function drawApple(ctx2, x, y, r) {
+    ctx2.save();
+    ctx2.shadowBlur = 4;
+    ctx2.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx2.fillStyle = '#d94f45';
+    ctx2.beginPath();
+    ctx2.arc(x - r * 0.18, y, r * 0.86, 0, Math.PI * 2);
+    ctx2.arc(x + r * 0.18, y, r * 0.84, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = '#4ea24e';
+    ctx2.beginPath();
+    ctx2.ellipse(x + r * 0.36, y - r * 0.92, r * 0.34, r * 0.18, -0.6, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx2.beginPath();
+    ctx2.arc(x - r * 0.36, y - r * 0.3, r * 0.2, 0, Math.PI * 2);
+    ctx2.fill();
+    ctx2.restore();
+  }
+
+  function drawSnakeEyes(ctx2, head, dirVec, bodyW) {
+    var len = Math.hypot(dirVec.x, dirVec.y) || 1;
+    var fx = dirVec.x / len;
+    var fy = dirVec.y / len;
+    var sx = -fy, sy = fx;
+    var eyeR = bodyW * 0.18;
+    var forward = bodyW * 0.22;
+    var spread = bodyW * 0.2;
+    var pupilShift = bodyW * 0.09;
+    [{k:1},{k:-1}].forEach(function (it) {
+      var ex = head.x + fx * forward + sx * spread * it.k;
+      var ey = head.y + fy * forward + sy * spread * it.k;
+      ctx2.fillStyle = '#fff';
+      ctx2.beginPath(); ctx2.arc(ex, ey, eyeR, 0, Math.PI * 2); ctx2.fill();
+      ctx2.fillStyle = '#1f1f1f';
+      ctx2.beginPath(); ctx2.arc(ex + fx * pupilShift, ey + fy * pupilShift, eyeR * 0.45, 0, Math.PI * 2); ctx2.fill();
+    });
+  }
+
+  function strokeSnakePath(ctx2, pts, style, bodyW, shadow) {
+    ctx2.save();
+    ctx2.lineCap = 'round';
+    ctx2.lineJoin = 'round';
+    ctx2.lineWidth = bodyW;
+    ctx2.strokeStyle = style;
+    ctx2.shadowBlur = shadow && shadow.blur ? shadow.blur : 4;
+    ctx2.shadowColor = shadow && shadow.color ? shadow.color : 'rgba(0,0,0,0.2)';
+    ctx2.beginPath();
+    pts.forEach(function (p, i) { if (!i) ctx2.moveTo(p.x, p.y); else ctx2.lineTo(p.x, p.y); });
+    ctx2.stroke();
+    ctx2.restore();
+  }
+
+  function renderPresetSnake(ctx2, pts, t, mapId, preset) {
+    var bodyW = CELL * (preset.widthMul || 0.78);
+    var headVec = { x: pts[0].x - pts[1].x, y: pts[0].y - pts[1].y };
+    if (preset.alpha != null) ctx2.save(), ctx2.globalAlpha = preset.alpha;
+    if (preset.segmented) {
+      pts.forEach(function (p, i) {
+        if (i === pts.length - 1) return;
+        var st = typeof preset.segmented === 'function' ? preset.segmented(i, t) : preset.segmented[i % preset.segmented.length];
+        strokeSnakePath(ctx2, [p, pts[i + 1]], st, bodyW, preset.shadow);
+      });
+    } else {
+      var style = preset.style;
+      if (typeof style === 'function') style = style(ctx2, pts, t, mapId);
+      strokeSnakePath(ctx2, pts, style, bodyW, preset.shadow);
+    }
+    if (preset.star) {
+      pts.forEach(function (p, i) {
+        if (i % 2) return;
+        ctx2.fillStyle = preset.star;
+        ctx2.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+      });
+    }
+    if (preset.spark) {
+      pts.forEach(function (p, i) {
+        if (((i + (t / 90 | 0)) % 3) !== 0) return;
+        ctx2.fillStyle = preset.spark;
+        ctx2.fillRect(p.x - 2, p.y - 2, 3, 3);
+      });
+    }
+    if (preset.flameHead) {
+      ctx2.save();
+      for (var fi = 0; fi < 4; fi++) {
+        ctx2.fillStyle = 'rgba(255,70,40,' + (0.55 - fi * 0.1) + ')';
+        ctx2.fillRect(pts[0].x - bodyW * 0.25, pts[0].y - bodyW * 0.55 - fi * 2, bodyW * 0.5, 2);
+      }
+      ctx2.restore();
+    }
+    if (preset.alpha != null) ctx2.restore();
+    drawSnakeEyes(ctx2, pts[0], headVec, bodyW);
+  }
+
+  var ASSETS_LIB = {
+    skins: {
+      default: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: mapId === 'lava' ? '#a7ff4a' : '#46d35c' }); } },
+      ghost: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#a7f6b6', alpha: 0.5, shadow: { blur: 8, color: 'rgba(160,255,180,0.35)' } }); } },
+      gold: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: function (cc, p) { var g = cc.createLinearGradient(p[0].x, p[0].y, p[p.length - 1].x, p[p.length - 1].y); g.addColorStop(0, '#ffe38a'); g.addColorStop(1, '#b8860b'); return g; } }); } },
+      rainbow: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: function (i, tt) { return 'hsl(' + (((tt / 22 | 0) + i * 28) % 360) + ',88%,58%)'; } }); } },
+      flame: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#ff4a28', shadow: { blur: 6, color: 'rgba(255,80,40,0.35)' }, flameHead: true }); } },
+      cosmic: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#5f4a88', spark: 'rgba(255,255,255,0.85)' }); } },
+      china: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#d7342a', star: '#ffe58f' }); } },
+      bee: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#ffd93d', '#1d1d1d'] }); } },
+      ocean: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#37b7ff', '#1e6aa6', '#5fd2ff'] }); } },
+      jade: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#43be7b' }); } },
+      candy: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#ff72b6', '#ffd0e9'] }); } },
+      cyber: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#a45bff', spark: 'rgba(150,255,255,0.7)' }); } },
+      ice: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#9ce9ff' }); } },
+      sunset: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#ff9f43', '#ff5f6d', '#ffc371'] }); } },
+      plasma: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: function (i, tt) { return 'hsl(' + (((tt / 15 | 0) + i * 35) % 360) + ',95%,62%)'; }, shadow: { blur: 6, color: 'rgba(120,80,255,0.35)' } }); } },
+      pixel: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#7dcf6f', '#4d8f49', '#9fe18a'] }); } },
+      shadow: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#2d2d38', shadow: { blur: 7, color: 'rgba(0,0,0,0.45)' } }); } },
+      mint: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { style: '#70f0c4' }); } },
+      aurora: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#76ffcb', '#65b3ff', '#c784ff'], shadow: { blur: 6, color: 'rgba(100,220,255,0.3)' } }); } },
+      magma: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#ff6a00', '#ff2a00', '#ffb347'], flameHead: true }); } },
+      neon: { render: function (ctx2, pts, t, mapId) { renderPresetSnake(ctx2, pts, t, mapId, { segmented: ['#00f5ff', '#ff00e5'], shadow: { blur: 7, color: 'rgba(0,255,255,0.35)' } }); } }
+    },
+    maps: {
+      classic: {
+        render: function (ctx2, w, h, cell) {
+          var gridN = Math.max(1, Math.floor(w / cell));
+          var a = '#A2D149', b = '#AAD751';
+          var yy, xx;
+          for (yy = 0; yy < gridN; yy++) for (xx = 0; xx < gridN; xx++) {
+            ctx2.fillStyle = (xx + yy) % 2 ? a : b;
+            ctx2.fillRect(xx * cell, yy * cell, cell, cell);
+          }
+          // 轻地面质感：避免纯平面
+          ctx2.fillStyle = 'rgba(255,255,255,0.04)';
+          for (yy = 0; yy < gridN; yy += 3) {
+            ctx2.fillRect(0, yy * cell + cell * 0.18, w, 1);
+          }
+        }
+      },
+      forest: {
+        render: function (ctx2, w, h, cell) {
+          var gridN = Math.max(1, Math.floor(w / cell));
+          var bg = ctx2.createLinearGradient(0, 0, 0, h);
+          bg.addColorStop(0, '#245e35');
+          bg.addColorStop(1, '#163f26');
+          ctx2.fillStyle = bg;
+          ctx2.fillRect(0, 0, w, h);
+          var yy, xx;
+          for (yy = 0; yy < gridN; yy++) for (xx = 0; xx < gridN; xx++) {
+            ctx2.fillStyle = (xx + yy) % 2 ? 'rgba(110,180,90,0.10)' : 'rgba(70,130,60,0.10)';
+            ctx2.fillRect(xx * cell, yy * cell, cell, cell);
+          }
+          ctx2.strokeStyle = 'rgba(40,140,70,0.20)';
+          for (var g = 0; g <= gridN; g++) {
+            ctx2.beginPath(); ctx2.moveTo(g * cell, 0); ctx2.lineTo(g * cell, h); ctx2.stroke();
+            ctx2.beginPath(); ctx2.moveTo(0, g * cell); ctx2.lineTo(w, g * cell); ctx2.stroke();
+          }
+          if (treesCache) treesCache.forEach(function (tr, idx) {
+            var tw = cell * (0.60 + (idx % 2) * 0.08);
+            var th = cell * (0.58 + (idx % 3) * 0.06);
+            var tx = tr.x * cell + (cell - tw) * 0.5;
+            var ty = tr.y * cell + cell * 0.20;
+            ctx2.fillStyle = 'rgba(22,72,35,0.85)';
+            ctx2.fillRect(tx + tw * 0.42, ty + th * 0.55, tw * 0.16, th * 0.45);
+            ctx2.fillStyle = 'rgba(35,110,50,0.92)';
+            ctx2.fillRect(tx, ty + th * 0.30, tw, th * 0.45);
+            ctx2.fillStyle = 'rgba(55,145,70,0.95)';
+            ctx2.fillRect(tx + tw * 0.12, ty, tw * 0.76, th * 0.42);
+          });
+        }
+      },
+      lava: {
+        render: function (ctx2, w, h, cell) {
+          var gridN = Math.max(1, Math.floor(w / cell));
+          var lg = ctx2.createLinearGradient(0, 0, 0, h);
+          lg.addColorStop(0, '#2a0b09');
+          lg.addColorStop(1, '#140606');
+          ctx2.fillStyle = lg;
+          ctx2.fillRect(0, 0, w, h);
+          var tt = performance.now();
+          var flow = 0.08 + (Math.sin(tt / 700) + 1) * 0.03;
+          ctx2.fillStyle = 'rgba(255,70,30,' + flow.toFixed(3) + ')';
+          for (var i = -1; i < gridN + 1; i += 2) {
+            var y0 = i * cell + ((tt / 28) % (cell * 2));
+            ctx2.fillRect(0, y0, w, cell * 0.45);
+          }
+          ctx2.strokeStyle = 'rgba(255,110,60,0.18)';
+          for (var g = 0; g <= gridN; g++) {
+            ctx2.beginPath(); ctx2.moveTo(g * cell, 0); ctx2.lineTo(g * cell, h); ctx2.stroke();
+            ctx2.beginPath(); ctx2.moveTo(0, g * cell); ctx2.lineTo(w, g * cell); ctx2.stroke();
+          }
+          // 裂纹感
+          ctx2.strokeStyle = 'rgba(255,170,110,0.11)';
+          ctx2.lineWidth = 1;
+          for (var c = 0; c < 5; c++) {
+            var sx = ((c * 131 + (tt / 9 | 0)) % Math.max(1, w - 20)) + 10;
+            var sy = ((c * 79 + (tt / 13 | 0)) % Math.max(1, h - 40)) + 20;
+            ctx2.beginPath();
+            ctx2.moveTo(sx, sy);
+            ctx2.lineTo(sx + 10, sy + 6);
+            ctx2.lineTo(sx + 17, sy - 2);
+            ctx2.stroke();
+          }
+        }
+      },
+      checkerboard: {
+        render: function (ctx2, w, h, cell) {
+          var gridN = Math.max(1, Math.floor(w / cell));
+          var a = '#A2D149', b = '#AAD751';
+          for (var yy = 0; yy < gridN; yy++) for (var xx = 0; xx < gridN; xx++) {
+            ctx2.fillStyle = (xx + yy) % 2 ? a : b;
+            ctx2.fillRect(xx * cell, yy * cell, cell, cell);
+          }
+        }
+      }
+    },
+    items: {
+      calabash: '<svg class="item-calabash-svg" viewBox="0 0 64 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="cbGlassGrad" cx="38%" cy="28%" r="78%"><stop offset="0%" stop-color="#b8ff8c"/><stop offset="55%" stop-color="#67b64a"/><stop offset="100%" stop-color="#2a5a19"/></radialGradient></defs><path class="cb-neck cb-outline" d="M32 14c-5 0-9 4-9 9 0 6 4 10 9 10s9-4 9-10c0-5-4-9-9-9z"/><path class="cb-glass cb-outline" d="M32 30c-11 0-20 9-20 21 0 15 9 27 20 27s20-12 20-27c0-12-9-21-20-21z"/><ellipse cx="40" cy="48" rx="7" ry="5" fill="rgba(255,255,255,0.24)"/><path class="cb-leaf" d="M40 9c6 1 10 5 12 10-6 1-12-2-15-7 1-1 2-2 3-3z"/></svg>',
+      crate: '<div class="crate-visual"><div class="crate-core"></div><div class="crate-band"></div><div class="crate-lock"></div></div>'
+    }
+  };
 
   function layoutSnakeScreen() {
     if (!canvas || !ctx || !snakeScreen || !snakeScreen.classList.contains('active')) return;
@@ -441,6 +1037,7 @@
     box.style.setProperty('--snake-board', boardSize + 'px');
     box.style.width = boardSize + 'px';
     box.style.height = boardSize + 'px';
+    refreshMapBoxClass();
     draw();
   }
 
@@ -464,6 +1061,11 @@
   var unlockedSkins = ['default'];
   var cloudCurrentSkin = 'default';
   var unlockBaselineRound = ['default'];
+  var walletCoins = 0, walletCalabash = 0, walletCrates = 0;
+  var unlockedMaps = ['classic'];
+  var equippedMap = 'classic';
+  var activeMap = 'classic';
+  var treesCache = null;
 
   function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
 
@@ -494,65 +1096,176 @@
     bar.classList.add('visible');
   }
 
+  function applyProfileRow(row) {
+    if (!row) return;
+    cloudHigh = num(row.highScore);
+    if (row.nickname) localStorage.setItem(STORAGE_NAME, String(row.nickname).trim());
+    if (row.unlockedSkins && row.unlockedSkins.length) unlockedSkins = row.unlockedSkins.slice();
+    else unlockedSkins = mergeUnlockedFromScore(cloudHigh, ['default']);
+    if (row.currentSkin) cloudCurrentSkin = row.currentSkin;
+    walletCoins = num(row.coins);
+    walletCalabash = num(row.calabashCount);
+    walletCrates = num(row.crates);
+    if (row.unlockedMaps && row.unlockedMaps.length) unlockedMaps = row.unlockedMaps.map(String);
+    else unlockedMaps = ['classic'];
+    if (unlockedMaps.indexOf('classic') < 0) unlockedMaps.unshift('classic');
+    equippedMap = row.currentMap && String(row.currentMap).trim() ? String(row.currentMap) : 'classic';
+    if (unlockedMaps.indexOf(equippedMap) < 0) equippedMap = 'classic';
+  }
+
+  function updateHubWalletUI() {
+    var a = function (id, v) { var n = document.getElementById(id); if (n) n.textContent = String(v); };
+    a('hub-coins', walletCoins);
+    a('hub-calabash', walletCalabash);
+    a('hub-crates', walletCrates);
+    a('shop-wallet-display', walletCoins);
+    a('wh-crates-h', walletCrates);
+  }
+
   async function fetchProfile() {
     var c = getSb();
     var el = document.getElementById('cloud-high');
-    if (!c) { if (el) el.textContent = '离线'; return; }
+    if (!c) {
+      if (el) el.textContent = '离线';
+      updateHubWalletUI();
+      return;
+    }
     setSync(true);
     try {
       var id = getUserId();
-      var r = await c.from('profiles').select('highScore, nickname, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
+      var r = await c
+        .from('profiles')
+        .select(
+          'highScore, nickname, unlockedSkins, currentSkin, coins, calabashCount, crates, unlockedMaps, currentMap'
+        )
+        .eq('id', id)
+        .maybeSingle();
       if (r.error) throw r.error;
-      var row = r.data;
-      cloudHigh = row ? num(row.highScore) : 0;
+      applyProfileRow(r.data);
       if (el) el.textContent = String(cloudHigh);
-      if (row && row.nickname) localStorage.setItem(STORAGE_NAME, String(row.nickname).trim());
-      if (row && row.unlockedSkins && row.unlockedSkins.length) unlockedSkins = row.unlockedSkins.slice();
-      else unlockedSkins = mergeUnlockedFromScore(cloudHigh, ['default']);
-      if (row && row.currentSkin) cloudCurrentSkin = row.currentSkin;
       document.getElementById('display-name').textContent = getNickname() || '——';
+      updateHubWalletUI();
     } catch (e) {
-      console.warn(e); if (el) el.textContent = '—';
-    } finally { setSync(false); }
+      console.warn(e);
+      if (el) el.textContent = '—';
+    } finally {
+      setSync(false);
+    }
   }
 
   async function persistRound(finalScore, prevUnlockedSnapshot, activeSkin) {
     var c = getSb();
-    if (!c) return { ok:false, reason:'no_client', newUnlocks:[] };
+    if (!c) {
+      return { ok: false, reason: 'no_client', newUnlocks: [], earnedCoins: 0, crateDropped: false };
+    }
     var id = getUserId();
     var name = getNickname() || 'Player';
-    var selRemote = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
-    var rh = selRemote.data ? num(selRemote.data.highScore) : 0;
-    var ru = (selRemote.data && selRemote.data.unlockedSkins) ? selRemote.data.unlockedSkins.slice() : ['default'];
+    var selRemote = await c
+      .from('profiles')
+      .select(
+        'highScore, unlockedSkins, currentSkin, coins, calabashCount, crates, unlockedMaps, currentMap'
+      )
+      .eq('id', id)
+      .maybeSingle();
+    var sr = selRemote.data || {};
+    var rh = num(sr.highScore);
+    var ru = sr.unlockedSkins && sr.unlockedSkins.length ? sr.unlockedSkins.slice() : ['default'];
     var mergedHigh = Math.max(finalScore, rh, cloudHigh);
     var mergedUnlock = mergeUnlockedFromScore(mergedHigh, ru);
     var beforeSet = {};
-    prevUnlockedSnapshot.forEach(function (x) { beforeSet[x] = 1; });
+    prevUnlockedSnapshot.forEach(function (x) {
+      beforeSet[x] = 1;
+    });
     var newUnlocks = mergedUnlock.filter(function (sid) {
       return sid !== 'default' && !beforeSet[sid];
     });
     var curSkin = activeSkin || cloudCurrentSkin || 'default';
     if (!isSkinUnlocked(curSkin, mergedUnlock)) curSkin = 'default';
 
+    var earnedCoins = Math.floor(finalScore * SC_PER_LEN);
+    var mergedCoins = num(sr.coins) + earnedCoins;
+    var crateDropped = Math.random() < CRATE_DROP_PROB;
+    var mergedCrates = num(sr.crates) + (crateDropped ? 1 : 0);
+    var mergedMaps = sr.unlockedMaps && sr.unlockedMaps.length ? sr.unlockedMaps.map(String) : ['classic'];
+    if (mergedMaps.indexOf('classic') < 0) mergedMaps.unshift('classic');
+    var curMapRow = equippedMap && mergedMaps.indexOf(equippedMap) >= 0 ? equippedMap : 'classic';
+
     setSync(true);
     try {
-      var up = await c.from('profiles').upsert({
-        id: id,
-        nickname: name,
-        highScore: mergedHigh,
-        unlockedSkins: mergedUnlock,
-        currentSkin: curSkin,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      var up = await c.from('profiles').upsert(
+        {
+          id: id,
+          nickname: name,
+          highScore: mergedHigh,
+          unlockedSkins: mergedUnlock,
+          currentSkin: curSkin,
+          coins: mergedCoins,
+          calabashCount: num(sr.calabashCount),
+          crates: mergedCrates,
+          unlockedMaps: mergedMaps,
+          currentMap: curMapRow,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      );
       if (up.error) throw up.error;
       cloudHigh = mergedHigh;
       unlockedSkins = mergedUnlock;
       cloudCurrentSkin = curSkin;
+      walletCoins = mergedCoins;
+      walletCrates = mergedCrates;
+      equippedMap = curMapRow;
+      unlockedMaps = mergedMaps.slice();
       document.getElementById('cloud-high').textContent = String(cloudHigh);
-      return { ok:true, improved: finalScore > rh, newUnlocks: newUnlocks };
+      updateHubWalletUI();
+      return {
+        ok: true,
+        improved: finalScore > rh,
+        newUnlocks: newUnlocks,
+        earnedCoins: earnedCoins,
+        crateDropped: crateDropped
+      };
     } catch (e) {
-      console.warn(e); return { ok:false, error: e, newUnlocks: newUnlocks };
-    } finally { setSync(false); }
+      console.warn(e);
+      return { ok: false, error: e, newUnlocks: newUnlocks, earnedCoins: earnedCoins, crateDropped: crateDropped };
+    } finally {
+      setSync(false);
+    }
+  }
+
+  /** 全量写入 profiles（商店 / 开箱 / 装备后同步） */
+  async function syncProfileFull() {
+    var c = getSb();
+    if (!c) return { ok: false };
+    var id = getUserId();
+    var name = getNickname() || 'Player';
+    setSync(true);
+    try {
+      var up = await c.from('profiles').upsert(
+        {
+          id: id,
+          nickname: name,
+          highScore: cloudHigh,
+          unlockedSkins: unlockedSkins.slice(),
+          currentSkin: cloudCurrentSkin,
+          coins: walletCoins,
+          calabashCount: walletCalabash,
+          crates: walletCrates,
+          unlockedMaps: unlockedMaps.slice(),
+          currentMap: equippedMap,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      );
+      if (up.error) throw up.error;
+      updateHubWalletUI();
+      return { ok: true };
+    } catch (e) {
+      console.warn(e);
+      return { ok: false, error: e };
+    } finally {
+      setSync(false);
+    }
   }
 
   async function upsertNicknameOnly(nm) {
@@ -561,13 +1274,39 @@
     setSync(true);
     try {
       var id = getUserId();
-      var ex = await c.from('profiles').select('highScore, unlockedSkins, currentSkin').eq('id', id).maybeSingle();
-      var hs = ex.data ? num(ex.data.highScore) : 0;
-      var us = (ex.data && ex.data.unlockedSkins) ? ex.data.unlockedSkins : mergeUnlockedFromScore(hs, ['default']);
-      var cs = (ex.data && ex.data.currentSkin) ? ex.data.currentSkin : 'default';
-      var res = await c.from('profiles').upsert({
-        id: id, nickname: nm, highScore: hs, unlockedSkins: us, currentSkin: cs, updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      var ex = await c
+        .from('profiles')
+        .select(
+          'highScore, unlockedSkins, currentSkin, coins, calabashCount, crates, unlockedMaps, currentMap'
+        )
+        .eq('id', id)
+        .maybeSingle();
+      var d = ex.data || {};
+      var hs = num(d.highScore);
+      var us = d.unlockedSkins && d.unlockedSkins.length ? d.unlockedSkins : mergeUnlockedFromScore(hs, ['default']);
+      var cs = d.currentSkin || 'default';
+      var cx = num(d.coins);
+      var cal = num(d.calabashCount);
+      var cr = num(d.crates);
+      var umaps = d.unlockedMaps && d.unlockedMaps.length ? d.unlockedMaps.map(String) : ['classic'];
+      if (umaps.indexOf('classic') < 0) umaps.unshift('classic');
+      var cmap = d.currentMap && String(d.currentMap).trim() ? String(d.currentMap) : 'classic';
+      var res = await c.from('profiles').upsert(
+        {
+          id: id,
+          nickname: nm,
+          highScore: hs,
+          unlockedSkins: us,
+          currentSkin: cs,
+          coins: cx,
+          calabashCount: cal,
+          crates: cr,
+          unlockedMaps: umaps,
+          currentMap: cmap,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      );
       if (res.error) throw res.error;
       await fetchProfile();
       return { ok: true };
@@ -601,7 +1340,16 @@
   function getNickname() { return (localStorage.getItem(STORAGE_NAME) || '').trim(); }
 
   function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(function (el) { el.classList.toggle('active', el.id === id); });
+    document.querySelectorAll('.screen').forEach(function (el) {
+      el.classList.toggle('active', el.id === id);
+    });
+    if (id !== 'shop-screen' && id !== 'warehouse-screen') ecoPreviewStop();
+    var hubScreens = ['home-screen', 'shop-screen', 'warehouse-screen', 'leaderboard-screen'];
+    setHubNavVisible(hubScreens.indexOf(id) >= 0);
+    setHubNavActive(id);
+    if (id === 'shop-screen') renderShop();
+    if (id === 'warehouse-screen') renderWarehouse();
+    if (id === 'leaderboard-screen') fetchLb();
     if (id === 'snake-screen' && window.snakeBoot) window.snakeBoot();
   }
   window.showScreen = showScreen;
@@ -627,6 +1375,486 @@
     finally { setSync(false); }
   }
 
+  function setHubNavVisible(on) {
+    var nav = document.getElementById('hub-bottom-nav');
+    if (nav) nav.classList.toggle('hidden', !on);
+  }
+
+  function setHubNavActive(id) {
+    document.querySelectorAll('.hub-nav-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-hub') === id);
+    });
+  }
+
+  function randomLockedSkinId() {
+    var pool = SKIN_ORDER.filter(function (s) {
+      return s !== 'default' && unlockedSkins.indexOf(s) < 0;
+    });
+    if (!pool.length) return null;
+    return pool[(Math.random() * pool.length) | 0];
+  }
+
+  function randomLockedMapId() {
+    var pool = MAP_ORDER.filter(function (m) {
+      return unlockedMaps.indexOf(m) < 0;
+    });
+    if (!pool.length) return null;
+    return pool[(Math.random() * pool.length) | 0];
+  }
+
+  function rollCrateLoot() {
+    var r = Math.random();
+    var acc = 0;
+    var kind = 'coins';
+    for (var i = 0; i < CRATE_ROLLS.length; i++) {
+      acc += CRATE_ROLLS[i].prob;
+      if (r < acc) {
+        kind = CRATE_ROLLS[i].kind;
+        break;
+      }
+    }
+    if (kind === 'coins') {
+      var amt = 100 + ((Math.random() * 201) | 0);
+      return { kind: 'coins', amount: amt, text: '获得 ' + amt + ' 蛇币！' };
+    }
+    if (kind === 'calabash') return { kind: 'calabash', amount: 1, text: '获得金葫芦 ×1！' };
+    if (kind === 'skin') {
+      var sid = randomLockedSkinId();
+      if (!sid) {
+        var fx = 200 + ((Math.random() * 151) | 0);
+        return { kind: 'coins', amount: fx, text: '皮肤已全部解锁 · 折算 ' + fx + ' 蛇币' };
+      }
+      return { kind: 'skin', skinId: sid, text: '解锁皮肤：' + SKIN_META[sid].label };
+    }
+    var mid = randomLockedMapId();
+    if (!mid) {
+      var fx2 = 400 + ((Math.random() * 101) | 0);
+      return { kind: 'coins', amount: fx2, text: '地图已全部解锁 · 折算 ' + fx2 + ' 蛇币' };
+    }
+    return { kind: 'map', mapId: mid, text: '解锁地图：' + MAP_META[mid].label };
+  }
+
+  function applyCrateResult(res) {
+    if (res.kind === 'coins') walletCoins += res.amount;
+    else if (res.kind === 'calabash') walletCalabash += res.amount || 1;
+    else if (res.kind === 'skin' && res.skinId && unlockedSkins.indexOf(res.skinId) < 0)
+      unlockedSkins.push(res.skinId);
+    else if (res.kind === 'map' && res.mapId && unlockedMaps.indexOf(res.mapId) < 0)
+      unlockedMaps.push(res.mapId);
+    updateHubWalletUI();
+  }
+
+  /** —— 商店/仓库 Canvas 预览：单循环 ~18fps，离开页面即停，减轻移动端压力 —— */
+  var ecoPreviewList = [];
+  var ecoRaf = 0;
+  var lastEcoFrame = 0;
+  var ecoT0 = 0;
+
+  function ecoPreviewStop() {
+    if (ecoRaf) {
+      cancelAnimationFrame(ecoRaf);
+      ecoRaf = 0;
+    }
+    ecoPreviewList = [];
+    ecoT0 = 0;
+  }
+
+  function drawSnakePreview(ctx, skinId, t) {
+    var w = ctx.canvas.width, h = ctx.canvas.height;
+    var g = 8, cell = Math.min(w, h) / g, ox = (w - g * cell) / 2, oy = (h - g * cell) / 2;
+    ASSETS_LIB.maps.checkerboard.render(ctx, w, h, cell);
+    var pts = [
+      { x: ox + cell * 5.2, y: oy + cell * 3.8 + Math.sin(t / 500) * 1.2 },
+      { x: ox + cell * 4.2, y: oy + cell * 4.0 + Math.sin(t / 500 + 0.6) * 1.2 },
+      { x: ox + cell * 3.2, y: oy + cell * 4.2 + Math.sin(t / 500 + 1.1) * 1.2 },
+      { x: ox + cell * 2.2, y: oy + cell * 4.4 + Math.sin(t / 500 + 1.6) * 1.2 }
+    ];
+    (ASSETS_LIB.skins[skinId] || ASSETS_LIB.skins.default).render(ctx, pts, t, 'classic');
+  }
+
+  function drawMapThumb(ctx, mapId, t) {
+    var w = ctx.canvas.width, h = ctx.canvas.height;
+    var g = 8, cell = Math.min(w, h) / g;
+    (ASSETS_LIB.maps[mapId] || ASSETS_LIB.maps.classic).render(ctx, w, h, cell);
+    // 缩略图里给一点“可玩感”：小蛇 + 苹果
+    var ox = (w - g * cell) / 2, oy = (h - g * cell) / 2;
+    drawApple(ctx, ox + cell * 5.8, oy + cell * 2.2, cell * 0.28);
+    var pts = [
+      { x: ox + cell * 2.2, y: oy + cell * 5.2 },
+      { x: ox + cell * 3.1, y: oy + cell * 5.0 },
+      { x: ox + cell * 4.0, y: oy + cell * 4.8 }
+    ];
+    ASSETS_LIB.skins.default.render(ctx, pts, t, mapId);
+  }
+
+  function ecoPreviewTick(now) {
+    if (!ecoPreviewList.length) {
+      ecoRaf = 0;
+      return;
+    }
+    if (now - lastEcoFrame < 52) {
+      ecoRaf = requestAnimationFrame(ecoPreviewTick);
+      return;
+    }
+    lastEcoFrame = now;
+    if (!ecoT0) ecoT0 = now;
+    var tt = now - ecoT0;
+    var i;
+    for (i = ecoPreviewList.length - 1; i >= 0; i--) {
+      var it = ecoPreviewList[i];
+      if (!it.canvas.isConnected) {
+        ecoPreviewList.splice(i, 1);
+        continue;
+      }
+      if (it.type === 'skin') drawSnakePreview(it.ctx, it.skinId, tt);
+      else drawMapThumb(it.ctx, it.mapId, tt);
+    }
+    ecoRaf = requestAnimationFrame(ecoPreviewTick);
+  }
+
+  function ecoPreviewRegisterFromGrids() {
+    ecoPreviewStop();
+    ['shop-grid', 'wh-grid-skins', 'wh-grid-maps'].forEach(function (gid) {
+      var root = document.getElementById(gid);
+      if (!root) return;
+      root.querySelectorAll('canvas.skin-preview[data-skin]').forEach(function (cv) {
+        ecoPreviewList.push({
+          canvas: cv,
+          ctx: cv.getContext('2d', { alpha: true }),
+          type: 'skin',
+          skinId: cv.getAttribute('data-skin') || 'default'
+        });
+      });
+      root.querySelectorAll('canvas.map-thumb[data-map]').forEach(function (cv) {
+        ecoPreviewList.push({
+          canvas: cv,
+          ctx: cv.getContext('2d', { alpha: true }),
+          type: 'map',
+          mapId: cv.getAttribute('data-map') || 'classic'
+        });
+      });
+    });
+    if (ecoPreviewList.length) {
+      ecoT0 = 0;
+      lastEcoFrame = 0;
+      ecoRaf = requestAnimationFrame(ecoPreviewTick);
+    }
+  }
+
+  function renderShop() {
+    var grid = document.getElementById('shop-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    function bindBuy(btn, fn) {
+      btn.onclick = function () {
+        fn(btn);
+      };
+    }
+
+    function flashCoinAndDing(btn) {
+      var el = document.getElementById('hub-coins');
+      if (el) el.classList.add('coin-flash');
+      setTimeout(function () {
+        if (el) el.classList.remove('coin-flash');
+      }, 600);
+      btn.classList.add('ding');
+      setTimeout(function () {
+        btn.classList.remove('ding');
+      }, 450);
+    }
+
+    var cal = document.createElement('div');
+    cal.className = 'eco-card';
+    cal.innerHTML =
+      '<span class="eco-use-badge" style="display:none"></span>' +
+      '<div class="item-visual-wrap">' +
+      ASSETS_LIB.items.calabash +
+      '</div>' +
+      '<div class="eco-title">金葫芦</div>' +
+      '<div class="eco-meta">死后可选续命一次</div>' +
+      '<div class="eco-price">' +
+      SHOP_CALABASH_PRICE +
+      ' 🪙</div>';
+    var calBtn = document.createElement('button');
+    calBtn.type = 'button';
+    calBtn.className = 'shop-buy';
+    calBtn.textContent = '购买';
+    calBtn.disabled = walletCoins < SHOP_CALABASH_PRICE;
+    bindBuy(calBtn, function (btn) {
+      if (walletCoins < SHOP_CALABASH_PRICE) return;
+      walletCoins -= SHOP_CALABASH_PRICE;
+      walletCalabash++;
+      updateHubWalletUI();
+      flashCoinAndDing(btn);
+      syncProfileFull();
+      renderShop();
+    });
+    cal.appendChild(calBtn);
+    grid.appendChild(cal);
+
+    SKIN_ORDER.forEach(function (sid) {
+      if (sid === 'default') return;
+      var meta = SKIN_META[sid];
+      var price = SHOP_SKIN_PRICES[sid] || 2500;
+      var has = unlockedSkins.indexOf(sid) >= 0;
+      var wrap = document.createElement('div');
+      wrap.className = 'eco-card' + (has ? ' locked' : '');
+      var stackClass = 'eco-preview-stack' + (sid === 'gold' ? ' eco-preview-stack--gold' : '');
+      wrap.innerHTML =
+        '<span class="eco-use-badge" style="display:none"></span>' +
+        '<div class="' +
+        stackClass +
+        '">' +
+        '<canvas class="skin-preview" width="88" height="88" data-skin="' +
+        sid +
+        '"></canvas>' +
+        '</div>' +
+        '<div class="eco-lock-mask"></div>' +
+        '<div class="eco-title">' +
+        meta.label +
+        '</div>' +
+        '<div class="eco-meta">' +
+        (has ? '已拥有' : '商店解锁') +
+        '</div>' +
+        '<div class="eco-price">' +
+        price +
+        ' 🪙</div>';
+      if (has) wrap.querySelector('.eco-lock-mask').insertAdjacentHTML('afterend', '<span class="eco-lock-icon">🔒</span>');
+      var sbtn = document.createElement('button');
+      sbtn.type = 'button';
+      sbtn.className = 'shop-buy';
+      sbtn.textContent = has ? '已拥有' : '购买';
+      sbtn.disabled = has || walletCoins < price;
+      if (!has) {
+        bindBuy(sbtn, function (btn) {
+          if (unlockedSkins.indexOf(sid) >= 0 || walletCoins < price) return;
+          walletCoins -= price;
+          if (unlockedSkins.indexOf(sid) < 0) unlockedSkins.push(sid);
+          updateHubWalletUI();
+          flashCoinAndDing(btn);
+          syncProfileFull();
+          renderShop();
+        });
+      }
+      wrap.appendChild(sbtn);
+      grid.appendChild(wrap);
+    });
+
+    ['forest', 'lava'].forEach(function (mid) {
+      var meta = MAP_META[mid];
+      var has = unlockedMaps.indexOf(mid) >= 0;
+      var mw = document.createElement('div');
+      mw.className = 'eco-card' + (has ? ' locked' : '');
+      mw.innerHTML =
+        '<span class="eco-use-badge" style="display:none"></span>' +
+        '<div class="eco-preview-stack">' +
+        '<canvas class="map-thumb" width="88" height="88" data-map="' +
+        mid +
+        '"></canvas>' +
+        '</div>' +
+        '<div class="eco-lock-mask"></div>' +
+        '<div class="eco-title">' +
+        meta.label +
+        ' 地图</div>' +
+        '<div class="eco-meta">' +
+        (has ? '已拥有' : '动态环境') +
+        '</div>' +
+        '<div class="eco-price">' +
+        SHOP_MAP_PRICE +
+        ' 🪙</div>';
+      if (has) mw.querySelector('.eco-lock-mask').insertAdjacentHTML('afterend', '<span class="eco-lock-icon">🔒</span>');
+      var mbtn = document.createElement('button');
+      mbtn.type = 'button';
+      mbtn.className = 'shop-buy';
+      mbtn.textContent = has ? '已拥有' : '购买';
+      mbtn.disabled = has || walletCoins < SHOP_MAP_PRICE;
+      if (!has) {
+        bindBuy(mbtn, function (btn) {
+          if (unlockedMaps.indexOf(mid) >= 0 || walletCoins < SHOP_MAP_PRICE) return;
+          walletCoins -= SHOP_MAP_PRICE;
+          if (unlockedMaps.indexOf(mid) < 0) unlockedMaps.push(mid);
+          updateHubWalletUI();
+          flashCoinAndDing(btn);
+          syncProfileFull();
+          renderShop();
+        });
+      }
+      mw.appendChild(mbtn);
+      grid.appendChild(mw);
+    });
+
+    ecoPreviewRegisterFromGrids();
+  }
+
+  function renderWarehouse() {
+    var gs = document.getElementById('wh-grid-skins');
+    var gm = document.getElementById('wh-grid-maps');
+    var gi = document.getElementById('wh-grid-items');
+    if (!gs || !gm || !gi) return;
+    gs.innerHTML = '';
+    gm.innerHTML = '';
+    gi.innerHTML = '';
+
+    SKIN_ORDER.forEach(function (sid) {
+      var ok = unlockedSkins.indexOf(sid) >= 0;
+      var meta = SKIN_META[sid];
+      var eq = cloudCurrentSkin === sid;
+      var d = document.createElement('div');
+      d.className = 'eco-card' + (eq ? ' equipped' : '') + (ok ? '' : ' locked');
+      var stackClass = 'eco-preview-stack' + (sid === 'gold' ? ' eco-preview-stack--gold' : '');
+      d.innerHTML =
+        '<span class="eco-use-badge">使用中</span>' +
+        '<div class="' +
+        stackClass +
+        '">' +
+        '<canvas class="skin-preview" width="88" height="88" data-skin="' +
+        sid +
+        '"></canvas>' +
+        '</div>' +
+        '<div class="eco-lock-mask"></div>' +
+        (ok ? '' : '<span class="eco-lock-icon">🔒</span>') +
+        '<div class="eco-title">' +
+        meta.label +
+        '</div>' +
+        '<div class="eco-meta">' +
+        sid +
+        '</div>';
+      var sb = document.createElement('button');
+      sb.type = 'button';
+      sb.className = 'shop-buy';
+      sb.textContent = '装备';
+      sb.disabled = !ok;
+      if (ok) {
+        sb.onclick = function () {
+          cloudCurrentSkin = sid;
+          activeSkin = sid;
+          syncProfileFull();
+          renderWarehouse();
+        };
+      } else {
+        sb.textContent = '未解锁';
+      }
+      d.appendChild(sb);
+      gs.appendChild(d);
+    });
+
+    MAP_ORDER.forEach(function (mid) {
+      var ok = unlockedMaps.indexOf(mid) >= 0;
+      var meta = MAP_META[mid];
+      var eq = equippedMap === mid;
+      var d = document.createElement('div');
+      d.className = 'eco-card' + (eq ? ' equipped' : '') + (ok ? '' : ' locked');
+      d.innerHTML =
+        '<span class="eco-use-badge">使用中</span>' +
+        '<div class="eco-preview-stack">' +
+        '<canvas class="map-thumb" width="88" height="88" data-map="' +
+        mid +
+        '"></canvas>' +
+        '</div>' +
+        '<div class="eco-lock-mask"></div>' +
+        (ok ? '' : '<span class="eco-lock-icon">🔒</span>') +
+        '<div class="eco-title">' +
+        meta.label +
+        '</div>' +
+        '<div class="eco-meta">' +
+        mid +
+        '</div>';
+      var mb = document.createElement('button');
+      mb.type = 'button';
+      mb.className = 'shop-buy';
+      mb.textContent = '装备';
+      mb.disabled = !ok;
+      if (ok) {
+        mb.onclick = function () {
+          equippedMap = mid;
+          activeMap = mid;
+          treesCache = null;
+          syncProfileFull();
+          renderWarehouse();
+        };
+      } else {
+        mb.textContent = '未解锁';
+      }
+      d.appendChild(mb);
+      gm.appendChild(d);
+    });
+
+    var crateC = document.createElement('div');
+    crateC.className = 'eco-card';
+    crateC.innerHTML =
+      '<span class="eco-use-badge" style="display:none"></span>' +
+      '<div class="item-visual-wrap" style="position:relative">' +
+      ASSETS_LIB.items.crate +
+      '</div>' +
+      '<div class="eco-title">神秘宝箱</div>' +
+      '<div class="eco-meta">库存 ' +
+      walletCrates +
+      '</div>';
+    var cb = document.createElement('button');
+    cb.type = 'button';
+    cb.className = 'shop-buy';
+    cb.textContent = '开箱';
+    cb.disabled = walletCrates < 1;
+    if (walletCrates >= 1) {
+      cb.onclick = function () {
+        openCrateSequence();
+      };
+    }
+    crateC.appendChild(cb);
+    gi.appendChild(crateC);
+
+    var calC = document.createElement('div');
+    calC.className = 'eco-card';
+    calC.innerHTML =
+      '<span class="eco-use-badge" style="display:none"></span>' +
+      '<div class="item-visual-wrap">' +
+      ASSETS_LIB.items.calabash +
+      '</div>' +
+      '<div class="eco-title">金葫芦</div>' +
+      '<div class="eco-meta">持有 ' +
+      walletCalabash +
+      ' · 死亡时可续命</div>';
+    gi.appendChild(calC);
+
+    ecoPreviewRegisterFromGrids();
+  }
+
+  function openCrateSequence() {
+    if (walletCrates < 1) return;
+    walletCrates--;
+    updateHubWalletUI();
+    var res = rollCrateLoot();
+    applyCrateResult(res);
+    var modal = document.getElementById('crate-modal');
+    var icon = document.getElementById('crate-icon');
+    var txt = document.getElementById('crate-reveal-text');
+    var card = document.getElementById('crate-card');
+    if (icon) icon.innerHTML = '<div class="item-visual-wrap" style="position:relative">' + ASSETS_LIB.items.crate + '</div>';
+    if (txt) txt.textContent = '开启中…';
+    if (modal) modal.classList.add('visible');
+    if (card) card.classList.add('crate-shake');
+    setTimeout(function () {
+      if (card) card.classList.remove('crate-shake');
+      if (icon) {
+        if (res.kind === 'calabash') icon.innerHTML = '<div class="item-visual-wrap">' + ASSETS_LIB.items.calabash + '</div>';
+        else if (res.kind === 'map') icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">🗺️</div>';
+        else if (res.kind === 'skin') icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">✨</div>';
+        else icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">🪙</div>';
+      }
+      if (txt) txt.textContent = res.text;
+    }, 520);
+    var ok = document.getElementById('crate-ok');
+    if (ok) {
+      ok.onclick = function () {
+        if (modal) modal.classList.remove('visible');
+        syncProfileFull();
+        renderWarehouse();
+        buildLobby();
+      };
+    }
+  }
+
   var phase = 'lobby';
   var playing = false;
   var dir = {x:1,y:0}, nextDir = {x:1,y:0};
@@ -638,29 +1866,21 @@
 
   function getDiff() { return DIFF[selDiff] || DIFF.novice; }
 
+  function refreshMapBoxClass() {
+    var box = document.getElementById('snake-canvas-box');
+    if (!box) return;
+    box.classList.remove('map-classic', 'map-forest', 'map-lava');
+    box.classList.add('map-' + (activeMap || 'classic'));
+  }
+
   function buildLobby() {
-    var strip = document.getElementById('skin-strip');
     var diffEl = document.getElementById('lobby-diff');
-    strip.innerHTML = '';
-    SKIN_ORDER.forEach(function (sid, i) {
-      var meta = SKIN_META[sid];
-      var ok = isSkinUnlocked(sid);
-      var card = document.createElement('div');
-      card.className = 'skin-card' + (ok ? '' : ' locked') + (sid === activeSkin ? ' selected' : '');
-      card.dataset.skin = sid;
-      if (ok) {
-        card.innerHTML = '<div style="font-weight:800;color:var(--neon-cyan)">' + meta.label + '</div><div style="opacity:0.7;margin-top:4px;font-size:0.55rem">'+sid+'</div>';
-        card.onclick = function () {
-          activeSkin = sid;
-          Array.prototype.forEach.call(strip.children, function (c) {
-            c.classList.toggle('selected', c.dataset.skin === sid && !c.classList.contains('locked'));
-          });
-        };
-      } else {
-        card.innerHTML = '<span class="lock">🔒</span><div style="margin-top:4px;font-size:0.55rem">需'+meta.ms+'分</div>';
-      }
-      strip.appendChild(card);
-    });
+    var loadoutEl = document.getElementById('lobby-current-loadout');
+    if (loadoutEl) {
+      var skinLabel = (SKIN_META[activeSkin] && SKIN_META[activeSkin].label) || activeSkin;
+      var mapLabel = (MAP_META[activeMap] && MAP_META[activeMap].label) || activeMap;
+      loadoutEl.textContent = '皮肤：' + skinLabel + ' ｜ 地图：' + mapLabel;
+    }
     diffEl.innerHTML = '';
     ['novice','pro','master'].forEach(function (k) {
       var b = document.createElement('button');
@@ -686,10 +1906,16 @@
   }
 
   function spawnFood() {
-    var occ = {}; snake.forEach(function (s) { occ[s.x+','+s.y]=1; });
-    var t = 0; do {
-      food = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) }; t++;
-    } while (occ[food.x+','+food.y] && t < 400);
+    var occ = {};
+    snake.forEach(function (s) { occ[s.x+','+s.y] = 1; });
+    if (activeMap === 'forest' && treesCache) {
+      treesCache.forEach(function (tr) { occ[tr.x+','+tr.y] = 1; });
+    }
+    var t = 0;
+    do {
+      food = { x: Math.floor(Math.random() * GRID), y: Math.floor(Math.random() * GRID) };
+      t++;
+    } while (occ[food.x+','+food.y] && t < 500);
   }
 
   function hud() { document.getElementById('snake-live-score').textContent = String(snake.length); }
@@ -698,7 +1924,7 @@
     dir.x = nextDir.x; dir.y = nextDir.y;
     var head = snake[0];
     var nx = head.x + dir.x, ny = head.y + dir.y;
-    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) { die(); return; }
+    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) { die('wall'); return; }
     snake.unshift({x:nx,y:ny});
     var ate = nx === food.x && ny === food.y;
     if (ate) {
@@ -708,7 +1934,7 @@
       if (activeSkin === 'gold') goldFlashUntil = performance.now() + 220;
     } else snake.pop();
     for (var i = 1; i < snake.length; i++) {
-      if (snake[i].x === nx && snake[i].y === ny) { die(); return; }
+      if (snake[i].x === nx && snake[i].y === ny) { die('self'); return; }
     }
     if (activeSkin === 'ghost') {
       ghostTrail.push({x:nx,y:ny,t:performance.now()});
@@ -720,107 +1946,144 @@
     hud();
   }
 
-  function die() {
-    playing = false; phase = 'dead';
-    if (loopId) cancelAnimationFrame(loopId); loopId = null;
-    if (snakeScreen) { snakeScreen.classList.add('death-shake'); snakeScreen.classList.add('death-flash'); }
-    setTimeout(function () {
-      if (snakeScreen) { snakeScreen.classList.remove('death-shake'); snakeScreen.classList.remove('death-flash'); }
-    }, 500);
-    var score = snake.length;
+  function runDeathAchievementsThenGameOver(score, sync) {
+    var pending = sync && sync.newUnlocks && sync.newUnlocks.length ? sync.newUnlocks.slice() : [];
+    var sc = score;
+    function openGO() {
+      document.getElementById('go-score-display').textContent = String(sc);
+      var msg = document.getElementById('go-record-msg');
+      var syncEl = document.getElementById('go-sync-msg');
+      var pb = num(cloudHigh);
+      if (sync && sync.ok && sync.improved) msg.textContent = '🏆 打破个人纪录！';
+      else if (pb > sc) msg.textContent = '云端最高 ' + pb + ' · 本局 ' + sc;
+      else msg.textContent = '本局长度 ' + sc;
+      var loot = '';
+      if (sync && sync.ok) {
+        loot = '✓ +' + (sync.earnedCoins || 0) + ' 蛇币';
+        if (sync.crateDropped) loot += ' · 掉落宝箱！';
+        loot += ' · 云端已同步';
+      } else if (sync && sync.reason === 'no_client') loot = '⚠️ 未配置 SB_KEY（蛇币未入账）';
+      else loot = sync && sync.error ? '⚠️ 同步失败' : '';
+      syncEl.textContent = loot;
+      document.getElementById('gameover-modal').classList.add('visible');
+    }
+    function chain() {
+      if (!pending.length) {
+        openGO();
+        return;
+      }
+      var sid = pending.shift();
+      document.getElementById('achv-body').innerHTML =
+        '🎉 恭喜！你已觉醒 <strong style="color:var(--neon-magenta)">' + SKIN_META[sid].label + '</strong> ！';
+      document.getElementById('achv-modal').classList.add('visible');
+      var okBtn = document.getElementById('achv-ok');
+      okBtn.onclick = function () {
+        document.getElementById('achv-modal').classList.remove('visible');
+        okBtn.onclick = null;
+        chain();
+      };
+    }
+    if (pending.length) chain();
+    else openGO();
+  }
+
+  function runPersistAfterDeath(score) {
     var prevSnap = unlockBaselineRound.slice();
-    var prevBest = num(cloudHigh);
     draw();
     Promise.resolve(persistRound(score, prevSnap, activeSkin)).then(function (sync) {
-      var pending = (sync && sync.newUnlocks && sync.newUnlocks.length) ? sync.newUnlocks.slice() : [];
-      var sc = score;
-      function openGO() {
-        document.getElementById('go-score-display').textContent = String(sc);
-        var msg = document.getElementById('go-record-msg');
-        var syncEl = document.getElementById('go-sync-msg');
-        if (sync && sync.ok && sync.improved) msg.textContent = '🏆 打破个人纪录！';
-        else if (prevBest > 0) msg.textContent = '云端纪录 ' + prevBest + ' · 差距 ' + Math.max(0, prevBest - sc);
-        else msg.textContent = '继续加油！';
-        if (sync && sync.ok) syncEl.textContent = '✓ 云端已同步（含皮肤进度）';
-        else if (sync && sync.reason === 'no_client') syncEl.textContent = '⚠️ 未配置 SB_KEY';
-        else syncEl.textContent = sync && sync.error ? '⚠️ 同步失败' : '';
-        document.getElementById('gameover-modal').classList.add('visible');
-      }
-      function chain() {
-        if (!pending.length) { openGO(); return; }
-        var sid = pending.shift();
-        document.getElementById('achv-body').innerHTML = '🎉 恭喜！你已觉醒 <strong style="color:var(--neon-magenta)">' + SKIN_META[sid].label + '</strong> ！';
-        document.getElementById('achv-modal').classList.add('visible');
-        var okBtn = document.getElementById('achv-ok');
-        okBtn.onclick = function () {
-          document.getElementById('achv-modal').classList.remove('visible');
-          okBtn.onclick = null;
-          chain();
-        };
-      }
-      if (pending.length) chain();
-      else openGO();
+      runDeathAchievementsThenGameOver(score, sync);
     });
+  }
+
+  function die(reason) {
+    playing = false;
+    phase = 'dead';
+    if (loopId) cancelAnimationFrame(loopId);
+    loopId = null;
+    if (reason === 'self') snake.shift();
+    var score = snake.length;
+    if (snakeScreen) {
+      snakeScreen.classList.add('death-shake');
+      snakeScreen.classList.add('death-flash');
+    }
+    setTimeout(function () {
+      if (snakeScreen) {
+        snakeScreen.classList.remove('death-shake');
+        snakeScreen.classList.remove('death-flash');
+      }
+    }, 500);
+    draw();
+
+    if (walletCalabash > 0) {
+      document.getElementById('revive-modal').classList.add('visible');
+      var yesBtn = document.getElementById('revive-yes');
+      var noBtn = document.getElementById('revive-no');
+      yesBtn.onclick = function () {
+        document.getElementById('revive-modal').classList.remove('visible');
+        yesBtn.onclick = noBtn.onclick = null;
+        walletCalabash--;
+        updateHubWalletUI();
+        nextDir = { x: -dir.x, y: -dir.y };
+        dir = { x: nextDir.x, y: nextDir.y };
+        playing = true;
+        phase = 'playing';
+        lastTick = performance.now();
+        loopId = requestAnimationFrame(loop);
+        syncProfileFull();
+        draw();
+      };
+      noBtn.onclick = function () {
+        document.getElementById('revive-modal').classList.remove('visible');
+        yesBtn.onclick = noBtn.onclick = null;
+        runPersistAfterDeath(score);
+      };
+    } else {
+      runPersistAfterDeath(score);
+    }
+  }
+
+  function ensureForestTrees() {
+    if (activeMap !== 'forest') {
+      treesCache = null;
+      return;
+    }
+    if (treesCache && treesCache.length >= 10) return;
+    treesCache = [];
+    var occ = {};
+    snake.forEach(function (s) { occ[s.x+','+s.y] = 1; });
+    occ[food.x+','+food.y] = 1;
+    var tries = 0;
+    while (treesCache.length < 14 && tries < 500) {
+      tries++;
+      var x = (Math.random() * GRID) | 0;
+      var y = (Math.random() * GRID) | 0;
+      var k = x+','+y;
+      if (occ[k]) continue;
+      occ[k] = 1;
+      treesCache.push({ x: x, y: y });
+    }
   }
 
   function draw() {
     if (!ctx) return;
     var w = boardSize, h = boardSize;
-    ctx.fillStyle = '#0a0e14'; ctx.fillRect(0,0,w,h);
-    ctx.strokeStyle = 'rgba(0,255,204,0.06)';
-    for (var g = 0; g <= GRID; g++) {
-      ctx.beginPath(); ctx.moveTo(g*CELL,0); ctx.lineTo(g*CELL,h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,g*CELL); ctx.lineTo(w,g*CELL); ctx.stroke();
-    }
-    if (performance.now() < goldFlashUntil && activeSkin === 'gold') {
-      ctx.fillStyle = 'rgba(255, 215, 0, 0.35)'; ctx.fillRect(0,0,w,h);
-    }
-    ctx.fillStyle = '#ff3355'; ctx.beginPath();
-    ctx.arc(food.x*CELL+CELL/2, food.y*CELL+CELL/2, CELL*0.32, 0, Math.PI*2); ctx.fill();
+    var mapId = activeMap || 'classic';
+    ensureForestTrees();
+    var mapRenderer = (ASSETS_LIB.maps[mapId] || ASSETS_LIB.maps.classic);
+    mapRenderer.render(ctx, w, h, CELL);
 
-    var skin = activeSkin;
-    var t = performance.now();
-    if (skin === 'ghost') {
-      ghostTrail.forEach(function (tr) {
-        var age = (t - tr.t) / 450;
-        var a = Math.max(0, 0.32 - age * 0.32);
-        ctx.fillStyle = 'rgba(80,255,120,'+a+')';
-        ctx.fillRect(tr.x*CELL+1, tr.y*CELL+1, CELL-2, CELL-2);
-      });
+    if (performance.now() < goldFlashUntil && activeSkin === 'gold') {
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.18)';
+      ctx.fillRect(0, 0, w, h);
     }
-    snake.forEach(function (seg, idx) {
-      var pad = 1;
-      if (skin === 'rainbow') {
-        ctx.fillStyle = 'hsl('+(((t/22|0)+idx*28)%360)+',88%,58%)';
-      } else if (skin === 'gold') {
-        var grd = ctx.createLinearGradient(seg.x*CELL, seg.y*CELL, seg.x*CELL+CELL, seg.y*CELL+CELL);
-        grd.addColorStop(0,'#ffeaa7'); grd.addColorStop(1,'#b8860b');
-        ctx.fillStyle = grd;
-      } else if (skin === 'cosmic') {
-        ctx.fillStyle = 'rgba(70,35,110,0.5)';
-        ctx.fillRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2);
-        var sp = ((idx * 11 + (t/70|0)) % 4);
-        ctx.fillStyle = sp ? 'rgba(255,255,255,0.85)' : 'rgba(180,200,255,0.45)';
-        ctx.fillRect(seg.x*CELL+CELL*0.25, seg.y*CELL+CELL*0.3, 3, 3);
-        return;
-      } else if (skin === 'flame') {
-        ctx.fillStyle = idx === 0 ? '#ff6600' : '#ff2200';
-      } else if (skin === 'ghost') {
-        ctx.fillStyle = 'rgba(60,255,100,0.42)';
-      } else {
-        ctx.fillStyle = idx === 0 ? '#5cff4a' : '#39ff14';
-      }
-      if (skin !== 'cosmic') ctx.fillRect(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2);
-      if (skin === 'flame' && idx === 0) {
-        ctx.fillStyle = 'rgba(255,200,80,0.9)'; ctx.beginPath();
-        ctx.arc(seg.x*CELL+CELL/2, seg.y*CELL+CELL/2, 5, 0, Math.PI*2); ctx.fill();
-      }
+    drawApple(ctx, food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL * 0.36);
+
+    var pts = snake.map(function (seg) {
+      return { x: seg.x * CELL + CELL / 2, y: seg.y * CELL + CELL / 2 };
     });
-    if (skin === 'flame') {
-      embers.forEach(function (em, ei) {
-        ctx.fillStyle = 'rgba(255,50,40,'+(0.25 + (ei%3)*0.08)+')';
-        ctx.fillRect(em.x*CELL+2, em.y*CELL+CELL*0.75, CELL-4, 2);
-      });
+    if (pts.length > 1) {
+      var skinRenderer = (ASSETS_LIB.skins[activeSkin] || ASSETS_LIB.skins.default);
+      skinRenderer.render(ctx, pts, performance.now(), mapId);
     }
   }
 
@@ -850,16 +2113,22 @@
 
   window.snakeBoot = function () {
     document.getElementById('gameover-modal').classList.remove('visible');
+    document.getElementById('revive-modal').classList.remove('visible');
+    document.getElementById('crate-modal').classList.remove('visible');
     document.getElementById('achv-modal').classList.remove('visible');
     phase = 'lobby'; playing = false;
     if (loopId) cancelAnimationFrame(loopId); loopId = null;
     activeSkin = isSkinUnlocked(cloudCurrentSkin) ? cloudCurrentSkin : 'default';
     selDiff = 'novice';
+    activeMap = unlockedMaps.indexOf(equippedMap) >= 0 ? equippedMap : 'classic';
+    equippedMap = activeMap;
+    treesCache = null;
     resetSnake();
     buildLobby();
     unlockBaselineRound = unlockedSkins.slice();
     document.getElementById('snake-lobby-overlay').classList.add('visible');
     document.getElementById('snake-ready-overlay').classList.remove('visible');
+    refreshMapBoxClass();
     layoutSnakeScreen();
     requestAnimationFrame(function () { layoutSnakeScreen(); });
   };
@@ -893,8 +2162,28 @@
   });
 
   document.getElementById('btn-snake').onclick = function () { showScreen('snake-screen'); };
-  document.getElementById('btn-leaderboard').onclick = function () { showScreen('leaderboard-screen'); fetchLb(); };
   document.getElementById('lb-back').onclick = function () { showScreen('home-screen'); };
+  document.getElementById('shop-back').onclick = function () { showScreen('home-screen'); };
+  document.getElementById('wh-back').onclick = function () { showScreen('home-screen'); };
+  document.querySelectorAll('.hub-nav-btn').forEach(function (b) {
+    b.onclick = function () {
+      showScreen(b.getAttribute('data-hub'));
+    };
+  });
+  document.querySelectorAll('#wh-tabs button').forEach(function (t) {
+    t.onclick = function () {
+      document.querySelectorAll('#wh-tabs button').forEach(function (x) {
+        x.classList.toggle('sel', x === t);
+      });
+      var tab = t.getAttribute('data-wh');
+      var gs = document.getElementById('wh-grid-skins');
+      var gm = document.getElementById('wh-grid-maps');
+      var gi = document.getElementById('wh-grid-items');
+      if (gs) gs.style.display = tab === 'skins' ? 'grid' : 'none';
+      if (gm) gm.style.display = tab === 'maps' ? 'grid' : 'none';
+      if (gi) gi.style.display = tab === 'items' ? 'grid' : 'none';
+    };
+  });
   document.getElementById('snake-back').onclick = function () {
     playing = false; phase = 'lobby'; if (loopId) cancelAnimationFrame(loopId);
     showScreen('home-screen'); fetchProfile();
@@ -961,6 +2250,8 @@
   if (resolveSbKey()) document.getElementById('supabase-hint').style.display = 'none';
   getUserId();
   cloudBanner();
+  setHubNavVisible(true);
+  setHubNavActive('home-screen');
   document.getElementById('display-name').textContent = getNickname() || '——';
   if (!hasNickname()) document.getElementById('nickname-modal').classList.add('visible');
   else fetchProfile();
