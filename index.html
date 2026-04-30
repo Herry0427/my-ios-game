@@ -2155,7 +2155,9 @@
     phase = 'playing'; playing = true;
     setReadyHint('');
     document.getElementById('snake-ready-overlay').classList.remove('visible');
-    if (!(dir.x === -dx && dir.y === -dy)) nextDir = {x:dx,y:dy};
+    // Ready 阶段的首个输入必须无条件生效（含复活后），避免方向被吞掉。
+    dir = {x:dx,y:dy};
+    nextDir = {x:dx,y:dy};
     lastTick = performance.now();
     loopId = requestAnimationFrame(loop);
   }
