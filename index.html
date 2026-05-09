@@ -558,6 +558,225 @@
       50% { opacity: 1; transform: translateY(-3px); }
     }
     .revive-card { border-color: rgba(255, 215, 80, 0.45) !important; }
+
+    /* —— 好孕食谱 · 莫兰迪纸张质感（recipe-*） —— */
+    #recipe-home-screen.screen,
+    #recipe-detail-screen.screen {
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(ellipse 120% 90% at 50% -15%, rgba(168, 184, 160, 0.22), transparent 52%),
+        linear-gradient(165deg, #ede8e0 0%, #e5ded4 45%, #dcd4c8 100%);
+      color: #3d4540;
+      padding-bottom: calc(20px + var(--safe-bottom));
+    }
+    #recipe-home-screen.screen::before,
+    #recipe-detail-screen.screen::before {
+      content: ""; pointer-events: none; position: absolute; inset: 0; opacity: 0.06; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+    }
+    #recipe-home-screen .recipe-inner,
+    #recipe-detail-screen .recipe-inner { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .recipe-topbar {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-shrink: 0;
+      margin-bottom: 12px;
+    }
+    .recipe-back { padding: 10px 12px; font-size: 0.86rem; font-weight: 600;
+      color: #5a7d6e; background: rgba(255, 252, 248, 0.82); border: 1px solid rgba(120, 140, 130, 0.35);
+      border-radius: 12px; cursor: pointer; transition: transform 0.12s, box-shadow 0.2s;
+      box-shadow: 0 2px 10px rgba(80, 90, 85, 0.08);
+    }
+    .recipe-back:active { transform: scale(0.96); }
+    .recipe-mode-banner {
+      flex: 1; padding: 12px 14px; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 252, 248, 0.92), rgba(232, 236, 228, 0.88));
+      border: 1px solid rgba(140, 155, 145, 0.35);
+      box-shadow: 0 4px 20px rgba(70, 80, 75, 0.07);
+      transition: transform 0.25s var(--ease-out), opacity 0.25s;
+    }
+    .recipe-mode-banner h2 { margin: 0 0 6px; font-size: 1rem; font-weight: 700; color: #4a524e; }
+    .recipe-mode-banner .sub { font-size: 0.78rem; color: #6d756f; line-height: 1.45; }
+    .recipe-heart-btn {
+      margin-top: 10px; padding: 10px 14px; border-radius: 999px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 0.82rem;
+      background: linear-gradient(145deg, #7eb8d6, #5a9ec4); color: #fff;
+      box-shadow: 0 4px 14px rgba(90, 158, 196, 0.35);
+      transition: transform 0.12s, filter 0.15s;
+    }
+    .recipe-heart-btn:active { transform: scale(0.96); filter: brightness(0.95); }
+    .recipe-heart-btn[hidden] { display: none !important; }
+    .recipe-search {
+      width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(130, 145, 135, 0.4);
+      background: rgba(255, 252, 248, 0.9); font-size: 0.92rem; color: #3d4540;
+      margin-bottom: 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .recipe-search:focus { border-color: #8fb39e; box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.25); }
+    .recipe-today-card {
+      padding: 16px; border-radius: 18px; margin-bottom: 14px;
+      background: linear-gradient(145deg, rgba(220, 228, 218, 0.95), rgba(245, 240, 232, 0.98));
+      border: 1px solid rgba(130, 155, 138, 0.38);
+      box-shadow: 0 8px 28px rgba(70, 85, 78, 0.1);
+      transition: transform 0.3s var(--ease-out);
+    }
+    .recipe-today-card:active { transform: scale(0.99); }
+    .recipe-today-card .tagline { font-size: 0.78rem; color: #5c665f; line-height: 1.55; margin-bottom: 8px; }
+    .recipe-today-card .dish { font-size: 1.15rem; font-weight: 800; color: #3d5248; }
+    .recipe-today-card .meta { font-size: 0.72rem; color: #7a827c; margin-top: 6px; }
+    .recipe-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+    .recipe-list-footer {
+      text-align: center; padding: 14px 12px; color: #7a827c; font-size: 0.78rem; clear: both;
+    }
+    .recipe-row {
+      display: flex; flex-direction: column; gap: 4px; padding: 14px; margin-bottom: 10px; border-radius: 14px;
+      background: rgba(255, 252, 248, 0.88); border: 1px solid rgba(130, 140, 132, 0.28);
+      cursor: pointer; transition: transform 0.12s, box-shadow 0.2s;
+      box-shadow: 0 2px 12px rgba(60, 65, 62, 0.06);
+    }
+    .recipe-row:active { transform: scale(0.985); }
+    .recipe-row .t { font-weight: 700; font-size: 0.95rem; color: #3d4540; }
+    .recipe-row .m { font-size: 0.72rem; color: #717970; }
+    .recipe-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .recipe-tags span {
+      font-size: 0.62rem; padding: 3px 8px; border-radius: 999px;
+      background: rgba(168, 184, 160, 0.35); color: #4a5a52;
+    }
+    #recipe-detail-screen .recipe-detail-scroll {
+      flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(12px + var(--safe-bottom));
+    }
+    #recipe-detail-screen h1 { font-size: 1.25rem; margin: 0 0 8px; color: #3a4540; font-weight: 800; }
+    .recipe-detail-meta { font-size: 0.78rem; color: #667069; margin-bottom: 12px; }
+    .recipe-science {
+      padding: 12px 14px; border-radius: 14px; background: rgba(232, 238, 232, 0.65);
+      border: 1px dashed rgba(120, 145, 125, 0.45); font-size: 0.82rem; line-height: 1.55; color: #4a554e;
+      margin-bottom: 14px;
+    }
+    .recipe-ing-list { list-style: none; padding: 0; margin: 0 0 16px; }
+    .recipe-ing-list li {
+      display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 10px;
+      border-bottom: 1px solid rgba(120, 130, 122, 0.15); font-size: 0.88rem;
+    }
+    .recipe-ing-list input { width: 18px; height: 18px; accent-color: #7a9d8c; }
+    .recipe-steps { counter-reset: rs; }
+    .recipe-step {
+      padding: 12px; margin-bottom: 10px; border-radius: 14px;
+      background: rgba(255, 252, 248, 0.92); border: 1px solid rgba(130, 140, 132, 0.22);
+    }
+    .recipe-step .num { font-size: 0.68rem; color: #8a9590; margin-bottom: 4px; }
+    .recipe-step .txt { font-size: 0.88rem; color: #3d4540; line-height: 1.5; }
+    .recipe-timer-btn {
+      margin-top: 8px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(90, 140, 170, 0.45);
+      background: rgba(230, 242, 248, 0.9); color: #3a5a68; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .recipe-timer-btn:active { transform: scale(0.97); }
+    .recipe-wake-hint { font-size: 0.68rem; color: #8a918c; margin-top: 12px; text-align: center; }
+    #recipe-lmp-modal.modal-root { z-index: 21000; }
+    #recipe-lmp-modal .recipe-modal-card {
+      width: 100%; max-width: 360px; padding: 22px; border-radius: 20px;
+      background: linear-gradient(165deg, #f5f0ea, #ebe4dc); border: 1px solid rgba(120, 135, 125, 0.35);
+      box-shadow: 0 16px 48px rgba(40, 45, 42, 0.18);
+    }
+    #recipe-lmp-modal .recipe-modal-card h3 { margin: 0 0 12px; font-size: 1.05rem; color: #3d4540; }
+    #recipe-lmp-modal input[type="date"] {
+      width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(120, 135, 125, 0.45);
+      font-size: 1rem; margin-bottom: 14px; background: #fffefb;
+    }
+    #recipe-lmp-modal .recipe-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    #recipe-lmp-modal button {
+      padding: 10px 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #recipe-lmp-modal button:active { transform: scale(0.96); }
+    #recipe-lmp-modal .btn-cancel { background: rgba(255, 252, 248, 0.9); color: #5c665f; border: 1px solid rgba(120, 130, 122, 0.35); }
+    #recipe-lmp-modal .btn-ok { background: linear-gradient(145deg, #8fb39e, #6d917f); color: #fff; }
+
+    .recipe-cover-wrap { margin: -4px -4px 12px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(130, 145, 135, 0.35); }
+    .recipe-cover-img { width: 100%; height: auto; display: block; max-height: 220px; object-fit: cover; }
+    .recipe-cover-ph {
+      margin: 0 0 12px; border-radius: 16px; height: 140px; display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; background: linear-gradient(145deg, rgba(232, 238, 228, 0.9), rgba(220, 215, 205, 0.85));
+      border: 1px dashed rgba(130, 145, 135, 0.4);
+    }
+    .recipe-detail-h1 { font-size: 1.35rem; }
+    .recipe-science-sub { font-size: 0.78rem; color: #6d756f; display: inline-block; margin-top: 8px; }
+    .recipe-hub-tabs {
+      display: flex; gap: 8px; margin: 14px 0 12px;
+    }
+    .recipe-tab-btn {
+      flex: 1; padding: 12px 10px; border-radius: 12px; border: 1px solid rgba(130, 145, 135, 0.4);
+      background: rgba(255, 252, 248, 0.88); font-weight: 700; font-size: 0.88rem; color: #5c665f; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    .recipe-tab-btn.sel {
+      background: linear-gradient(145deg, rgba(200, 218, 205, 0.95), rgba(232, 236, 228, 0.98));
+      border-color: #8fb39e; color: #3d5248; box-shadow: 0 4px 14px rgba(100, 120, 105, 0.12);
+    }
+    .recipe-tab-btn:active { transform: scale(0.98); }
+    .recipe-ing-section { margin-bottom: 16px; }
+    .recipe-ing-h {
+      margin: 0 0 8px; font-size: 0.82rem; font-weight: 800; color: #4a5a52;
+      letter-spacing: 0.02em; border-left: 4px solid #8fb39e; padding-left: 8px;
+    }
+    .recipe-ing-list-v2 { list-style: none; padding: 0; margin: 0; }
+    .recipe-ing-row {
+      padding: 12px 10px; margin-bottom: 8px; border-radius: 12px;
+      background: rgba(255, 252, 248, 0.92); border: 1px solid rgba(130, 140, 132, 0.22);
+    }
+    .recipe-ing-label {
+      display: flex; align-items: center; gap: 10px; cursor: pointer; flex-wrap: wrap;
+    }
+    .recipe-ing-label input { width: 20px; height: 20px; accent-color: #6d917f; flex-shrink: 0; }
+    .recipe-ing-text { flex: 1; font-size: 0.92rem; color: #3d4540; line-height: 1.45; min-width: 0; }
+    .recipe-ing-badge {
+      font-size: 0.65rem; padding: 4px 8px; border-radius: 999px;
+      background: rgba(168, 184, 160, 0.35); color: #4a5a52; font-weight: 700;
+    }
+    .recipe-empty-hint { color: #7a827c; font-size: 0.86rem; margin: 8px 0; }
+    .recipe-steps-cook { padding-bottom: 8px; }
+    .recipe-step-cook-blk {
+      padding: 16px 14px; margin-bottom: 12px; border-radius: 16px; cursor: pointer;
+      background: rgba(255, 252, 248, 0.92); border: 2px solid rgba(130, 140, 132, 0.22);
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .recipe-step-cook-blk.recipe-step-active {
+      border-color: #7a9d8c; background: rgba(232, 242, 236, 0.95);
+      box-shadow: 0 6px 20px rgba(90, 120, 100, 0.12);
+    }
+    .recipe-step-ttl {
+      font-size: 0.72rem; font-weight: 800; color: #8a9590; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+    }
+    .recipe-step-big { font-size: 1.12rem; font-weight: 650; line-height: 1.55; color: #2e3532; }
+    .recipe-step-timer-hint { margin-top: 10px; font-size: 0.72rem; color: #6d756f; font-weight: 600; }
+    .recipe-step-inline-tips {
+      margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 248, 235, 0.92), rgba(245, 238, 228, 0.96));
+      border: 1px dashed rgba(200, 170, 120, 0.5); font-size: 0.82rem; line-height: 1.55;
+      color: #5a4a38; font-weight: 600;
+    }
+    .recipe-step-inline-tips-label {
+      display: block; font-size: 0.68rem; font-weight: 800; color: #8a7560; letter-spacing: 0.04em; margin-bottom: 6px;
+    }
+    #recipe-detail-screen .recipe-float-timer {
+      position: fixed; left: 50%; bottom: calc(18px + var(--safe-bottom)); transform: translateX(-50%);
+      z-index: 22000; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 999px;
+      background: rgba(45, 52, 48, 0.92); color: #f5f7f4; box-shadow: 0 10px 36px rgba(20, 25, 22, 0.35);
+      font-weight: 700; font-size: 1.05rem; max-width: calc(100vw - 28px);
+    }
+    #recipe-detail-screen .recipe-float-timer[hidden] { display: none !important; }
+    .recipe-float-timer-label { font-size: 0.72rem; opacity: 0.85; font-weight: 600; }
+    #recipe-float-timer-disp { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+    .recipe-float-timer-x {
+      margin-left: 4px; width: 32px; height: 32px; border-radius: 999px; border: none; cursor: pointer;
+      background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 1rem; line-height: 1;
+    }
+    .recipe-row-thumb {
+      width: 52px; height: 52px; border-radius: 12px; object-fit: cover; flex-shrink: 0;
+      background: rgba(232, 238, 228, 0.9); border: 1px solid rgba(130, 140, 132, 0.25);
+    }
+    .recipe-row-thumb-ph { display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+    .recipe-row-inner { display: flex; gap: 12px; align-items: flex-start; }
+    .recipe-row-main { flex: 1; min-width: 0; }
   </style>
 </head>
 <body>
@@ -621,7 +840,7 @@
     <div class="grid-menu" style="margin-top:10px">
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
       <button type="button" class="tile-btn coming" disabled>学生养成农场 <span class="tile-badge">预留</span></button>
-      <button type="button" class="tile-btn coming" disabled>美食菜谱 <span class="tile-badge">预留</span></button>
+      <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn coming" disabled>足球赛程 <span class="tile-badge">预留</span></button>
     </div>
   </section>
@@ -686,6 +905,57 @@
       <div class="lb-list" id="lb-list"><div class="lb-empty">加载中…</div></div>
     </div>
   </section>
+
+  <section id="recipe-home-screen" class="screen">
+    <div class="recipe-inner">
+      <div class="recipe-topbar">
+        <button type="button" class="recipe-back" id="recipe-home-back">◀ 大厅</button>
+        <div class="recipe-mode-banner" id="recipe-mode-banner">
+          <h2 id="recipe-mode-title">科学备孕中</h2>
+          <p class="sub" id="recipe-mode-sub">均衡营养，为未来宝宝打好基础。</p>
+          <button type="button" class="recipe-heart-btn" id="recipe-btn-pregnant">❤ 我怀上了</button>
+        </div>
+      </div>
+      <div id="recipe-pregnancy-strip" class="recipe-mode-banner" style="margin-bottom:12px;display:none">
+        <h2 id="recipe-gest-head">孕期陪伴</h2>
+        <p class="sub" id="recipe-gest-sub"></p>
+      </div>
+      <div class="recipe-today-card" id="recipe-today-card" role="button" tabindex="0">
+        <div class="tagline" id="recipe-today-tagline">加载今日推荐…</div>
+        <div class="dish" id="recipe-today-title">——</div>
+        <div class="meta" id="recipe-today-meta"></div>
+      </div>
+      <input type="search" class="recipe-search" id="recipe-search" placeholder="搜索菜谱或食材，如：牛、叶酸…" autocomplete="off" />
+      <div class="recipe-list" id="recipe-list"><div class="recipe-row" style="cursor:default;color:#7a827c">加载食谱库…</div></div>
+    </div>
+  </section>
+
+  <section id="recipe-detail-screen" class="screen">
+    <div class="recipe-inner">
+      <div class="recipe-topbar">
+        <button type="button" class="recipe-back" id="recipe-detail-back">◀ 食谱列表</button>
+      </div>
+      <div class="recipe-detail-scroll" id="recipe-detail-root"></div>
+      <div id="recipe-float-timer" class="recipe-float-timer" hidden>
+        <span class="recipe-float-timer-label">悬浮计时</span>
+        <span id="recipe-float-timer-disp">--:--</span>
+        <button type="button" id="recipe-float-timer-close" class="recipe-float-timer-x" aria-label="关闭计时">✕</button>
+      </div>
+      <p class="recipe-wake-hint" id="recipe-wake-hint"></p>
+    </div>
+  </section>
+
+  <div id="recipe-lmp-modal" class="modal-root" aria-modal="true" role="dialog">
+    <div class="recipe-modal-card">
+      <h3>填写末次月经首日</h3>
+      <p style="font-size:0.82rem;color:#5c665f;margin:0 0 10px;line-height:1.5">用于推算孕周；可随时在大厅同步云端。</p>
+      <input type="date" id="recipe-lmp-input" />
+      <div class="recipe-modal-actions">
+        <button type="button" class="btn-cancel" id="recipe-lmp-cancel">取消</button>
+        <button type="button" class="btn-ok" id="recipe-lmp-confirm">保存并切换</button>
+      </div>
+    </div>
+  </div>
 
   <section id="snake-screen" class="screen">
     <div class="snake-topbar">
@@ -1076,6 +1346,104 @@
   var equippedMap = 'classic';
   var activeMap = 'classic';
   var treesCache = null;
+  /** 好孕食谱 · pregnancy_user_config（0 备孕 / 1 怀孕）、lmp_date */
+  var pregStatus = 0;
+  var pregLmp = null;
+  var recipeDetailActiveStepIdx = -1;
+  var recipeFloatTimerIv = null;
+
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+  function escAttr(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;');
+  }
+
+  async function fetchPregnancyUserConfig() {
+    var c = getSb();
+    if (!c) return;
+    var uid = getUserId();
+    try {
+      var r = await c.from('pregnancy_user_config').select('status,lmp_date').eq('user_id', uid).maybeSingle();
+      if (r.error) throw r.error;
+      if (r.data) {
+        pregStatus = num(r.data.status);
+        pregLmp = r.data.lmp_date ? String(r.data.lmp_date).slice(0, 10) : null;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  async function upsertPregnancyUserConfig() {
+    var c = getSb();
+    if (!c) return { ok: false };
+    var uid = getUserId();
+    setSync(true);
+    try {
+      var r = await c.from('pregnancy_user_config').upsert(
+        { user_id: uid, status: pregStatus, lmp_date: pregLmp || null },
+        { onConflict: 'user_id' }
+      );
+      if (r.error) throw r.error;
+      return { ok: true };
+    } catch (e) {
+      console.warn(e);
+      return { ok: false };
+    } finally {
+      setSync(false);
+    }
+  }
+
+  function stopRecipeFloatTimer() {
+    if (recipeFloatTimerIv) {
+      clearInterval(recipeFloatTimerIv);
+      recipeFloatTimerIv = null;
+    }
+    var ft = document.getElementById('recipe-float-timer');
+    if (ft) ft.hidden = true;
+    var disp = document.getElementById('recipe-float-timer-disp');
+    if (disp) disp.textContent = '--:--';
+  }
+
+  function startRecipeStepTimer(sec) {
+    stopRecipeFloatTimer();
+    var ft = document.getElementById('recipe-float-timer');
+    var disp = document.getElementById('recipe-float-timer-disp');
+    if (!ft || !disp || !sec) return;
+    ft.hidden = false;
+    var end = Date.now() + sec * 1000;
+    recipeFloatTimerIv = setInterval(function () {
+      var left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      var m = Math.floor(left / 60);
+      var s2 = left % 60;
+      disp.textContent = m + ':' + (s2 < 10 ? '0' : '') + s2;
+      if (left <= 0) {
+        stopRecipeFloatTimer();
+        try {
+          if (navigator.vibrate) navigator.vibrate(200);
+        } catch (e) {}
+      }
+    }, 400);
+  }
+
+  /** 食谱列表：recipeMetaIndex=全量轻字段（推荐/搜索）；recipeListPaginated=分页完整行 */
+  var recipeMetaIndex = [];
+  var recipeListPaginated = [];
+  var recipeListNextOffset = 0;
+  var recipeListHasMore = true;
+  var recipeListLoading = false;
+  var recipeListScrollBound = false;
+  var RECIPE_FIRST_PAGE = 10;
+  var RECIPE_PAGE_SIZE = 20;
+  var recipeTodayPick = null;
+  var recipeDetailObj = null;
+  var recipeWakeSentinel = null;
 
   function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
 
@@ -1356,7 +1724,9 @@
     snake_game: 'snake-screen',
     snake_shop: 'shop-screen',
     snake_warehouse: 'warehouse-screen',
-    snake_leaderboard: 'leaderboard-screen'
+    snake_leaderboard: 'leaderboard-screen',
+    recipe_home: 'recipe-home-screen',
+    recipe_detail: 'recipe-detail-screen'
   };
 
   function activateScreen(screenId) {
@@ -1383,6 +1753,703 @@
     if (view === 'snake_warehouse') renderWarehouse();
     if (view === 'snake_leaderboard') fetchLb();
     if (view === 'snake_game' && window.snakeBoot) window.snakeBoot();
+    if (view === 'recipe_home') {
+      fetchPregnancyUserConfig().then(function () {
+        return loadRecipeHubData();
+      });
+    }
+    if (view === 'recipe_detail') renderRecipeDetailView();
+    if (view !== 'recipe_detail') releaseRecipeWakeLock();
+  }
+
+  var RECIPE_MOCK = [
+    {
+      id: 'local-mock-1',
+      title: '山药滋补红烧牛腩',
+      cover_image: '',
+      cooking_time: '约 90 分钟',
+      difficulty: '中等',
+      tags: ['补铁', '高蛋白', '备孕推荐', '补钙', '高钙', '预防贫血'],
+      ingredients: {
+        主料: [
+          { item: '牛腩', amount: '500g' },
+          { item: '铁棍山药', amount: '1根' }
+        ],
+        辅料: [
+          { item: '胡萝卜', amount: '半根' },
+          { item: '大葱', amount: '1段' },
+          { item: '老姜', amount: '1块' }
+        ],
+        调料: [
+          { item: '冰糖', amount: '8颗' },
+          { item: '生抽', amount: '2勺' },
+          { item: '老抽', amount: '1勺' },
+          { item: '料酒', amount: '2勺' },
+          { item: '八角', amount: '2个' },
+          { item: '香叶', amount: '2片' }
+        ]
+      },
+      steps: [
+        { no: 1, title: '浸泡', content: '牛腩切 3cm 方块，用清水浸泡 30 分钟出血水。', timer: 0, tips: '' },
+        {
+          no: 2,
+          title: '焯水',
+          content: '冷水下锅，加葱姜料酒，水开撇去浮沫，煮 5 分钟后捞出用温水洗净。',
+          timer: 300,
+          tips: '千万别用冷水冲，肉会柴。'
+        },
+        { no: 3, title: '炒糖色', content: '小火慢炒冰糖至枣红色，下肉翻炒上色。', timer: 0, tips: '' },
+        { no: 4, title: '炖煮', content: '加入所有香料和足量热水，大火烧开转小火炖 60 分钟。', timer: 3600, tips: '' },
+        {
+          no: 5,
+          title: '焖收',
+          content: '下入山药胡萝卜，再炖 20 分钟，最后大火收汁。',
+          timer: 1200,
+          tips: '收汁时再放盐，肉质更软嫩。'
+        }
+      ],
+      nutrition_insight:
+        '本月重点：血红素铁与优质蛋白有助于预防孕期贫血；山药淀粉温和护胃。建议搭配一份「清炒西蓝花」和一杯橙汁（VC 辅助铁吸收）。',
+      suitable_months: [0, 4, 5, 6, 7, 8]
+    }
+  ];
+
+  var TRIMESTER_TAGS = {
+    early: ['缓解孕吐', '高叶酸', '叶酸'],
+    mid: ['补钙', 'DHA', '预防贫血', '补铁'],
+    late: ['低盐', '控糖', '去水肿']
+  };
+
+  function _parseDateLocal(ymd) {
+    var p = String(ymd || '').split('-');
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), 12, 0, 0, 0);
+  }
+
+  function calculatePregnancyState(lmpStr, todayOverride) {
+    var t = todayOverride ? _parseDateLocal(todayOverride) : new Date();
+    t.setHours(12, 0, 0, 0);
+    if (!lmpStr) {
+      return {
+        days: 0,
+        current_week: 0,
+        current_day: 0,
+        obstetricMonth: 0,
+        trimester: 'prep'
+      };
+    }
+    var l = _parseDateLocal(lmpStr);
+    l.setHours(12, 0, 0, 0);
+    var days = Math.floor((t.getTime() - l.getTime()) / 86400000);
+    if (days < 0) days = 0;
+    var current_week = Math.floor(days / 7);
+    var current_day = days % 7;
+    var obstetricMonth = days <= 0 ? 1 : Math.min(10, Math.max(1, Math.ceil(days / 28)));
+    var trimester = obstetricMonth <= 3 ? 'early' : obstetricMonth <= 7 ? 'mid' : 'late';
+    return {
+      days: days,
+      current_week: current_week,
+      current_day: current_day,
+      obstetricMonth: obstetricMonth,
+      trimester: trimester
+    };
+  }
+
+  function flattenIngredientRows(r) {
+    var ing = r.ingredients;
+    if (!ing) return [];
+    if (Array.isArray(ing)) return ing;
+    if (typeof ing === 'object') {
+      var out = [];
+      ['主料', '辅料', '调料'].forEach(function (k) {
+        if (Array.isArray(ing[k])) {
+          ing[k].forEach(function (it) {
+            if (it && it.item) out.push(it);
+          });
+        }
+      });
+      return out;
+    }
+    return [];
+  }
+
+  function recipeHaystack(r) {
+    var parts = [r.title || ''];
+    (r.tags || []).forEach(function (x) {
+      parts.push(x);
+    });
+    flattenIngredientRows(r).forEach(function (it) {
+      if (it && it.item) parts.push(it.item);
+    });
+    return parts.join('\u0000').toLowerCase();
+  }
+
+  function scoreRecipeDynamic(rec, obstetricMonth, trimester) {
+    var pri = TRIMESTER_TAGS[trimester] || [];
+    var tags = rec.tags || [];
+    var s = 0;
+    pri.forEach(function (kw) {
+      tags.forEach(function (tg) {
+        if (String(tg).indexOf(kw) >= 0 || String(kw).indexOf(tg) >= 0) s += 3;
+      });
+    });
+    tags.forEach(function (tg) {
+      if (/叶酸|铁|钙|DHA|蛋白/.test(String(tg))) s += 1;
+    });
+    var sm = rec.suitable_months || [];
+    if (sm.indexOf(obstetricMonth) >= 0) s += 5;
+    return s;
+  }
+
+  function pickTodayRecommendation(list, mode, state) {
+    var pool = list.slice();
+    if (!pool.length) return null;
+    function rnd(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+    if (mode === 0) {
+      var tagged = pool.filter(function (r) {
+        var okMonth = (r.suitable_months || []).indexOf(0) >= 0;
+        if (!okMonth) return false;
+        var tags = r.tags || [];
+        return tags.some(function (tg) {
+          var s = String(tg);
+          return /高钙|补钙|高蛋白|蛋白|钙/.test(s);
+        });
+      });
+      var prep = tagged.length
+        ? tagged
+        : pool.filter(function (r) {
+            return (r.suitable_months || []).indexOf(0) >= 0;
+          });
+      return rnd(prep.length ? prep : pool);
+    }
+    var om = state.obstetricMonth || 1;
+    var tr = state.trimester || 'mid';
+    var matched = pool.filter(function (r) {
+      return (r.suitable_months || []).indexOf(om) >= 0;
+    });
+    var use = matched.length ? matched : pool;
+    var scored = use.map(function (r) {
+      return { r: r, s: scoreRecipeDynamic(r, om, tr) };
+    });
+    scored.sort(function (a, b) {
+      return b.s - a.s;
+    });
+    var top = scored[0].s;
+    var tops = scored.filter(function (x) {
+      return x.s >= top - 0.5;
+    });
+    return rnd(
+      tops.map(function (x) {
+        return x.r;
+      })
+    );
+  }
+
+  function todayExplainSentence(rec, state, mode) {
+    if (mode === 0) {
+      return '备孕阶段注重均衡营养与叶酸储备，今日推荐：「' + (rec.title || '') + '」。';
+    }
+    var w = state.current_week;
+    var intro =
+      w <= 12
+        ? '胎儿器官分化剧烈，重视叶酸与清淡易消化。'
+        : w <= 27
+          ? '宝宝生长加速，钙与铁需求上升。'
+          : '留意水肿与血糖，饮食宜清淡少盐。';
+    return (
+      '老婆现在第 ' +
+      state.current_week +
+      ' 周又 ' +
+      state.current_day +
+      ' 天（孕程约第 ' +
+      state.obstetricMonth +
+      ' 个月），' +
+      intro +
+      ' 今日推荐：「' +
+      (rec.title || '') +
+      '」。'
+    );
+  }
+
+  async function fetchRecipeMetaIndex() {
+    recipeMetaIndex = RECIPE_MOCK.slice();
+    var client = getSb();
+    if (!client) return;
+    try {
+      var res = await client
+        .from('pregnancy_recipes')
+        .select('id,title,tags,suitable_months,cooking_time,difficulty,cover_image,ingredients,nutrition_insight')
+        .order('title');
+      if (!res.error && res.data && res.data.length) recipeMetaIndex = res.data;
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  async function loadRecipePage(reset) {
+    if (reset) {
+      recipeListPaginated = [];
+      recipeListNextOffset = 0;
+      recipeListHasMore = true;
+    }
+    if (!recipeListHasMore || recipeListLoading) return;
+    recipeListLoading = true;
+    var client = getSb();
+    var take = recipeListNextOffset === 0 ? RECIPE_FIRST_PAGE : RECIPE_PAGE_SIZE;
+    try {
+      if (!client) {
+        var mockAll = RECIPE_MOCK.slice();
+        var slice = mockAll.slice(recipeListNextOffset, recipeListNextOffset + take);
+        recipeListPaginated = recipeListPaginated.concat(slice);
+        recipeListNextOffset += slice.length;
+        recipeListHasMore = recipeListNextOffset < mockAll.length;
+      } else {
+        var res = await client
+          .from('pregnancy_recipes')
+          .select('*')
+          .order('title')
+          .range(recipeListNextOffset, recipeListNextOffset + take - 1);
+        if (res.error) throw res.error;
+        var chunk = res.data || [];
+        recipeListPaginated = recipeListPaginated.concat(chunk);
+        recipeListNextOffset += chunk.length;
+        recipeListHasMore = chunk.length === take;
+      }
+    } catch (e) {
+      console.warn(e);
+      recipeListHasMore = false;
+    } finally {
+      recipeListLoading = false;
+    }
+  }
+
+  async function fetchRecipeFullById(id) {
+    var c = getSb();
+    if (!c || id == null || id === '') return null;
+    try {
+      var res = await c.from('pregnancy_recipes').select('*').eq('id', id).maybeSingle();
+      if (res.error) throw res.error;
+      return res.data || null;
+    } catch (e) {
+      console.warn(e);
+      return null;
+    }
+  }
+
+  function bindRecipeListScroll() {
+    var el = document.getElementById('recipe-list');
+    if (!el || recipeListScrollBound) return;
+    recipeListScrollBound = true;
+    el.addEventListener(
+      'scroll',
+      function () {
+        var inp = document.getElementById('recipe-search');
+        if (inp && inp.value.trim()) return;
+        if (recipeListLoading || !recipeListHasMore) return;
+        if (el.scrollHeight - el.scrollTop - el.clientHeight < 140) {
+          loadRecipePage(false).then(function () {
+            renderRecipeListRows();
+          });
+        }
+      },
+      { passive: true }
+    );
+  }
+
+  function releaseRecipeWakeLock() {
+    stopRecipeFloatTimer();
+    recipeDetailActiveStepIdx = -1;
+    if (recipeWakeSentinel && recipeWakeSentinel.release) {
+      recipeWakeSentinel.release().catch(function () {});
+      recipeWakeSentinel = null;
+    }
+    var h = document.getElementById('recipe-wake-hint');
+    if (h) h.textContent = '';
+  }
+
+  async function tryRecipeWakeLock() {
+    try {
+      if (navigator.wakeLock && navigator.wakeLock.request) {
+        releaseRecipeWakeLock();
+        recipeWakeSentinel = await navigator.wakeLock.request('screen');
+        var el = document.getElementById('recipe-wake-hint');
+        if (el) el.textContent = '已请求屏幕常亮（烹饪模式）';
+        recipeWakeSentinel.addEventListener('release', function () {
+          recipeWakeSentinel = null;
+        });
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function filterRecipeMetaByQuery(q) {
+    var qq = (q || '').trim().toLowerCase();
+    if (!qq) return [];
+    return recipeMetaIndex.filter(function (r) {
+      return recipeHaystack(r).indexOf(qq) >= 0;
+    });
+  }
+
+  function renderRecipeListRows() {
+    var el = document.getElementById('recipe-list');
+    if (!el) return;
+    var inp = document.getElementById('recipe-search');
+    var qq = inp && inp.value ? inp.value.trim() : '';
+    var rows;
+    var searching = !!qq;
+    if (searching) {
+      rows = filterRecipeMetaByQuery(qq);
+    } else {
+      rows = recipeListPaginated.slice();
+    }
+    function rowHtml(r) {
+      var tags = (r.tags || [])
+        .slice(0, 6)
+        .map(function (t) {
+          return '<span>' + String(t).replace(/</g, '') + '</span>';
+        })
+        .join('');
+      var rid = String(r.id != null ? r.id : '').replace(/"/g, '');
+      var cov = r.cover_image && String(r.cover_image).trim()
+        ? '<img class="recipe-row-thumb" src="' +
+          escAttr(r.cover_image) +
+          '" alt="" loading="lazy"/>'
+        : '<div class="recipe-row-thumb recipe-row-thumb-ph" aria-hidden="true">🍲</div>';
+      return (
+        '<div class="recipe-row" data-id="' +
+        rid +
+        '"><div class="recipe-row-inner">' +
+        cov +
+        '<div class="recipe-row-main"><div class="t">' +
+        String(r.title || '').replace(/</g, '&lt;') +
+        '</div><div class="m">' +
+        String(r.cooking_time || '') +
+        ' · ' +
+        String(r.difficulty || '') +
+        '</div><div class="recipe-tags">' +
+        tags +
+        '</div></div></div></div>'
+      );
+    }
+    var parts = rows.map(rowHtml);
+    if (!searching) {
+      if (recipeListLoading) parts.push('<div class="recipe-list-footer">加载中…</div>');
+      else if (!recipeListHasMore && rows.length)
+        parts.push('<div class="recipe-list-footer">已加载全部</div>');
+    } else if (!rows.length) {
+      parts.push('<div class="recipe-list-footer">没有匹配的菜谱</div>');
+    }
+    if (!rows.length && !searching) {
+      if (recipeListLoading) {
+        el.innerHTML = '<div class="recipe-list-footer">加载中…</div>';
+        return;
+      }
+      el.innerHTML =
+        '<div class="recipe-row" style="cursor:default;color:#7a827c">暂无菜谱</div>';
+      return;
+    }
+    el.innerHTML = parts.join('');
+    el.querySelectorAll('.recipe-row[data-id]').forEach(function (row) {
+      row.addEventListener('click', async function () {
+        var id = row.getAttribute('data-id');
+        var rec = rows.find(function (x) {
+          return String(x.id) === id;
+        });
+        if (rec) await openRecipeDetail(rec);
+      });
+    });
+  }
+
+  function syncRecipeModeUI() {
+    var pregnant = pregStatus === 1;
+    var btn = document.getElementById('recipe-btn-pregnant');
+    var strip = document.getElementById('recipe-pregnancy-strip');
+    var banner = document.getElementById('recipe-mode-banner');
+    var title = document.getElementById('recipe-mode-title');
+    var sub = document.getElementById('recipe-mode-sub');
+    if (!title) return;
+    if (pregnant) {
+      if (btn) btn.hidden = true;
+      if (strip) strip.style.display = 'block';
+      if (banner) banner.style.display = 'none';
+      var st = calculatePregnancyState(pregLmp, null);
+      var gh = document.getElementById('recipe-gest-head');
+      var gs = document.getElementById('recipe-gest-sub');
+      if (gh)
+        gh.textContent =
+          '老婆已怀孕：第 ' + st.current_week + ' 周 ' + st.current_day + ' 天（约第 ' + st.obstetricMonth + ' 个月）';
+      if (gs)
+        gs.textContent =
+          '末次月经 ' + (pregLmp || '未填') + ' · 孕月按 28 天估算，仅供参考，产检遵医嘱。';
+    } else {
+      if (btn) btn.hidden = false;
+      if (strip) strip.style.display = 'none';
+      if (banner) banner.style.display = 'block';
+      title.textContent = '科学备孕中';
+      sub.textContent = '均衡营养，为未来宝宝打好基础。';
+    }
+  }
+
+  function renderTodayCard() {
+    var st = calculatePregnancyState(pregLmp, null);
+    var mode = pregStatus === 1 ? 1 : 0;
+    recipeTodayPick = pickTodayRecommendation(recipeMetaIndex, mode, st);
+    var tagEl = document.getElementById('recipe-today-tagline');
+    var titEl = document.getElementById('recipe-today-title');
+    var metaEl = document.getElementById('recipe-today-meta');
+    if (!recipeTodayPick) {
+      if (tagEl) tagEl.textContent = '暂无推荐，请稍后同步食谱库';
+      if (titEl) titEl.textContent = '——';
+      if (metaEl) metaEl.textContent = '';
+      return;
+    }
+    if (tagEl) tagEl.textContent = todayExplainSentence(recipeTodayPick, st, mode);
+    if (titEl) titEl.textContent = recipeTodayPick.title || '';
+    if (metaEl)
+      metaEl.textContent =
+        (recipeTodayPick.cooking_time || '') + ' · ' + (recipeTodayPick.difficulty || '');
+  }
+
+  function loadRecipeHubData() {
+    return fetchRecipeMetaIndex()
+      .then(function () {
+        return loadRecipePage(true);
+      })
+      .then(function () {
+        syncRecipeModeUI();
+        renderTodayCard();
+        renderRecipeListRows();
+        bindRecipeListScroll();
+      });
+  }
+
+  async function openRecipeDetail(rec) {
+    var r = rec;
+    if (r && r.id != null && r.id !== '' && getSb()) {
+      var needFull =
+        r.steps == null ||
+        (Array.isArray(r.steps) && r.steps.length === 0) ||
+        (typeof r.steps === 'string' && !String(r.steps).trim());
+      if (needFull) {
+        var full = await fetchRecipeFullById(r.id);
+        if (full) r = full;
+      }
+    }
+    recipeDetailObj = r;
+    goToView('recipe_detail');
+  }
+
+  function renderRecipeDetailView() {
+    var root = document.getElementById('recipe-detail-root');
+    if (!root || !recipeDetailObj) return;
+    var r = recipeDetailObj;
+    var st = calculatePregnancyState(pregLmp, null);
+    stopRecipeFloatTimer();
+    recipeDetailActiveStepIdx = -1;
+
+    var rawSteps = r.steps;
+    if (typeof rawSteps === 'string') {
+      try {
+        rawSteps = JSON.parse(rawSteps);
+      } catch (e0) {
+        rawSteps = null;
+      }
+    }
+    var steps = [];
+    if (Array.isArray(rawSteps)) {
+      steps = rawSteps.slice().sort(function (a, b) {
+        return (a.no || 0) - (b.no || 0);
+      });
+    }
+
+    var chkKey = 'recipe_v2_' + String(r.id || 'x');
+    var saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(chkKey) || '{}');
+    } catch (e) {}
+
+    var ing = r.ingredients;
+    var sectionOrder = ['主料', '辅料', '调料'];
+    var ingInner = '';
+    if (ing && typeof ing === 'object' && !Array.isArray(ing)) {
+      sectionOrder.forEach(function (sec) {
+        var arr = ing[sec];
+        if (!Array.isArray(arr) || !arr.length) return;
+        var rows = arr
+          .map(function (it, idx) {
+            var key = sec + '_' + idx;
+            var ck = saved[key] ? ' checked' : '';
+            return (
+              '<li class="recipe-ing-row"><label class="recipe-ing-label">' +
+              '<input type="checkbox" data-ing-key="' +
+              escAttr(key) +
+              '"' +
+              ck +
+              ' /><span class="recipe-ing-text"><strong>' +
+              escHtml(it.item) +
+              '</strong><span class="recipe-ing-dot"> · </span>' +
+              escHtml(it.amount) +
+              '</span><span class="recipe-ing-badge">' +
+              (saved[key] ? '已买/已准备' : '待采购') +
+              '</span></label></li>'
+            );
+          })
+          .join('');
+        ingInner +=
+          '<div class="recipe-ing-section"><h4 class="recipe-ing-h">' +
+          escHtml(sec) +
+          '</h4><ul class="recipe-ing-list-v2">' +
+          rows +
+          '</ul></div>';
+      });
+    } else {
+      var flat = Array.isArray(ing) ? ing : flattenIngredientRows(r);
+      ingInner =
+        '<ul class="recipe-ing-list-v2">' +
+        flat
+          .map(function (it) {
+            return (
+              '<li class="recipe-ing-row"><span class="recipe-ing-text"><strong>' +
+              escHtml(it.item) +
+              '</strong> · ' +
+              escHtml(it.amount) +
+              '</span></li>'
+            );
+          })
+          .join('') +
+        '</ul>';
+    }
+    if (!ingInner) ingInner = '<p class="recipe-empty-hint">暂无食材明细</p>';
+
+    var stepCookHtml = steps
+      .map(function (s, i) {
+        var tm = s.timer ? Number(s.timer) : 0;
+        var ttl = s.title || '步骤 ' + (s.no || i + 1);
+        var tipRaw = (s.tips != null && String(s.tips).trim() !== '') ? String(s.tips).trim() : '';
+        var tipBlock = tipRaw
+          ? '<div class="recipe-step-inline-tips"><span class="recipe-step-inline-tips-label">大厨贴士</span>' +
+            escHtml(tipRaw) +
+            '</div>'
+          : '';
+        return (
+          '<div class="recipe-step-cook-blk" data-idx="' +
+          i +
+          '" data-timer="' +
+          tm +
+          '" data-tips="' +
+          escAttr(tipRaw) +
+          '"><div class="recipe-step-ttl">' +
+          escHtml(ttl) +
+          '</div><div class="recipe-step-big">' +
+          escHtml(s.content || s.desc || '') +
+          '</div>' +
+          tipBlock +
+          (tm > 0
+            ? '<div class="recipe-step-timer-hint">⏱ 本步 ' +
+              Math.round(tm / 60) +
+              ' 分钟 · 点击卡片启动底部悬浮倒计时</div>'
+            : '') +
+          '</div>'
+        );
+      })
+      .join('');
+
+    var insight =
+      r.nutrition_insight ||
+      r.pairing_advice ||
+      '均衡饮食，个体化咨询医生。';
+    var science =
+      '<div class="recipe-science"><strong>本月营养科普</strong>：' +
+      escHtml(insight) +
+      (pregStatus === 1
+        ? '<br/><span class="recipe-science-sub">当前约孕程第 ' +
+          st.obstetricMonth +
+          ' 个月：食材务必煮熟煮透。</span>'
+        : '') +
+      '</div>';
+
+    var hero =
+      r.cover_image && String(r.cover_image).trim()
+        ? '<div class="recipe-cover-wrap"><img class="recipe-cover-img" src="' +
+          escAttr(r.cover_image) +
+          '" alt="" loading="lazy"/></div>'
+        : '<div class="recipe-cover-ph" aria-hidden="true">🍲</div>';
+
+    root.innerHTML =
+      hero +
+      '<h1 class="recipe-detail-h1">' +
+      escHtml(r.title) +
+      '</h1><div class="recipe-detail-meta">' +
+      escHtml(r.cooking_time || '') +
+      ' · ' +
+      escHtml(r.difficulty || '') +
+      '</div>' +
+      science +
+      '<div class="recipe-hub-tabs">' +
+      '<button type="button" class="recipe-tab-btn sel" data-pane="ing">食材准备</button>' +
+      '<button type="button" class="recipe-tab-btn" data-pane="cook">烹饪流程</button>' +
+      '</div>' +
+      '<div id="recipe-pane-ing" class="recipe-tab-pane">' +
+      ingInner +
+      '</div>' +
+      '<div id="recipe-pane-cook" class="recipe-tab-pane" style="display:none">' +
+      '<div class="recipe-steps-cook">' +
+      (stepCookHtml || '<p class="recipe-empty-hint">暂无步骤</p>') +
+      '</div></div>';
+
+    root.querySelectorAll('.recipe-ing-list-v2 input').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var key = cb.getAttribute('data-ing-key');
+        var o = {};
+        try {
+          o = JSON.parse(localStorage.getItem(chkKey) || '{}');
+        } catch (e2) {}
+        o[key] = cb.checked;
+        localStorage.setItem(chkKey, JSON.stringify(o));
+        var row = cb.closest('.recipe-ing-row');
+        if (row) {
+          var bd = row.querySelector('.recipe-ing-badge');
+          if (bd) bd.textContent = cb.checked ? '已买/已准备' : '待采购';
+        }
+      });
+    });
+
+    root.querySelectorAll('.recipe-tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pane = btn.getAttribute('data-pane');
+        root.querySelectorAll('.recipe-tab-btn').forEach(function (b) {
+          b.classList.toggle('sel', b === btn);
+        });
+        var ping = document.getElementById('recipe-pane-ing');
+        var pcook = document.getElementById('recipe-pane-cook');
+        if (ping) ping.style.display = pane === 'ing' ? 'block' : 'none';
+        if (pcook) pcook.style.display = pane === 'cook' ? 'block' : 'none';
+      });
+    });
+
+    root.querySelectorAll('.recipe-step-cook-blk').forEach(function (blk) {
+      blk.addEventListener('click', function () {
+        var idx = parseInt(blk.getAttribute('data-idx'), 10);
+        recipeDetailActiveStepIdx = idx;
+        root.querySelectorAll('.recipe-step-cook-blk').forEach(function (b) {
+          b.classList.toggle('recipe-step-active', parseInt(b.getAttribute('data-idx'), 10) === idx);
+        });
+        var tm = parseInt(blk.getAttribute('data-timer'), 10) || 0;
+        if (tm > 0) startRecipeStepTimer(tm);
+        else stopRecipeFloatTimer();
+      });
+    });
+
+    var ftcl = document.getElementById('recipe-float-timer-close');
+    if (ftcl) {
+      ftcl.onclick = function () {
+        stopRecipeFloatTimer();
+      };
+    }
+
+    tryRecipeWakeLock();
   }
 
   async function fetchLb() {
@@ -2219,6 +3286,48 @@
     if (!map[e.key]) return;
     e.preventDefault();
     setDir(map[e.key][0], map[e.key][1]);
+  });
+
+  document.getElementById('btn-enter-recipes').onclick = function () {
+    goToView('recipe_home');
+  };
+  document.getElementById('recipe-home-back').onclick = function () {
+    goToView('lobby');
+  };
+  document.getElementById('recipe-detail-back').onclick = function () {
+    goToView('recipe_home');
+  };
+  var recipeSearchEl = document.getElementById('recipe-search');
+  if (recipeSearchEl) {
+    recipeSearchEl.addEventListener('input', function () {
+      renderRecipeListRows();
+    });
+  }
+  document.getElementById('recipe-today-card').addEventListener('click', async function () {
+    if (recipeTodayPick) await openRecipeDetail(recipeTodayPick);
+  });
+  document.getElementById('recipe-btn-pregnant').onclick = function () {
+    document.getElementById('recipe-lmp-modal').classList.add('visible');
+    var inp = document.getElementById('recipe-lmp-input');
+    if (inp && pregLmp) inp.value = pregLmp;
+  };
+  document.getElementById('recipe-lmp-cancel').onclick = function () {
+    document.getElementById('recipe-lmp-modal').classList.remove('visible');
+  };
+  document.getElementById('recipe-lmp-confirm').onclick = async function () {
+    var inp = document.getElementById('recipe-lmp-input');
+    var v = inp && inp.value ? inp.value.trim() : '';
+    if (!v) return;
+    pregStatus = 1;
+    pregLmp = v;
+    document.getElementById('recipe-lmp-modal').classList.remove('visible');
+    await upsertPregnancyUserConfig();
+    if (currentView === 'recipe_home') loadRecipeHubData();
+  };
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && currentView === 'recipe_detail') {
+      tryRecipeWakeLock();
+    }
   });
 
   document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };

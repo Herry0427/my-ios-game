@@ -15,25 +15,16 @@ import sys
 import uuid
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 DEFAULT_URL = "https://qfplpzosjcvvyhcotodz.supabase.co"
 
 ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = ROOT / "supabase_local.env"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-
-def load_dotenv(path: Path) -> None:
-    if not path.is_file():
-        return
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        k, v = k.strip(), v.strip().strip('"').strip("'")
-        if k and k not in os.environ:
-            os.environ[k] = v
+from supabase_env_loader import load_supabase_env
 
 
 def http_json(method: str, url: str, headers: dict, body=None) -> tuple[int, dict | list | None]:
@@ -48,7 +39,7 @@ def http_json(method: str, url: str, headers: dict, body=None) -> tuple[int, dic
 
 
 def main() -> int:
-    load_dotenv(ENV_FILE)
+    load_supabase_env(ROOT)
 
     base = (os.environ.get("SUPABASE_URL") or DEFAULT_URL).rstrip("/")
     anon = (os.environ.get("SUPABASE_ANON_KEY") or "").strip()
@@ -181,6 +172,37 @@ def main() -> int:
             _delete_row(base, anon, test_id)
             return 1
 
+    # --- migrations/007：pregnancy_user_config + pregnancy_recipes ---
+    try:
+        pconf_url = f"{base}/rest/v1/pregnancy_user_config"
+        pconf_headers = {**headers_base, "Prefer": "resolution=merge-duplicates,return=minimal"}
+        code_pc, _ = http_json(
+            "POST",
+            pconf_url,
+            pconf_headers,
+            {"user_id": test_id, "status": 1, "lmp_date": "2026-02-01"},
+        )
+        if code_pc in (200, 201):
+            sel_pc = (
+                f"{base}/rest/v1/pregnancy_user_config?user_id=eq.{quote(test_id, safe='')}"
+                "&select=status,lmp_date"
+            )
+            _, prow = http_json("GET", sel_pc, headers_base, None)
+            if isinstance(prow, list) and prow and int(prow[0].get("status", -1)) == 1:
+                print("OK: pregnancy_user_config 可写可读（007）")
+        ru = f"{base}/rest/v1/pregnancy_recipes?select=id,title,tags,suitable_months&limit=30"
+        code_r, rbody = http_json("GET", ru, headers_base, None)
+        if code_r == 200 and isinstance(rbody, list):
+            hit = [x for x in rbody if "牛腩" in str(x.get("title", ""))]
+            print(
+                f"OK: pregnancy_recipes 可读 {len(rbody)} 条（007）"
+                + ("；命中牛腩" if hit else "（尚无牛腩标题时请执行 migrations/007）")
+            )
+    except Exception as ex:
+        print(f"SKIP 007: {ex}")
+
+    _delete_pregnancy_row(base, anon, test_id)
+
     if not _delete_row(base, anon, test_id):
         print(f"WARN: delete failed id={test_id}", file=sys.stderr)
         return 1
@@ -195,6 +217,26 @@ def main() -> int:
         + ("（含 004 经济字段）" if economy_ok else "（基础字段；请应用 004 以测蛇币/宝箱）")
     )
     return 0
+
+
+def _delete_pregnancy_row(base: str, anon: str, test_id: str) -> None:
+    headers = {
+        "apikey": anon,
+        "Authorization": f"Bearer {anon}",
+        "Accept": "application/json",
+        "User-Agent": "ios_game-e2e-test/2.0",
+    }
+    try:
+        uid_q = quote(test_id, safe="")
+        req = Request(
+            f"{base}/rest/v1/pregnancy_user_config?user_id=eq.{uid_q}",
+            method="DELETE",
+            headers=headers,
+        )
+        with urlopen(req, timeout=60) as resp:
+            pass
+    except Exception:
+        pass
 
 
 def _delete_row(base: str, anon: str, test_id: str) -> bool:

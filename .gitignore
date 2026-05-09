@@ -6,3 +6,5 @@ dist/
 __pycache__/
 .env
 supabase_local.env
+# 推荐：仅在本机放置密钥，整目录不提交
+.secrets/

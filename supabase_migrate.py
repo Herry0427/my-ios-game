@@ -9,6 +9,7 @@ ios_game · Supabase 数据库联动入口（Management API）
 凭证（勿提交仓库）:
   环境变量 SUPABASE_MANAGEMENT_TOKEN、SUPABASE_PROJECT_REF
   或 ios_game/supabase_local.env
+  或 ios_game/.secrets/supabase.env（见 README_SECRETS.txt）
 
 用法:
   python supabase_migrate.py              # 执行全部迁移
@@ -26,25 +27,12 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from supabase_env_loader import load_supabase_env
+
 DEFAULT_PROJECT_REF = "qfplpzosjcvvyhcotodz"
 API_TMPL = "https://api.supabase.com/v1/projects/{ref}/database/query"
 SCRIPT_DIR = Path(__file__).resolve().parent
 MIGRATIONS_DIR = SCRIPT_DIR / "migrations"
-
-
-def load_dotenv_file(path: Path) -> None:
-    if not path.is_file():
-        return
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        k, v = k.strip(), v.strip().strip('"').strip("'")
-        if k and k not in os.environ:
-            os.environ[k] = v
 
 
 def run_query(project_ref: str, token: str, sql: str) -> dict:
@@ -83,7 +71,7 @@ def collect_migration_files(single: Path | None) -> list[Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    load_dotenv_file(SCRIPT_DIR / "supabase_local.env")
+    load_supabase_env(SCRIPT_DIR)
 
     parser = argparse.ArgumentParser(description="Apply Supabase SQL migrations via Management API")
     parser.add_argument(
@@ -132,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     if not token:
         print(
             "错误: 未设置 SUPABASE_MANAGEMENT_TOKEN。\n"
-            "请在环境变量或 supabase_local.env 中配置。",
+            "请在环境变量、supabase_local.env 或 .secrets/supabase.env 中配置。",
             file=sys.stderr,
         )
         return 1

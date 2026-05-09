@@ -1,0 +1,30 @@
+好孕食谱 · 云端建表（必须在你本机执行，密钥勿提交 Git）
+
+一、为什么 Cursor / AI 不能直接替你建表？
+  连接 Supabase 执行 DDL 需要 Management Token（sbp_...），密钥只在你的账号里，
+  本仓库没有也不应写入密钥，因此只能在「你电脑」上跑迁移脚本。
+
+二、三分钟操作
+  1) 打开 Supabase Dashboard → 你的项目 ios_app_first
+     → Project Settings → General → 复制 Reference ID（一串字母数字，即 project ref）
+
+  2) 配置密钥（任选其一，均不会提交 Git）：复制 supabase_local.env.example 为 supabase_local.env；或复制 .secrets.example/supabase.env 到 .secrets/supabase.env（见 README_SECRETS.txt）
+
+  3) 编辑 supabase_local.env，填写四项：
+     SUPABASE_MANAGEMENT_TOKEN = Account → Access Tokens 里创建的 sbp_...
+     SUPABASE_PROJECT_REF        = 上一步的 Reference ID
+     SUPABASE_URL                = https://<同一Ref>.supabase.co
+     SUPABASE_ANON_KEY           = Project Settings → API → anon public（eyJ...）
+
+  4) 在本目录终端执行：
+       python supabase_migrate.py
+     看到「全部迁移执行完成」后，Table Editor 会出现 pregnancy_user_config、pregnancy_recipes（007）；profiles 不再含孕期字段。
+
+  5) 集成测试（会向 profiles 写入一行测试数据再删除）：
+       python tests\test_supabase_profiles.py
+     纯本地孕周逻辑（不连网）：
+       python tests\test_pregnancy_logic.py
+
+三、无法跑脚本时
+  将 migrations\007_pregnancy_hub_tables.sql 全文复制到 Supabase → SQL Editor → Run。
+  （006 现为序号占位；好孕表以 007 为准。）
