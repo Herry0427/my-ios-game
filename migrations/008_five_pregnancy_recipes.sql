@@ -1,12 +1,11 @@
 -- 008 · 好孕食谱：5 道高精度菜谱（ingredients 主料/辅料/调料；steps 含 timer、tips）
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '西红柿山药牛腩',
-  '',
   '约 95 分钟',
   '中等',
   array['高效补铁', '预防贫血', '宝宝发育'],
@@ -26,12 +25,11 @@ $st$::jsonb,
 where not exists (select 1 from public.pregnancy_recipes r where r.title = '西红柿山药牛腩');
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '金汤柠檬鲈鱼',
-  '',
   '约 25 分钟',
   '中等',
   array['补DHA', '开胃缓解孕吐', '高蛋白'],
@@ -51,12 +49,11 @@ $st$::jsonb,
 where not exists (select 1 from public.pregnancy_recipes r where r.title = '金汤柠檬鲈鱼');
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '坚果腰果虾仁',
-  '',
   '约 15 分钟',
   '中等',
   array['宝宝智力发育', '补钙', '不长胖'],
@@ -76,12 +73,11 @@ $st$::jsonb,
 where not exists (select 1 from public.pregnancy_recipes r where r.title = '坚果腰果虾仁');
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '腐竹黑木耳烧肉',
-  '',
   '约 25 分钟（不含泡发）',
   '中等',
   array['预防便秘', '补血', '优质蛋白'],
@@ -101,12 +97,11 @@ $st$::jsonb,
 where not exists (select 1 from public.pregnancy_recipes r where r.title = '腐竹黑木耳烧肉');
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '板栗红枣炖乌鸡',
-  '',
   '约 70 分钟',
   '中等',
   array['气血调理', '叶酸补充', '暖宫滋补'],

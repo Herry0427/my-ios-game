@@ -17,7 +17,6 @@ comment on column public.pregnancy_user_config.status is '0=备孕 1=怀孕';
 create table if not exists public.pregnancy_recipes (
   id uuid primary key default gen_random_uuid(),
   title text not null,
-  cover_image text not null default '',
   cooking_time text not null default '',
   difficulty text not null default '',
   tags text[] not null default '{}',
@@ -46,12 +45,11 @@ create trigger pregnancy_recipes_set_updated_at
   for each row execute procedure public.set_profiles_updated_at();
 
 insert into public.pregnancy_recipes (
-  title, cover_image, cooking_time, difficulty, tags,
+  title, cooking_time, difficulty, tags,
   ingredients, steps, nutrition_insight, suitable_months
 )
 select
   '山药滋补红烧牛腩',
-  'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=80',
   '约 90 分钟',
   '中等',
   array['补铁', '高蛋白', '备孕推荐', '补钙', '高钙', '预防贫血'],
@@ -66,3 +64,5 @@ select
   '本月重点：血红素铁与优质蛋白有助于预防孕期贫血；山药淀粉温和护胃。建议搭配一份「清炒西蓝花」和一杯橙汁（VC 辅助铁吸收）。',
   array[0, 4, 5, 6, 7, 8]
 where not exists (select 1 from public.pregnancy_recipes pr where pr.title = '山药滋补红烧牛腩');
+
+alter table public.pregnancy_recipes drop column if exists cover_image;
