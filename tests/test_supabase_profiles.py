@@ -180,16 +180,26 @@ def main() -> int:
             "POST",
             pconf_url,
             pconf_headers,
-            {"user_id": test_id, "status": 1, "lmp_date": "2026-02-01"},
+            {
+                "user_id": test_id,
+                "status": 1,
+                "lmp_date": "2026-02-01",
+                "baby_nickname": "E2E宝",
+            },
         )
         if code_pc in (200, 201):
             sel_pc = (
                 f"{base}/rest/v1/pregnancy_user_config?user_id=eq.{quote(test_id, safe='')}"
-                "&select=status,lmp_date"
+                "&select=status,lmp_date,baby_nickname"
             )
             _, prow = http_json("GET", sel_pc, headers_base, None)
             if isinstance(prow, list) and prow and int(prow[0].get("status", -1)) == 1:
-                print("OK: pregnancy_user_config 可写可读（007）")
+                nick_ok = prow[0].get("baby_nickname") == "E2E宝"
+                print(
+                    "OK: pregnancy_user_config 可写可读（007"
+                    + ("；baby_nickname" if nick_ok else "；baby_nickname 列缺失请执行 migrations/011")
+                    + "）"
+                )
         ru = f"{base}/rest/v1/pregnancy_recipes?select=id,title,tags,suitable_months&limit=30"
         code_r, rbody = http_json("GET", ru, headers_base, None)
         if code_r == 200 and isinstance(rbody, list):

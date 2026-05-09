@@ -989,7 +989,10 @@
     .recipe-timer-btn:active { transform: scale(0.97); }
     .recipe-wake-hint { font-size: 0.68rem; color: #8a918c; margin-top: 12px; text-align: center; }
     #recipe-lmp-modal.modal-root,
-    #recipe-month-mismatch-modal.modal-root { z-index: 21000; }
+    #recipe-month-mismatch-modal.modal-root,
+    #recipe-nickname-modal.modal-root {
+      z-index: 21000;
+    }
     #recipe-lmp-modal .recipe-modal-card,
     #recipe-month-mismatch-modal .recipe-modal-card {
       width: 100%; max-width: 360px; padding: 22px; border-radius: 20px;
@@ -1001,9 +1004,105 @@
     #recipe-mismatch-body {
       font-size: 0.82rem; color: #5c665f; line-height: 1.65; margin: 0 0 16px;
     }
-    #recipe-lmp-modal input[type="date"] {
+    #recipe-lmp-modal input[type="date"],
+    #recipe-lmp-modal .recipe-input-text,
+    #recipe-nickname-modal .recipe-input-text {
       width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(120, 135, 125, 0.45);
       font-size: 1rem; margin-bottom: 14px; background: #fffefb;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    #recipe-lmp-modal .recipe-input-text:focus,
+    #recipe-nickname-modal .recipe-input-text:focus {
+      border-color: rgba(143, 179, 158, 0.95);
+      box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.22);
+    }
+    #recipe-lmp-modal .recipe-modal-field-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #5c665f;
+      margin: 0 0 6px;
+    }
+    #recipe-nickname-modal .recipe-modal-card {
+      width: 100%; max-width: 360px; padding: 22px; border-radius: 20px;
+      background: linear-gradient(165deg, #f5f0ea, #ebe4dc); border: 1px solid rgba(120, 135, 125, 0.35);
+      box-shadow: 0 16px 48px rgba(40, 45, 42, 0.18);
+    }
+    #recipe-nickname-modal .recipe-modal-card h3 {
+      margin: 0 0 12px; font-size: 1.05rem; color: #3d4540;
+    }
+    #recipe-nickname-modal .recipe-modal-actions {
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    #recipe-nickname-modal button {
+      padding: 10px 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #recipe-nickname-modal button:active { transform: scale(0.96); }
+    #recipe-nickname-modal .btn-cancel {
+      background: rgba(255, 252, 248, 0.9); color: #5c665f; border: 1px solid rgba(120, 130, 122, 0.35);
+    }
+    #recipe-nickname-modal .btn-ok {
+      background: linear-gradient(145deg, #8fb39e, #6d917f); color: #fff;
+    }
+    .recipe-status-title-hitbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      min-width: 0;
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 0 -4px;
+      padding: 2px 4px;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .recipe-status-title-hitbox:active {
+      background: rgba(120, 135, 125, 0.12);
+    }
+    .recipe-status-title-hitbox--prep {
+      cursor: default;
+      pointer-events: none;
+    }
+    .recipe-status-title-hitbox--prep:active {
+      background: transparent;
+    }
+    .recipe-status-title-hitbox .card-module__title {
+      flex: 1;
+      min-width: 0;
+    }
+    .recipe-nickname-edit {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #8a9290;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .recipe-nickname-edit:hover,
+    .recipe-nickname-edit:focus-visible {
+      color: #6d756f;
+      background: rgba(120, 135, 125, 0.12);
+      outline: none;
+    }
+    .recipe-nickname-edit svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     #recipe-lmp-modal .recipe-modal-actions,
     #recipe-month-mismatch-modal .recipe-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
@@ -1217,7 +1316,26 @@
           <div class="card-module__head">
             <span class="card-module__accent card-module__accent--teal" aria-hidden="true"></span>
             <div class="card-module__head-text">
-              <h2 class="card-module__title" id="recipe-card-status-title"># 备孕中</h2>
+              <div
+                class="recipe-status-title-hitbox recipe-status-title-hitbox--prep"
+                id="recipe-status-title-hitbox"
+                tabindex="-1"
+                aria-label="当前状态标题"
+              >
+                <h2 class="card-module__title" id="recipe-card-status-title"># 备孕中</h2>
+                <button type="button" class="recipe-nickname-edit" id="recipe-nickname-edit-btn" aria-label="编辑宝宝乳名">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                      stroke="currentColor"
+                      fill="none"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
               <p class="card-module__sub" id="recipe-card-status-sub">当前状态 · Status</p>
             </div>
           </div>
@@ -1331,12 +1449,41 @@
 
   <div id="recipe-lmp-modal" class="modal-root" aria-modal="true" role="dialog">
     <div class="recipe-modal-card">
-      <h3>填写末次月经首日</h3>
-      <p style="font-size:0.82rem;color:#5c665f;margin:0 0 10px;line-height:1.5">用于推算孕周；可随时在大厅同步云端。</p>
+      <h3>填写孕期信息</h3>
+      <p style="font-size:0.82rem;color:#5c665f;margin:0 0 10px;line-height:1.5">用于推算孕周；乳名可选，可随时修改。</p>
+      <label class="recipe-modal-field-label" for="recipe-lmp-input">末次月经首日</label>
       <input type="date" id="recipe-lmp-input" />
+      <label class="recipe-modal-field-label" for="recipe-baby-nickname-input">给宝宝取个乳名（可选）</label>
+      <input
+        type="text"
+        class="recipe-input-text"
+        id="recipe-baby-nickname-input"
+        maxlength="24"
+        placeholder="如：小饭团、皮皮..."
+        autocomplete="off"
+      />
       <div class="recipe-modal-actions">
         <button type="button" class="btn-cancel" id="recipe-lmp-cancel">取消</button>
         <button type="button" class="btn-ok" id="recipe-lmp-confirm">保存并切换</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="recipe-nickname-modal" class="modal-root" aria-modal="true" role="dialog">
+    <div class="recipe-modal-card">
+      <h3>修改宝宝乳名</h3>
+      <p style="font-size:0.82rem;color:#5c665f;margin:0 0 10px;line-height:1.5">留空保存则恢复默认标题显示。</p>
+      <input
+        type="text"
+        class="recipe-input-text"
+        id="recipe-nickname-only-input"
+        maxlength="24"
+        placeholder="如：小饭团、皮皮..."
+        autocomplete="off"
+      />
+      <div class="recipe-modal-actions">
+        <button type="button" class="btn-cancel" id="recipe-nickname-cancel">取消</button>
+        <button type="button" class="btn-ok" id="recipe-nickname-save">保存</button>
       </div>
     </div>
   </div>
@@ -1738,9 +1885,11 @@
   var equippedMap = 'classic';
   var activeMap = 'classic';
   var treesCache = null;
-  /** 好孕食谱 · pregnancy_user_config（0 备孕 / 1 怀孕）、lmp_date */
+  /** 好孕食谱 · pregnancy_user_config（0 备孕 / 1 怀孕）、lmp_date、baby_nickname */
   var pregStatus = 0;
   var pregLmp = null;
+  var pregBabyNickname = '';
+  var STORAGE_PREG_BABY_NICKNAME = 'preg_baby_nickname_v1';
   var recipeDetailActiveStepIdx = -1;
   var recipeFloatTimerIv = null;
 
@@ -1756,33 +1905,77 @@
       .replace(/"/g, '&quot;');
   }
 
+  function loadBabyNicknameFromStorage() {
+    try {
+      return String(localStorage.getItem(STORAGE_PREG_BABY_NICKNAME) || '').trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function saveBabyNicknameToStorage(v) {
+    try {
+      var s = String(v || '').trim();
+      if (s) localStorage.setItem(STORAGE_PREG_BABY_NICKNAME, s);
+      else localStorage.removeItem(STORAGE_PREG_BABY_NICKNAME);
+    } catch (e) {}
+  }
+
+  function sanitizeBabyNickname(raw) {
+    return String(raw || '')
+      .trim()
+      .slice(0, 24)
+      .replace(/[\r\n\t\u0000-\u001f#]/g, '');
+  }
+
   async function fetchPregnancyUserConfig() {
     var c = getSb();
-    if (!c) return;
+    if (!c) {
+      pregBabyNickname = loadBabyNicknameFromStorage();
+      return;
+    }
     var uid = getUserId();
     try {
-      var r = await c.from('pregnancy_user_config').select('status,lmp_date').eq('user_id', uid).maybeSingle();
+      var r = await c
+        .from('pregnancy_user_config')
+        .select('status,lmp_date,baby_nickname')
+        .eq('user_id', uid)
+        .maybeSingle();
       if (r.error) throw r.error;
       if (r.data) {
         pregStatus = num(r.data.status);
         pregLmp = r.data.lmp_date ? String(r.data.lmp_date).slice(0, 10) : null;
+        pregBabyNickname = r.data.baby_nickname ? String(r.data.baby_nickname).trim() : '';
+        saveBabyNicknameToStorage(pregBabyNickname);
       }
     } catch (e) {
       console.warn(e);
+      pregBabyNickname = loadBabyNicknameFromStorage();
     }
   }
 
   async function upsertPregnancyUserConfig() {
     var c = getSb();
-    if (!c) return { ok: false };
+    if (!c) {
+      saveBabyNicknameToStorage(pregBabyNickname);
+      return { ok: false };
+    }
     var uid = getUserId();
+    var nickClean = sanitizeBabyNickname(pregBabyNickname);
+    pregBabyNickname = nickClean;
     setSync(true);
     try {
       var r = await c.from('pregnancy_user_config').upsert(
-        { user_id: uid, status: pregStatus, lmp_date: pregLmp || null },
+        {
+          user_id: uid,
+          status: pregStatus,
+          lmp_date: pregLmp || null,
+          baby_nickname: nickClean || null
+        },
         { onConflict: 'user_id' }
       );
       if (r.error) throw r.error;
+      saveBabyNicknameToStorage(pregBabyNickname);
       return { ok: true };
     } catch (e) {
       console.warn(e);
@@ -1790,6 +1983,24 @@
     } finally {
       setSync(false);
     }
+  }
+
+  function openRecipeNicknameEditModal() {
+    var m = document.getElementById('recipe-nickname-modal');
+    var inp = document.getElementById('recipe-nickname-only-input');
+    if (inp) inp.value = pregBabyNickname || '';
+    if (m) m.classList.add('visible');
+    if (inp) setTimeout(function () { inp.focus(); }, 100);
+  }
+
+  async function applyBabyNicknameFromModal() {
+    var inp = document.getElementById('recipe-nickname-only-input');
+    pregBabyNickname = inp ? sanitizeBabyNickname(inp.value) : '';
+    saveBabyNicknameToStorage(pregBabyNickname);
+    var m = document.getElementById('recipe-nickname-modal');
+    if (m) m.classList.remove('visible');
+    syncRecipeModeUI();
+    await upsertPregnancyUserConfig();
   }
 
   function stopRecipeFloatTimer() {
@@ -2431,22 +2642,33 @@
         days: 0,
         current_week: 0,
         current_day: 0,
+        gestationWeek: 0,
+        pregnancyDays: 0,
         obstetricMonth: 0,
         trimester: 'prep'
       };
     }
     var l = _parseDateLocal(lmpStr);
     l.setHours(12, 0, 0, 0);
+    /** 与末次月经日相差的整日数：同日为 0，次日为 1 …（均为本地正午对齐，减少夏令时/边界误差） */
     var days = Math.floor((t.getTime() - l.getTime()) / 86400000);
     if (days < 0) days = 0;
-    var current_week = Math.floor(days / 7);
-    var current_day = days % 7;
+    /**
+     * 临床「孕第 N 周」：第 1 孕周 = 第 1–7 天，第 2 孕周 = 第 8–14 天 …（自末次月经日起算的妊娠天数）
+     * 与 floor(days/7)「已满几周」不同，避免第 10 天仍显示「第 1 周」。
+     */
+    var gestationWeek = days < 1 ? 1 : Math.ceil(days / 7);
+    /** 兼容字段：current_week = 孕周序数；current_day = 妊娠总天数（非「周内第几天」） */
+    var current_week = gestationWeek;
+    var current_day = days;
     var obstetricMonth = days <= 0 ? 1 : Math.min(10, Math.max(1, Math.ceil(days / 28)));
     var trimester = obstetricMonth <= 3 ? 'early' : obstetricMonth <= 7 ? 'mid' : 'late';
     return {
       days: days,
       current_week: current_week,
       current_day: current_day,
+      gestationWeek: gestationWeek,
+      pregnancyDays: days,
       obstetricMonth: obstetricMonth,
       trimester: trimester
     };
@@ -2886,6 +3108,8 @@
     var pregnant = pregStatus === 1;
     var titleEl = document.getElementById('recipe-card-status-title');
     var subEl = document.getElementById('recipe-card-status-sub');
+    var hitbox = document.getElementById('recipe-status-title-hitbox');
+    var editBtn = document.getElementById('recipe-nickname-edit-btn');
     var prepPanel = document.getElementById('recipe-status-panel-prep');
     var pregPanel = document.getElementById('recipe-status-panel-preg');
     var sub = document.getElementById('recipe-mode-sub');
@@ -2894,15 +3118,23 @@
     if (!titleEl || !subEl) return;
     if (pregnant) {
       var st = calculatePregnancyState(pregLmp, null);
-      titleEl.textContent = '# 怀孕第 ' + st.current_week + ' 周';
+      var nick = sanitizeBabyNickname(pregBabyNickname);
+      var weekPart = '怀孕第 ' + st.current_week + ' 周';
+      titleEl.textContent = nick ? '# ' + nick + ' · ' + weekPart : '# ' + weekPart;
       subEl.textContent = '孕期追踪 · On track';
+      if (hitbox) {
+        hitbox.classList.remove('recipe-status-title-hitbox--prep');
+        hitbox.tabIndex = 0;
+        hitbox.setAttribute('aria-label', '编辑宝宝乳名');
+      }
+      if (editBtn) editBtn.hidden = !!nick;
       if (pregDetail) {
         pregDetail.textContent =
-          '第 ' +
+          '孕第 ' +
           st.current_week +
-          ' 周 ' +
+          ' 周 · 妊娠第 ' +
           st.current_day +
-          ' 天 · 第 ' +
+          ' 天 · 约第 ' +
           st.obstetricMonth +
           ' 孕月';
       }
@@ -2918,6 +3150,12 @@
     } else {
       titleEl.textContent = '# 备孕中';
       subEl.textContent = '准备阶段 · Pre-conception';
+      if (hitbox) {
+        hitbox.classList.add('recipe-status-title-hitbox--prep');
+        hitbox.tabIndex = -1;
+        hitbox.setAttribute('aria-label', '当前状态标题');
+      }
+      if (editBtn) editBtn.hidden = true;
       if (sub) sub.textContent = '均衡营养，为未来宝宝打好基础。';
       if (prepPanel) {
         prepPanel.classList.add('is-active');
@@ -3150,9 +3388,11 @@
           mmBody.textContent =
             '您当前推算为约第 ' +
             stOpen.obstetricMonth +
-            ' 孕月（第 ' +
+            ' 孕月（孕第 ' +
             stOpen.current_week +
-            ' 周）。本菜谱适宜阶段：' +
+            ' 周 · 妊娠第 ' +
+            stOpen.current_day +
+            ' 天）。本菜谱适宜阶段：' +
             smTxt +
             '。与当前阶段不完全匹配，请结合产检与医嘱斟酌。';
         }
@@ -4240,20 +4480,54 @@
   document.getElementById('recipe-btn-pregnant').onclick = function () {
     document.getElementById('recipe-lmp-modal').classList.add('visible');
     var inp = document.getElementById('recipe-lmp-input');
+    var nickInp = document.getElementById('recipe-baby-nickname-input');
     if (inp && pregLmp) inp.value = pregLmp;
+    if (nickInp) nickInp.value = pregBabyNickname || '';
   };
   document.getElementById('recipe-lmp-cancel').onclick = function () {
     document.getElementById('recipe-lmp-modal').classList.remove('visible');
   };
   document.getElementById('recipe-lmp-confirm').onclick = async function () {
     var inp = document.getElementById('recipe-lmp-input');
+    var nickInp = document.getElementById('recipe-baby-nickname-input');
     var v = inp && inp.value ? inp.value.trim() : '';
     if (!v) return;
     pregStatus = 1;
     pregLmp = v;
+    pregBabyNickname = nickInp ? sanitizeBabyNickname(nickInp.value) : '';
+    saveBabyNicknameToStorage(pregBabyNickname);
     document.getElementById('recipe-lmp-modal').classList.remove('visible');
+    syncRecipeModeUI();
     await upsertPregnancyUserConfig();
     if (currentView === 'recipe_home') loadRecipeHubData();
+  };
+  var recipeStatusHitbox = document.getElementById('recipe-status-title-hitbox');
+  var recipeNicknameEditBtn = document.getElementById('recipe-nickname-edit-btn');
+  if (recipeStatusHitbox) {
+    recipeStatusHitbox.addEventListener('click', function () {
+      if (pregStatus !== 1) return;
+      openRecipeNicknameEditModal();
+    });
+    recipeStatusHitbox.addEventListener('keydown', function (e) {
+      if (pregStatus !== 1) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openRecipeNicknameEditModal();
+      }
+    });
+  }
+  if (recipeNicknameEditBtn) {
+    recipeNicknameEditBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (pregStatus !== 1) return;
+      openRecipeNicknameEditModal();
+    });
+  }
+  document.getElementById('recipe-nickname-cancel').onclick = function () {
+    document.getElementById('recipe-nickname-modal').classList.remove('visible');
+  };
+  document.getElementById('recipe-nickname-save').onclick = function () {
+    applyBabyNicknameFromModal();
   };
   document.getElementById('recipe-mismatch-ok').onclick = function () {
     document.getElementById('recipe-month-mismatch-modal').classList.remove('visible');
