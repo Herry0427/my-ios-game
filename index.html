@@ -563,7 +563,8 @@
 
     /* —— 好孕食谱 · 莫兰迪纸张质感（recipe-*） —— */
     #recipe-home-screen.screen,
-    #recipe-detail-screen.screen {
+    #recipe-detail-screen.screen,
+    #recipe-library-screen.screen {
       font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background:
         radial-gradient(ellipse 120% 90% at 50% -15%, rgba(168, 184, 160, 0.22), transparent 52%),
@@ -572,14 +573,20 @@
       padding-bottom: calc(20px + var(--safe-bottom));
     }
     #recipe-home-screen.screen::before,
-    #recipe-detail-screen.screen::before {
+    #recipe-detail-screen.screen::before,
+    #recipe-library-screen.screen::before {
       content: ""; pointer-events: none; position: absolute; inset: 0; opacity: 0.06; z-index: 0;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
       background-size: 180px 180px;
     }
     #recipe-home-screen .recipe-inner,
     #recipe-detail-screen .recipe-inner { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    #recipe-home-screen .recipe-inner--capsule { padding-top: calc(44px + var(--safe-top)); }
+    #recipe-home-screen .recipe-inner--capsule {
+      padding-top: calc(44px + var(--safe-top));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(12px + var(--safe-bottom));
+    }
     .recipe-status-capsule {
       position: fixed; top: calc(10px + var(--safe-top)); left: 50%; transform: translateX(-50%);
       z-index: 40; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;
@@ -606,12 +613,87 @@
     }
     .recipe-heart-btn:active { transform: scale(0.96); filter: brightness(0.95); }
     .recipe-heart-btn[hidden] { display: none !important; }
-    .recipe-search {
-      width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(130, 145, 135, 0.4);
-      background: rgba(255, 252, 248, 0.9); font-size: 0.92rem; color: #3d4540;
-      margin-bottom: 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    .recipe-library-cta {
+      width: 100%; max-width: 520px; margin: 0 auto 14px; padding: 15px 18px; border: none; border-radius: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      background: linear-gradient(145deg, rgba(255, 236, 214, 0.98), rgba(245, 220, 195, 0.96));
+      border: 1px solid rgba(200, 160, 120, 0.45);
+      box-shadow: 0 8px 26px rgba(120, 85, 55, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      color: #4a3528; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;
+      transition: transform 0.12s, filter 0.15s, box-shadow 0.2s;
     }
-    .recipe-search:focus { border-color: #8fb39e; box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.25); }
+    .recipe-library-cta:active { transform: scale(0.985); filter: brightness(0.97); }
+    .recipe-library-cta-icon { font-size: 1.45rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08)); }
+    .recipe-library-cta-text { flex: 1; text-align: center; }
+    .recipe-library-cta-hint { font-size: 1rem; opacity: 0.75; }
+    #recipe-library-screen.screen {
+      padding: 0;
+      overflow: hidden;
+      padding-bottom: 0;
+    }
+    .recipe-lib-root {
+      position: relative; z-index: 1;
+      flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; max-width: 560px; margin: 0 auto;
+      padding-left: max(12px, var(--safe-left)); padding-right: max(12px, var(--safe-right));
+    }
+    .recipe-lib-header {
+      flex-shrink: 0;
+      padding: calc(12px + var(--safe-top)) 4px 12px;
+      background: rgba(252, 248, 242, 0.68);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(130, 145, 125, 0.22);
+      box-shadow: 0 4px 20px rgba(70, 72, 65, 0.06);
+    }
+    .recipe-library-search {
+      width: 100%; padding: 12px 14px 12px 40px; border-radius: 14px;
+      border: 1px solid rgba(130, 145, 135, 0.38);
+      background: rgba(255, 252, 248, 0.88); font-size: 0.9rem; color: #3d4540;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .recipe-lib-search-wrap { position: relative; }
+    .recipe-lib-search-wrap::before {
+      content: "🔍"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 0.95rem; opacity: 0.55; pointer-events: none;
+    }
+    .recipe-library-search:focus {
+      border-color: #8fb39e;
+      box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.22);
+    }
+    .recipe-lib-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 10px 4px calc(12px + var(--safe-bottom));
+    }
+    #recipe-library-list .recipe-row {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      gap: 4px;
+      border-radius: 14px;
+    }
+    #recipe-library-list .recipe-row .t { font-size: 0.96rem; line-height: 1.32; }
+    #recipe-library-list .recipe-row .m { font-size: 0.7rem; margin-top: 1px; }
+    #recipe-library-list .recipe-tags { gap: 6px; margin-top: 2px; }
+    #recipe-library-list .recipe-tags span { font-size: 0.62rem; padding: 3px 8px; }
+    .recipe-lib-footer {
+      text-align: center;
+      padding: 12px 8px 6px;
+      color: #8a928c;
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+    }
+    .recipe-lib-footer--more { color: #9aa399; }
+    .recipe-lib-empty {
+      text-align: center;
+      padding: 36px 20px calc(28px + var(--safe-bottom));
+      color: #6d756f;
+    }
+    .recipe-lib-empty-emoji { font-size: 2.4rem; display: block; margin-bottom: 12px; filter: grayscale(0.15); }
+    .recipe-lib-empty-txt { margin: 0; font-size: 0.88rem; line-height: 1.65; font-weight: 600; }
     .recipe-ency-wrap { margin-bottom: 12px; padding: 0 8px; }
     .recipe-ency-card {
       position: relative;
@@ -1002,8 +1084,31 @@
         <div class="dish" id="recipe-today-title">——</div>
         <div class="meta" id="recipe-today-meta"></div>
       </div>
-      <input type="search" class="recipe-search" id="recipe-search" placeholder="搜索菜谱或食材，如：牛、叶酸…" autocomplete="off" />
-      <div class="recipe-list" id="recipe-list"><div class="recipe-row" style="cursor:default;color:#7a827c">加载食谱库…</div></div>
+      <button type="button" id="recipe-btn-open-library" class="recipe-library-cta" aria-label="进入全屏菜品库">
+        <span class="recipe-library-cta-icon" aria-hidden="true">📖</span>
+        <span class="recipe-library-cta-text">进入全屏菜品库</span>
+        <span class="recipe-library-cta-hint" aria-hidden="true">🔍</span>
+      </button>
+    </div>
+  </section>
+
+  <section id="recipe-library-screen" class="screen">
+    <div class="recipe-lib-root">
+      <header class="recipe-lib-header">
+        <div class="recipe-lib-search-wrap">
+          <input
+            type="search"
+            id="recipe-library-search"
+            class="recipe-library-search"
+            placeholder="搜索食材或功效..."
+            autocomplete="off"
+            enterkeyhint="search"
+          />
+        </div>
+      </header>
+      <div class="recipe-lib-scroll" id="recipe-library-list" role="list">
+        <div class="recipe-lib-footer">加载食谱库…</div>
+      </div>
     </div>
   </section>
 
@@ -1520,9 +1625,15 @@
   var recipeListNextOffset = 0;
   var recipeListHasMore = true;
   var recipeListLoading = false;
-  var recipeListScrollBound = false;
-  var RECIPE_FIRST_PAGE = 10;
-  var RECIPE_PAGE_SIZE = 20;
+  var recipeLibraryScrollBound = false;
+  var RECIPE_LIB_PAGE = 10;
+  var RECIPE_NEAR_BOTTOM_PX = 50;
+  var recipeDetailReturnView = 'recipe_home';
+  var recipeLibrarySearchQuery = '';
+  var recipeLibrarySearchActive = false;
+  var recipeLibrarySearchSorted = [];
+  var recipeLibrarySearchDisplayCount = 0;
+  var recipeLibSearchDebounce = null;
   /** 今日推荐持久化（与需求一致键名；备孕/怀孕或末次月经变化会清空并重生） */
   var STORAGE_LAST_RECOMMEND_DATE = 'last_recommend_date';
   var STORAGE_RECOMMEND_RECIPE_ID = 'recommend_recipe_id';
@@ -1889,6 +2000,7 @@
     snake_warehouse: 'warehouse-screen',
     snake_leaderboard: 'leaderboard-screen',
     recipe_home: 'recipe-home-screen',
+    recipe_library: 'recipe-library-screen',
     recipe_detail: 'recipe-detail-screen'
   };
 
@@ -1916,6 +2028,8 @@
   function getSwipeBackTarget() {
     switch (currentView) {
       case 'recipe_detail':
+        return recipeDetailReturnView || 'recipe_home';
+      case 'recipe_library':
         return 'recipe_home';
       case 'recipe_home':
         return 'lobby';
@@ -2013,6 +2127,18 @@
         return loadRecipeHubData();
       });
     }
+    if (view === 'recipe_library') {
+      fetchPregnancyUserConfig()
+        .then(function () {
+          return fetchRecipeMetaIndex();
+        })
+        .then(function () {
+          return openRecipeLibrary();
+        })
+        .then(function () {
+          bindRecipeLibraryScroll();
+        });
+    }
     if (view === 'recipe_detail') renderRecipeDetailView();
     if (view !== 'recipe_detail') releaseRecipeWakeLock();
   }
@@ -2067,6 +2193,19 @@
       suitable_months: [0, 4, 5, 6, 7, 8]
     }
   ];
+  for (var _rmi = 2; _rmi <= 30; _rmi++) {
+    RECIPE_MOCK.push({
+      id: 'local-mock-' + _rmi,
+      title: '模拟菜谱 ' + _rmi + '（分页测试）',
+      cooking_time: '约 30 分钟',
+      difficulty: '简单',
+      tags: ['测试', '叶酸', '补铁', '高蛋白'],
+      ingredients: {},
+      steps: [],
+      nutrition_insight: '',
+      suitable_months: [0, _rmi % 10 || 1]
+    });
+  }
 
   var TRIMESTER_TAGS = {
     early: ['缓解孕吐', '高叶酸', '叶酸'],
@@ -2301,6 +2440,31 @@
     }
   }
 
+  function recipeLibraryPriority(rec, om) {
+    var sm = normalizeSuitableMonths(rec.suitable_months || []);
+    if (om === 0) {
+      if (sm.indexOf(0) >= 0) return 0;
+      return 2;
+    }
+    if (sm.indexOf(om) >= 0) return 0;
+    if (sm.indexOf(0) >= 0) return 1;
+    return 2;
+  }
+
+  function sortRecipesForLibrary(arr) {
+    var om = getCurrentKnowledgeMonth();
+    return arr.slice().sort(function (a, b) {
+      var pa = recipeLibraryPriority(a, om);
+      var pb = recipeLibraryPriority(b, om);
+      if (pa !== pb) return pa - pb;
+      return String(a.title || '').localeCompare(String(b.title || ''), 'zh-CN');
+    });
+  }
+
+  function sortRecipeListPaginated() {
+    recipeListPaginated = sortRecipesForLibrary(recipeListPaginated);
+  }
+
   async function loadRecipePage(reset) {
     if (reset) {
       recipeListPaginated = [];
@@ -2309,14 +2473,16 @@
     }
     if (!recipeListHasMore || recipeListLoading) return;
     recipeListLoading = true;
+    if (currentView === 'recipe_library') renderRecipeLibraryList();
     var client = getSb();
-    var take = recipeListNextOffset === 0 ? RECIPE_FIRST_PAGE : RECIPE_PAGE_SIZE;
+    var take = RECIPE_LIB_PAGE;
     try {
       if (!client) {
-        var mockAll = RECIPE_MOCK.slice();
+        var mockAll = sortRecipesForLibrary(RECIPE_MOCK.slice());
         var slice = mockAll.slice(recipeListNextOffset, recipeListNextOffset + take);
         recipeListPaginated = recipeListPaginated.concat(slice);
         recipeListNextOffset += slice.length;
+        sortRecipeListPaginated();
         recipeListHasMore = recipeListNextOffset < mockAll.length;
       } else {
         var res = await client
@@ -2328,6 +2494,7 @@
         var chunk = res.data || [];
         recipeListPaginated = recipeListPaginated.concat(chunk);
         recipeListNextOffset += chunk.length;
+        sortRecipeListPaginated();
         recipeListHasMore = chunk.length === take;
       }
     } catch (e) {
@@ -2335,7 +2502,157 @@
       recipeListHasMore = false;
     } finally {
       recipeListLoading = false;
+      if (currentView === 'recipe_library') renderRecipeLibraryList();
     }
+  }
+
+  function applyRecipeLibrarySearch(raw) {
+    var qq = String(raw || '').trim();
+    recipeLibrarySearchQuery = qq;
+    if (!qq) {
+      recipeLibrarySearchActive = false;
+      recipeLibrarySearchSorted = [];
+      recipeLibrarySearchDisplayCount = 0;
+      var listEl = document.getElementById('recipe-library-list');
+      if (listEl) listEl.scrollTop = 0;
+      return loadRecipePage(true);
+    }
+    recipeLibrarySearchActive = true;
+    recipeLibrarySearchSorted = sortRecipesForLibrary(filterRecipeMetaByQuery(qq));
+    recipeLibrarySearchDisplayCount = Math.min(RECIPE_LIB_PAGE, recipeLibrarySearchSorted.length);
+    var listEl2 = document.getElementById('recipe-library-list');
+    if (listEl2) listEl2.scrollTop = 0;
+    renderRecipeLibraryList();
+    return Promise.resolve();
+  }
+
+  function openRecipeLibrary() {
+    var inp = document.getElementById('recipe-library-search');
+    if (inp) inp.value = '';
+    recipeLibrarySearchQuery = '';
+    recipeLibrarySearchActive = false;
+    recipeLibrarySearchSorted = [];
+    recipeLibrarySearchDisplayCount = 0;
+    var listEl = document.getElementById('recipe-library-list');
+    if (listEl) listEl.scrollTop = 0;
+    return loadRecipePage(true);
+  }
+
+  function renderRecipeLibraryList() {
+    var el = document.getElementById('recipe-library-list');
+    if (!el) return;
+    var searching = recipeLibrarySearchActive && recipeLibrarySearchQuery.length > 0;
+    var rows;
+    if (searching) {
+      rows = recipeLibrarySearchSorted.slice(0, recipeLibrarySearchDisplayCount);
+    } else {
+      rows = recipeListPaginated.slice();
+    }
+    function rowHtml(r) {
+      var tags = (r.tags || []).slice(0, 6).map(function (t, i) {
+        return (
+          '<span class="recipe-tag-tone-' +
+          (i % 4) +
+          '">' +
+          String(t).replace(/</g, '') +
+          '</span>'
+        );
+      });
+      var rid = String(r.id != null ? r.id : '').replace(/"/g, '');
+      return (
+        '<div class="recipe-row" data-id="' +
+        rid +
+        '"><div class="t">' +
+        String(r.title || '').replace(/</g, '&lt;') +
+        '</div><div class="m">' +
+        String(r.cooking_time || '') +
+        ' · ' +
+        String(r.difficulty || '') +
+        '</div><div class="recipe-tags">' +
+        tags.join('') +
+        '</div></div>'
+      );
+    }
+    if (searching) {
+      if (!recipeLibrarySearchSorted.length) {
+        el.innerHTML =
+          '<div class="recipe-lib-empty">' +
+          '<span class="recipe-lib-empty-emoji" aria-hidden="true">🍳</span>' +
+          '<p class="recipe-lib-empty-txt">哎呀，大厨还没开发这道菜，换个词搜搜？</p>' +
+          '</div>';
+        return;
+      }
+    } else {
+      if (!rows.length && recipeListLoading) {
+        el.innerHTML = '<div class="recipe-lib-footer">正在翻阅食谱…</div>';
+        return;
+      }
+      if (!rows.length && !recipeListLoading) {
+        el.innerHTML =
+          '<div class="recipe-row" style="cursor:default;color:#7a827c">暂无菜谱</div>';
+        return;
+      }
+    }
+    var parts = rows.map(rowHtml);
+    if (searching) {
+      if (recipeLibrarySearchDisplayCount < recipeLibrarySearchSorted.length) {
+        parts.push('<div class="recipe-lib-footer recipe-lib-footer--more">继续下滑加载更多…</div>');
+      } else if (rows.length) {
+        parts.push('<div class="recipe-lib-footer">已显示全部匹配</div>');
+      }
+    } else {
+      if (recipeListLoading) {
+        parts.push('<div class="recipe-lib-footer">正在翻阅食谱…</div>');
+      } else if (!recipeListHasMore && rows.length) {
+        parts.push('<div class="recipe-lib-footer">已经到底啦</div>');
+      }
+    }
+    el.innerHTML = parts.join('');
+    el.querySelectorAll('.recipe-row[data-id]').forEach(function (row) {
+      row.addEventListener('click', async function () {
+        var id = row.getAttribute('data-id');
+        var rec = null;
+        if (searching) {
+          rec = recipeLibrarySearchSorted.find(function (x) {
+            return String(x.id) === id;
+          });
+        } else {
+          rec = recipeListPaginated.find(function (x) {
+            return String(x.id) === id;
+          });
+        }
+        if (rec) {
+          recipeDetailReturnView = 'recipe_library';
+          await openRecipeDetail(rec);
+        }
+      });
+    });
+  }
+
+  function bindRecipeLibraryScroll() {
+    var el = document.getElementById('recipe-library-list');
+    if (!el || recipeLibraryScrollBound) return;
+    recipeLibraryScrollBound = true;
+    el.addEventListener(
+      'scroll',
+      function () {
+        var nearBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight < RECIPE_NEAR_BOTTOM_PX;
+        if (!nearBottom) return;
+        if (recipeLibrarySearchActive && recipeLibrarySearchQuery) {
+          if (recipeLibrarySearchDisplayCount >= recipeLibrarySearchSorted.length) return;
+          recipeLibrarySearchDisplayCount = Math.min(
+            recipeLibrarySearchSorted.length,
+            recipeLibrarySearchDisplayCount + RECIPE_LIB_PAGE
+          );
+          renderRecipeLibraryList();
+          return;
+        }
+        if (recipeListLoading || !recipeListHasMore) return;
+        loadRecipePage(false);
+      },
+      { passive: true }
+    );
   }
 
   async function fetchRecipeFullById(id) {
@@ -2349,26 +2666,6 @@
       console.warn(e);
       return null;
     }
-  }
-
-  function bindRecipeListScroll() {
-    var el = document.getElementById('recipe-list');
-    if (!el || recipeListScrollBound) return;
-    recipeListScrollBound = true;
-    el.addEventListener(
-      'scroll',
-      function () {
-        var inp = document.getElementById('recipe-search');
-        if (inp && inp.value.trim()) return;
-        if (recipeListLoading || !recipeListHasMore) return;
-        if (el.scrollHeight - el.scrollTop - el.clientHeight < 140) {
-          loadRecipePage(false).then(function () {
-            renderRecipeListRows();
-          });
-        }
-      },
-      { passive: true }
-    );
   }
 
   function releaseRecipeWakeLock() {
@@ -2403,72 +2700,6 @@
     if (!qq) return [];
     return recipeMetaIndex.filter(function (r) {
       return recipeHaystack(r).indexOf(qq) >= 0;
-    });
-  }
-
-  function renderRecipeListRows() {
-    var el = document.getElementById('recipe-list');
-    if (!el) return;
-    var inp = document.getElementById('recipe-search');
-    var qq = inp && inp.value ? inp.value.trim() : '';
-    var rows;
-    var searching = !!qq;
-    if (searching) {
-      rows = filterRecipeMetaByQuery(qq);
-    } else {
-      rows = recipeListPaginated.slice();
-    }
-    function rowHtml(r) {
-      var tags = (r.tags || []).slice(0, 6).map(function (t, i) {
-        return (
-          '<span class="recipe-tag-tone-' +
-          (i % 4) +
-          '">' +
-          String(t).replace(/</g, '') +
-          '</span>'
-        );
-      });
-      var rid = String(r.id != null ? r.id : '').replace(/"/g, '');
-      return (
-        '<div class="recipe-row" data-id="' +
-        rid +
-        '"><div class="t">' +
-        String(r.title || '').replace(/</g, '&lt;') +
-        '</div><div class="m">' +
-        String(r.cooking_time || '') +
-        ' · ' +
-        String(r.difficulty || '') +
-        '</div><div class="recipe-tags">' +
-        tags.join('') +
-        '</div></div>'
-      );
-    }
-    var parts = rows.map(rowHtml);
-    if (!searching) {
-      if (recipeListLoading) parts.push('<div class="recipe-list-footer">加载中…</div>');
-      else if (!recipeListHasMore && rows.length)
-        parts.push('<div class="recipe-list-footer">已加载全部</div>');
-    } else if (!rows.length) {
-      parts.push('<div class="recipe-list-footer">没有匹配的菜谱</div>');
-    }
-    if (!rows.length && !searching) {
-      if (recipeListLoading) {
-        el.innerHTML = '<div class="recipe-list-footer">加载中…</div>';
-        return;
-      }
-      el.innerHTML =
-        '<div class="recipe-row" style="cursor:default;color:#7a827c">暂无菜谱</div>';
-      return;
-    }
-    el.innerHTML = parts.join('');
-    el.querySelectorAll('.recipe-row[data-id]').forEach(function (row) {
-      row.addEventListener('click', async function () {
-        var id = row.getAttribute('data-id');
-        var rec = rows.find(function (x) {
-          return String(x.id) === id;
-        });
-        if (rec) await openRecipeDetail(rec);
-      });
     });
   }
 
@@ -2661,17 +2892,11 @@
   }
 
   function loadRecipeHubData() {
-    return fetchRecipeMetaIndex()
-      .then(function () {
-        return loadRecipePage(true);
-      })
-      .then(function () {
-        syncRecipeModeUI();
-        renderTodayCard();
-        renderRecipeListRows();
-        bindRecipeListScroll();
-        loadPregnancyKnowledgeTip({ refetch: true });
-      });
+    return fetchRecipeMetaIndex().then(function () {
+      syncRecipeModeUI();
+      renderTodayCard();
+      loadPregnancyKnowledgeTip({ refetch: true });
+    });
   }
 
   async function openRecipeDetail(rec) {
@@ -3763,14 +3988,27 @@
   document.getElementById('btn-enter-recipes').onclick = function () {
     goToView('recipe_home');
   };
-  var recipeSearchEl = document.getElementById('recipe-search');
-  if (recipeSearchEl) {
-    recipeSearchEl.addEventListener('input', function () {
-      renderRecipeListRows();
+  var recipeLibSearchInput = document.getElementById('recipe-library-search');
+  if (recipeLibSearchInput) {
+    recipeLibSearchInput.addEventListener('input', function () {
+      clearTimeout(recipeLibSearchDebounce);
+      var v = recipeLibSearchInput.value;
+      recipeLibSearchDebounce = setTimeout(function () {
+        applyRecipeLibrarySearch(v);
+      }, 300);
     });
   }
+  var recipeBtnOpenLibrary = document.getElementById('recipe-btn-open-library');
+  if (recipeBtnOpenLibrary) {
+    recipeBtnOpenLibrary.onclick = function () {
+      goToView('recipe_library');
+    };
+  }
   document.getElementById('recipe-today-card').addEventListener('click', async function () {
-    if (recipeTodayPick) await openRecipeDetail(recipeTodayPick);
+    if (recipeTodayPick) {
+      recipeDetailReturnView = 'recipe_home';
+      await openRecipeDetail(recipeTodayPick);
+    }
   });
   var recipeEncyRefresh = document.getElementById('recipe-ency-refresh');
   if (recipeEncyRefresh) {
