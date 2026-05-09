@@ -1009,9 +1009,17 @@
     #recipe-nickname-modal .recipe-input-text {
       width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(120, 135, 125, 0.45);
       font-size: 1rem; margin-bottom: 14px; background: #fffefb;
+      color: #2e3532;
+      caret-color: #2e3532;
+      -webkit-text-fill-color: #2e3532;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
+    }
+    #recipe-lmp-modal .recipe-input-text::placeholder,
+    #recipe-nickname-modal .recipe-input-text::placeholder {
+      color: #9aa399;
+      opacity: 1;
     }
     #recipe-lmp-modal .recipe-input-text:focus,
     #recipe-nickname-modal .recipe-input-text:focus {
