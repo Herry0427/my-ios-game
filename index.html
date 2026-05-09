@@ -572,6 +572,202 @@
       color: #3d4540;
       padding-bottom: calc(20px + var(--safe-bottom));
     }
+    /* 食谱首页 · 统一卡片 tokens（四模块对齐） */
+    #recipe-home-screen.screen {
+      --recipe-card-radius: 14px;
+      --recipe-card-pad: 14px 16px 16px;
+      --recipe-card-border: 1px solid rgba(130, 145, 135, 0.36);
+      --recipe-card-shadow: 0 6px 22px rgba(60, 72, 65, 0.1);
+      --recipe-card-gap: 16px;
+      --recipe-card-maxw: 520px;
+    }
+    .recipe-card-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--recipe-card-gap);
+      width: 100%;
+      max-width: var(--recipe-card-maxw);
+      margin: 0 auto;
+      padding: 0 max(12px, var(--safe-left)) calc(12px + var(--safe-bottom)) max(12px, var(--safe-right));
+      padding-top: calc(12px + var(--safe-top));
+      box-sizing: border-box;
+    }
+    .card-module {
+      width: 100%;
+      max-width: var(--recipe-card-maxw);
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: var(--recipe-card-radius);
+      border: var(--recipe-card-border);
+      box-shadow: var(--recipe-card-shadow);
+      padding: var(--recipe-card-pad);
+      position: relative;
+      box-sizing: border-box;
+      text-align: left;
+      background: linear-gradient(155deg, rgba(255, 252, 248, 0.97), rgba(240, 244, 238, 0.94));
+    }
+    .card-module--status {
+      background: linear-gradient(155deg, rgba(255, 252, 250, 0.98), rgba(232, 240, 246, 0.92));
+    }
+    .card-module--tips {
+      background: linear-gradient(145deg, rgba(252, 248, 238, 0.96), rgba(236, 244, 232, 0.94));
+    }
+    .card-module--today {
+      background: linear-gradient(145deg, rgba(220, 228, 218, 0.95), rgba(245, 240, 232, 0.98));
+    }
+    .card-module--library {
+      background: linear-gradient(145deg, rgba(255, 236, 214, 0.98), rgba(245, 220, 195, 0.96));
+      border-color: rgba(200, 160, 120, 0.42);
+      cursor: pointer;
+      transition: transform 0.12s, filter 0.15s, box-shadow 0.2s;
+    }
+    .card-module--library:active {
+      transform: scale(0.985);
+      filter: brightness(0.98);
+    }
+    .card-module__head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-right: 4px;
+    }
+    .card-module__accent {
+      width: 4px;
+      min-height: 2.35rem;
+      border-radius: 3px;
+      flex-shrink: 0;
+      align-self: stretch;
+      margin-top: 2px;
+    }
+    .card-module__accent--teal {
+      background: linear-gradient(180deg, #8fb39e, #5e8f78);
+      box-shadow: 0 0 0 1px rgba(94, 143, 120, 0.25);
+    }
+    .card-module__accent--mint {
+      background: linear-gradient(180deg, #9bc4a8, #6a9d7e);
+    }
+    .card-module__accent--rose {
+      background: linear-gradient(180deg, #c97b9a, #a85d7c);
+    }
+    .card-module__accent--amber {
+      background: linear-gradient(180deg, #e4b896, #c98a5a);
+    }
+    .card-module__head-text { flex: 1; min-width: 0; }
+    button.card-module {
+      font: inherit;
+      font-family: inherit;
+      width: 100%;
+      text-align: left;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .card-module h2.card-module__title {
+      margin: 0;
+    }
+    .card-module .card-module__sub {
+      margin: 0;
+    }
+    .recipe-today-tagline[hidden] {
+      display: none !important;
+    }
+    .card-module__title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #2a3832;
+      letter-spacing: 0.02em;
+      line-height: 1.35;
+    }
+    .card-module__sub {
+      font-size: 0.68rem;
+      color: #8a928c;
+      font-weight: 600;
+      margin-top: 3px;
+      letter-spacing: 0.03em;
+    }
+    .card-module__body { position: relative; }
+    .recipe-status-swap {
+      display: grid;
+      grid-template-areas: "slot";
+      min-height: 7rem;
+    }
+    .recipe-status-panel {
+      grid-area: slot;
+      transition: opacity 0.38s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .recipe-status-panel:not(.is-active) {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .recipe-status-panel.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .recipe-status-panel--prep {
+      text-align: center;
+    }
+    .recipe-status-panel--prep .recipe-mode-subline {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #5c665f;
+      line-height: 1.55;
+    }
+    .recipe-status-panel--preg .recipe-preg-detail {
+      margin: 0;
+      font-size: 0.84rem;
+      color: #4a554e;
+      font-weight: 700;
+      line-height: 1.55;
+      text-align: center;
+    }
+    .recipe-heart-btn {
+      margin-top: 0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.82rem;
+      background: linear-gradient(145deg, #7eb8d6, #5a9ec4);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(90, 158, 196, 0.35);
+      transition: transform 0.12s, filter 0.15s;
+      align-self: center;
+    }
+    .recipe-heart-btn:active {
+      transform: scale(0.96);
+      filter: brightness(0.95);
+    }
+    .recipe-heart-btn[hidden] {
+      display: none !important;
+    }
+    .recipe-today-dish {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #2a3832;
+      letter-spacing: -0.02em;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+    .recipe-today-meta {
+      font-size: 0.72rem;
+      color: #7a827c;
+      margin-bottom: 8px;
+    }
+    .recipe-today-nutrition {
+      margin: 0;
+      font-size: 0.76rem;
+      color: #5c665f;
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     #recipe-home-screen.screen::before,
     #recipe-detail-screen.screen::before,
     #recipe-library-screen.screen::before {
@@ -581,51 +777,29 @@
     }
     #recipe-home-screen .recipe-inner,
     #recipe-detail-screen .recipe-inner { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    #recipe-home-screen .recipe-inner--capsule {
-      padding-top: calc(44px + var(--safe-top));
+    #recipe-home-screen .recipe-inner--stack {
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding-bottom: calc(12px + var(--safe-bottom));
+      padding: 0;
     }
-    .recipe-status-capsule {
-      position: fixed; top: calc(10px + var(--safe-top)); left: 50%; transform: translateX(-50%);
-      z-index: 40; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;
-      max-width: calc(100vw - 32px); padding: 8px 18px; border-radius: 999px;
-      background: linear-gradient(145deg, rgba(255, 252, 248, 0.96), rgba(232, 238, 232, 0.94));
-      border: 1px solid rgba(130, 155, 138, 0.42);
-      box-shadow: 0 6px 22px rgba(60, 72, 65, 0.12);
+    .recipe-library-card-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 8px 4px 4px;
     }
-    .recipe-capsule-dot {
-      width: 8px; height: 8px; border-radius: 50%; background: #8fb39e; flex-shrink: 0;
-      box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.35);
+    .recipe-library-card-inner .recipe-library-cta-icon {
+      font-size: 1.35rem;
+      line-height: 1;
+      opacity: 0.92;
     }
-    .recipe-capsule-dot.pregnant { background: #c97b9a; box-shadow: 0 0 0 3px rgba(201, 123, 154, 0.35); }
-    .recipe-capsule-main { font-size: 0.82rem; font-weight: 800; color: #3d5248; letter-spacing: 0.04em; }
-    .recipe-capsule-detail { font-size: 0.72rem; font-weight: 600; color: #6d756f; max-width: 220px; line-height: 1.35; }
-    .recipe-prep-row { text-align: center; margin-bottom: 14px; padding: 0 8px; }
-    .recipe-prep-row .recipe-prep-sub { margin: 0 0 10px; font-size: 0.8rem; color: #5c665f; line-height: 1.55; }
-    .recipe-heart-btn {
-      margin-top: 10px; padding: 10px 14px; border-radius: 999px; border: none; cursor: pointer;
-      font-weight: 700; font-size: 0.82rem;
-      background: linear-gradient(145deg, #7eb8d6, #5a9ec4); color: #fff;
-      box-shadow: 0 4px 14px rgba(90, 158, 196, 0.35);
-      transition: transform 0.12s, filter 0.15s;
+    .recipe-library-card-inner .recipe-library-cta-text {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #4a3528;
+      letter-spacing: 0.02em;
     }
-    .recipe-heart-btn:active { transform: scale(0.96); filter: brightness(0.95); }
-    .recipe-heart-btn[hidden] { display: none !important; }
-    .recipe-library-cta {
-      width: 100%; max-width: 520px; margin: 0 auto 14px; padding: 15px 18px; border: none; border-radius: 16px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      background: linear-gradient(145deg, rgba(255, 236, 214, 0.98), rgba(245, 220, 195, 0.96));
-      border: 1px solid rgba(200, 160, 120, 0.45);
-      box-shadow: 0 8px 26px rgba(120, 85, 55, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
-      color: #4a3528; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;
-      transition: transform 0.12s, filter 0.15s, box-shadow 0.2s;
-    }
-    .recipe-library-cta:active { transform: scale(0.985); filter: brightness(0.97); }
-    .recipe-library-cta-icon { font-size: 1.45rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08)); }
-    .recipe-library-cta-text { flex: 1; text-align: center; }
-    .recipe-library-cta-hint { font-size: 1rem; opacity: 0.75; }
     #recipe-library-screen.screen {
       padding: 0;
       overflow: hidden;
@@ -694,29 +868,18 @@
     }
     .recipe-lib-empty-emoji { font-size: 2.4rem; display: block; margin-bottom: 12px; filter: grayscale(0.15); }
     .recipe-lib-empty-txt { margin: 0; font-size: 0.88rem; line-height: 1.65; font-weight: 600; }
-    .recipe-ency-wrap { margin-bottom: 12px; padding: 0 8px; }
     .recipe-ency-card {
       position: relative;
-      border-radius: 12px;
-      border: 1px solid rgba(130, 145, 120, 0.38);
-      background: linear-gradient(145deg, rgba(252, 248, 238, 0.96), rgba(236, 244, 232, 0.94));
-      padding: 12px 14px 14px;
-      box-shadow: 0 2px 14px rgba(70, 85, 78, 0.06);
+      padding: 0;
+      margin: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
     }
-    .recipe-ency-title-row {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 6px 10px;
-      margin-bottom: 8px;
-      padding-right: 32px;
-    }
-    .recipe-ency-h { font-size: 0.86rem; font-weight: 800; color: #3d5248; letter-spacing: 0.02em; }
-    .recipe-ency-sub { font-size: 0.65rem; color: #7a9084; font-weight: 600; }
     .recipe-ency-refresh {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      top: 10px;
+      right: 10px;
       border: none;
       background: transparent;
       cursor: pointer;
@@ -765,17 +928,13 @@
       line-height: 1.65;
       color: #4a554e;
     }
-    .recipe-today-card {
-      padding: 16px; border-radius: 18px; margin-bottom: 14px;
-      background: linear-gradient(145deg, rgba(220, 228, 218, 0.95), rgba(245, 240, 232, 0.98));
-      border: 1px solid rgba(130, 155, 138, 0.38);
-      box-shadow: 0 8px 28px rgba(70, 85, 78, 0.1);
-      transition: transform 0.3s var(--ease-out);
+    #recipe-today-card.card-module {
+      cursor: pointer;
+      transition: transform 0.22s var(--ease-out);
     }
-    .recipe-today-card:active { transform: scale(0.99); }
-    .recipe-today-card .tagline { font-size: 0.78rem; color: #5c665f; line-height: 1.55; margin-bottom: 8px; }
-    .recipe-today-card .dish { font-size: 1.28rem; font-weight: 800; color: #2a3832; letter-spacing: -0.02em; }
-    .recipe-today-card .meta { font-size: 0.72rem; color: #7a827c; margin-top: 6px; }
+    #recipe-today-card.card-module:active {
+      transform: scale(0.985);
+    }
     .recipe-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
     .recipe-list-footer {
       text-align: center; padding: 14px 12px; color: #7a827c; font-size: 0.78rem; clear: both;
@@ -1052,43 +1211,89 @@
   </section>
 
   <section id="recipe-home-screen" class="screen">
-    <div class="recipe-inner recipe-inner--capsule">
-      <div id="recipe-status-capsule" class="recipe-status-capsule" aria-live="polite">
-        <span id="recipe-capsule-dot" class="recipe-capsule-dot"></span>
-        <span id="recipe-capsule-main" class="recipe-capsule-main">备孕</span>
-        <span id="recipe-capsule-detail" class="recipe-capsule-detail"></span>
-      </div>
-      <div id="recipe-prep-row" class="recipe-prep-row">
-        <p class="recipe-prep-sub" id="recipe-mode-sub">均衡营养，为未来宝宝打好基础。</p>
-        <button type="button" class="recipe-heart-btn" id="recipe-btn-pregnant">❤ 我怀上了</button>
-      </div>
-      <div id="recipe-encyclopedia-wrap" class="recipe-ency-wrap">
-        <div id="recipe-encyclopedia-card" class="recipe-ency-card" aria-live="polite">
-          <button type="button" id="recipe-ency-refresh" class="recipe-ency-refresh" aria-label="换一条百科">↻</button>
-          <div class="recipe-ency-title-row">
-            <span class="recipe-ency-h">孕育百科</span>
-            <span class="recipe-ency-sub">Daily Tips</span>
-          </div>
-          <p id="recipe-ency-loading" class="recipe-ency-loading">正在翻阅百科…</p>
-          <div id="recipe-ency-inner" class="recipe-ency-inner">
-            <div class="recipe-ency-row">
-              <span id="recipe-ency-emoji" class="recipe-ency-emoji" aria-hidden="true">💡</span>
-              <span id="recipe-ency-cat" class="recipe-ency-cat"># 孕期冷知识</span>
+    <div class="recipe-inner recipe-inner--stack">
+      <div class="recipe-card-stack">
+        <section class="card-module card-module--status" aria-labelledby="recipe-card-status-title">
+          <div class="card-module__head">
+            <span class="card-module__accent card-module__accent--teal" aria-hidden="true"></span>
+            <div class="card-module__head-text">
+              <h2 class="card-module__title" id="recipe-card-status-title"># 备孕中</h2>
+              <p class="card-module__sub" id="recipe-card-status-sub">当前状态 · Status</p>
             </div>
-            <p id="recipe-ency-content" class="recipe-ency-content"></p>
           </div>
-        </div>
+          <div class="card-module__body">
+            <div class="recipe-status-swap">
+              <div
+                id="recipe-status-panel-prep"
+                class="recipe-status-panel recipe-status-panel--prep is-active"
+                aria-hidden="false"
+              >
+                <p class="recipe-mode-subline" id="recipe-mode-sub">均衡营养，为未来宝宝打好基础。</p>
+                <button type="button" class="recipe-heart-btn" id="recipe-btn-pregnant">❤ 我怀上了</button>
+              </div>
+              <div
+                id="recipe-status-panel-preg"
+                class="recipe-status-panel recipe-status-panel--preg"
+                aria-hidden="true"
+              >
+                <p class="recipe-preg-detail" id="recipe-preg-detail">第 0 周 0 天 · 第 1 孕月</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card-module card-module--tips" aria-labelledby="recipe-ency-heading">
+          <div id="recipe-encyclopedia-card" class="recipe-ency-card" aria-live="polite">
+            <button type="button" id="recipe-ency-refresh" class="recipe-ency-refresh" aria-label="换一条百科">↻</button>
+            <div class="card-module__head">
+              <span class="card-module__accent card-module__accent--mint" aria-hidden="true"></span>
+              <div class="card-module__head-text">
+                <h2 class="card-module__title" id="recipe-ency-heading"># 孕育百科</h2>
+                <p class="card-module__sub">Daily Tips</p>
+              </div>
+            </div>
+            <p id="recipe-ency-loading" class="recipe-ency-loading">正在翻阅百科…</p>
+            <div id="recipe-ency-inner" class="recipe-ency-inner">
+              <div class="recipe-ency-row">
+                <span id="recipe-ency-emoji" class="recipe-ency-emoji" aria-hidden="true">💡</span>
+                <span id="recipe-ency-cat" class="recipe-ency-cat"># 孕期冷知识</span>
+              </div>
+              <p id="recipe-ency-content" class="recipe-ency-content"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card-module card-module--today" id="recipe-today-card" role="button" tabindex="0" aria-labelledby="recipe-today-heading">
+          <div class="card-module__head">
+            <span class="card-module__accent card-module__accent--rose" aria-hidden="true"></span>
+            <div class="card-module__head-text">
+              <h2 class="card-module__title" id="recipe-today-heading"># 今日推荐</h2>
+              <p class="card-module__sub">Seeded Daily</p>
+            </div>
+          </div>
+          <div class="card-module__body">
+            <p id="recipe-today-tagline" class="recipe-today-tagline" hidden>加载今日推荐…</p>
+            <div id="recipe-today-title" class="recipe-today-dish">——</div>
+            <div id="recipe-today-meta" class="recipe-today-meta"></div>
+            <p id="recipe-today-nutrition" class="recipe-today-nutrition"></p>
+          </div>
+        </section>
+
+        <button type="button" class="card-module card-module--library" id="recipe-btn-open-library" aria-label="进入全屏菜品库">
+          <div class="card-module__head">
+            <span class="card-module__accent card-module__accent--amber" aria-hidden="true"></span>
+            <div class="card-module__head-text">
+              <span class="card-module__title"># 菜品库</span>
+              <span class="card-module__sub">Recipe Library</span>
+            </div>
+          </div>
+          <div class="recipe-library-card-inner">
+            <span class="recipe-library-cta-icon" aria-hidden="true">📖</span>
+            <span class="recipe-library-cta-text">进入全屏菜品库</span>
+            <span class="recipe-library-cta-icon" aria-hidden="true">🔍</span>
+          </div>
+        </button>
       </div>
-      <div class="recipe-today-card" id="recipe-today-card" role="button" tabindex="0">
-        <div class="tagline" id="recipe-today-tagline">加载今日推荐…</div>
-        <div class="dish" id="recipe-today-title">——</div>
-        <div class="meta" id="recipe-today-meta"></div>
-      </div>
-      <button type="button" id="recipe-btn-open-library" class="recipe-library-cta" aria-label="进入全屏菜品库">
-        <span class="recipe-library-cta-icon" aria-hidden="true">📖</span>
-        <span class="recipe-library-cta-text">进入全屏菜品库</span>
-        <span class="recipe-library-cta-hint" aria-hidden="true">🔍</span>
-      </button>
     </div>
   </section>
 
@@ -2399,32 +2604,6 @@
     return pick;
   }
 
-  function todayExplainSentence(rec, state, mode) {
-    if (mode === 0) {
-      return '备孕阶段注重均衡营养；今日从全库为您推荐：「' + (rec.title || '') + '」。';
-    }
-    var w = state.current_week;
-    var intro =
-      w <= 12
-        ? '胎儿器官分化剧烈，重视叶酸与清淡易消化。'
-        : w <= 27
-          ? '宝宝生长加速，钙与铁需求上升。'
-          : '留意水肿与血糖，饮食宜清淡少盐。';
-    return (
-      '老婆现在第 ' +
-      state.current_week +
-      ' 周又 ' +
-      state.current_day +
-      ' 天（孕程约第 ' +
-      state.obstetricMonth +
-      ' 个月），' +
-      intro +
-      ' 今日推荐：「' +
-      (rec.title || '') +
-      '」。'
-    );
-  }
-
   async function fetchRecipeMetaIndex() {
     recipeMetaIndex = RECIPE_MOCK.slice();
     var client = getSb();
@@ -2705,36 +2884,59 @@
 
   function syncRecipeModeUI() {
     var pregnant = pregStatus === 1;
-    var dot = document.getElementById('recipe-capsule-dot');
-    var main = document.getElementById('recipe-capsule-main');
-    var detail = document.getElementById('recipe-capsule-detail');
-    var prepRow = document.getElementById('recipe-prep-row');
+    var titleEl = document.getElementById('recipe-card-status-title');
+    var subEl = document.getElementById('recipe-card-status-sub');
+    var prepPanel = document.getElementById('recipe-status-panel-prep');
+    var pregPanel = document.getElementById('recipe-status-panel-preg');
     var sub = document.getElementById('recipe-mode-sub');
+    var pregDetail = document.getElementById('recipe-preg-detail');
     var btn = document.getElementById('recipe-btn-pregnant');
-    if (!main || !detail) return;
+    if (!titleEl || !subEl) return;
     if (pregnant) {
-      if (dot) dot.classList.add('pregnant');
-      main.textContent = '怀孕';
       var st = calculatePregnancyState(pregLmp, null);
-      detail.textContent =
-        '第 ' +
-        st.current_week +
-        ' 周 ' +
-        st.current_day +
-        ' 天 · 约第 ' +
-        st.obstetricMonth +
-        ' 孕月 · 末次月经 ' +
-        (pregLmp || '未填');
-      if (prepRow) prepRow.style.display = 'none';
+      titleEl.textContent = '# 怀孕第 ' + st.current_week + ' 周';
+      subEl.textContent = '孕期追踪 · On track';
+      if (pregDetail) {
+        pregDetail.textContent =
+          '第 ' +
+          st.current_week +
+          ' 周 ' +
+          st.current_day +
+          ' 天 · 第 ' +
+          st.obstetricMonth +
+          ' 孕月';
+      }
+      if (prepPanel) {
+        prepPanel.classList.remove('is-active');
+        prepPanel.setAttribute('aria-hidden', 'true');
+      }
+      if (pregPanel) {
+        pregPanel.classList.add('is-active');
+        pregPanel.setAttribute('aria-hidden', 'false');
+      }
       if (btn) btn.hidden = true;
     } else {
-      if (dot) dot.classList.remove('pregnant');
-      main.textContent = '备孕';
-      detail.textContent = '';
-      if (prepRow) prepRow.style.display = 'block';
+      titleEl.textContent = '# 备孕中';
+      subEl.textContent = '准备阶段 · Pre-conception';
       if (sub) sub.textContent = '均衡营养，为未来宝宝打好基础。';
+      if (prepPanel) {
+        prepPanel.classList.add('is-active');
+        prepPanel.setAttribute('aria-hidden', 'false');
+      }
+      if (pregPanel) {
+        pregPanel.classList.remove('is-active');
+        pregPanel.setAttribute('aria-hidden', 'true');
+      }
       if (btn) btn.hidden = false;
     }
+  }
+
+  function truncateRecipeNutrition(text, maxLen) {
+    var n = num(maxLen) || 120;
+    var t = String(text || '').trim();
+    if (!t) return '';
+    if (t.length <= n) return t;
+    return t.slice(0, Math.max(0, n - 1)) + '…';
   }
 
   function renderTodayCard() {
@@ -2744,17 +2946,30 @@
     var tagEl = document.getElementById('recipe-today-tagline');
     var titEl = document.getElementById('recipe-today-title');
     var metaEl = document.getElementById('recipe-today-meta');
+    var nutEl = document.getElementById('recipe-today-nutrition');
+    if (tagEl) {
+      tagEl.textContent = '';
+      tagEl.hidden = true;
+    }
     if (!recipeTodayPick) {
-      if (tagEl) tagEl.textContent = '暂无推荐，请稍后同步食谱库';
-      if (titEl) titEl.textContent = '——';
+      if (titEl) titEl.textContent = '暂无推荐，请稍后同步食谱库';
       if (metaEl) metaEl.textContent = '';
+      if (nutEl) {
+        nutEl.textContent = '';
+        nutEl.style.display = 'none';
+      }
       return;
     }
-    if (tagEl) tagEl.textContent = todayExplainSentence(recipeTodayPick, st, mode);
     if (titEl) titEl.textContent = recipeTodayPick.title || '';
     if (metaEl)
       metaEl.textContent =
         (recipeTodayPick.cooking_time || '') + ' · ' + (recipeTodayPick.difficulty || '');
+    if (nutEl) {
+      var insight = recipeTodayPick.nutrition_insight || '';
+      var tx = truncateRecipeNutrition(insight, 140);
+      nutEl.textContent = tx;
+      nutEl.style.display = tx ? 'block' : 'none';
+    }
   }
 
   function getCurrentKnowledgeMonth() {
