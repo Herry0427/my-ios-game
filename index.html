@@ -612,6 +612,77 @@
       margin-bottom: 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
     }
     .recipe-search:focus { border-color: #8fb39e; box-shadow: 0 0 0 3px rgba(143, 179, 158, 0.25); }
+    .recipe-ency-wrap { margin-bottom: 12px; padding: 0 8px; }
+    .recipe-ency-card {
+      position: relative;
+      border-radius: 12px;
+      border: 1px solid rgba(130, 145, 120, 0.38);
+      background: linear-gradient(145deg, rgba(252, 248, 238, 0.96), rgba(236, 244, 232, 0.94));
+      padding: 12px 14px 14px;
+      box-shadow: 0 2px 14px rgba(70, 85, 78, 0.06);
+    }
+    .recipe-ency-title-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      margin-bottom: 8px;
+      padding-right: 32px;
+    }
+    .recipe-ency-h { font-size: 0.86rem; font-weight: 800; color: #3d5248; letter-spacing: 0.02em; }
+    .recipe-ency-sub { font-size: 0.65rem; color: #7a9084; font-weight: 600; }
+    .recipe-ency-refresh {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      color: #6d8a7c;
+      padding: 6px;
+      opacity: 0.88;
+      transition: opacity 0.15s, transform 0.12s;
+    }
+    .recipe-ency-refresh:active { transform: rotate(45deg) scale(0.92); opacity: 1; }
+    .recipe-ency-loading {
+      margin: 10px 0;
+      font-size: 0.8rem;
+      color: #6d756f;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+    .recipe-ency-loading[hidden] { display: none !important; }
+    .recipe-ency-inner {
+      opacity: 0;
+      transition: opacity 0.38s ease;
+      pointer-events: none;
+    }
+    .recipe-ency-inner.recipe-ency-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .recipe-ency-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .recipe-ency-emoji { font-size: 1.28rem; line-height: 1.15; flex-shrink: 0; }
+    .recipe-ency-cat {
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: #2a3832;
+      flex: 1;
+      line-height: 1.45;
+    }
+    .recipe-ency-content {
+      margin: 0;
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #4a554e;
+    }
     .recipe-today-card {
       padding: 16px; border-radius: 18px; margin-bottom: 14px;
       background: linear-gradient(145deg, rgba(220, 228, 218, 0.95), rgba(245, 240, 232, 0.98));
@@ -908,6 +979,23 @@
       <div id="recipe-prep-row" class="recipe-prep-row">
         <p class="recipe-prep-sub" id="recipe-mode-sub">均衡营养，为未来宝宝打好基础。</p>
         <button type="button" class="recipe-heart-btn" id="recipe-btn-pregnant">❤ 我怀上了</button>
+      </div>
+      <div id="recipe-encyclopedia-wrap" class="recipe-ency-wrap">
+        <div id="recipe-encyclopedia-card" class="recipe-ency-card" aria-live="polite">
+          <button type="button" id="recipe-ency-refresh" class="recipe-ency-refresh" aria-label="换一条百科">↻</button>
+          <div class="recipe-ency-title-row">
+            <span class="recipe-ency-h">孕育百科</span>
+            <span class="recipe-ency-sub">Daily Tips</span>
+          </div>
+          <p id="recipe-ency-loading" class="recipe-ency-loading">正在翻阅百科…</p>
+          <div id="recipe-ency-inner" class="recipe-ency-inner">
+            <div class="recipe-ency-row">
+              <span id="recipe-ency-emoji" class="recipe-ency-emoji" aria-hidden="true">💡</span>
+              <span id="recipe-ency-cat" class="recipe-ency-cat"># 孕期冷知识</span>
+            </div>
+            <p id="recipe-ency-content" class="recipe-ency-content"></p>
+          </div>
+        </div>
       </div>
       <div class="recipe-today-card" id="recipe-today-card" role="button" tabindex="0">
         <div class="tagline" id="recipe-today-tagline">加载今日推荐…</div>
@@ -1443,6 +1531,80 @@
   var SWIPE_BACK_TRIGGER_DX = 100;
   var swipeBackState = { tracking: false, startX: 0, startY: 0 };
   var recipeTodayPick = null;
+  var recipeKnowledgeFiltered = [];
+  var recipeKnowledgeMonthKey = '';
+  var recipeKnowledgeLastId = null;
+  /** 离线或未连库时百科兜底（字段与 pregnancy_knowledge 一致） */
+  var RECIPE_KNOWLEDGE_MOCK = [
+    {
+      id: 'mock-ency-1',
+      category: '冷知识',
+      content:
+        '羊水其实是「尿液」：怀孕4个月后，宝宝就开始排尿了，这对肺部发育至关重要。',
+      suitable_months: [0, 4, 5, 6]
+    },
+    {
+      id: 'mock-ency-2',
+      category: '冷知识',
+      content: '指纹在孕期形成：宝宝的指纹在怀孕第13周左右就已经形成了，且终生不变。',
+      suitable_months: [0, 4]
+    },
+    {
+      id: 'mock-ency-3',
+      category: '心理',
+      content:
+        '准爸爸也有「妊娠反应」：由于紧张和焦虑，准爸爸也可能出现恶心、食欲差，医学称「妊娠伴随综合征」。',
+      suitable_months: [0]
+    },
+    {
+      id: 'mock-ency-4',
+      category: '饮食',
+      content: '缓解孕吐：建议少量多餐，早起先吃一点苏打饼干或吐司，避免胃部排空。',
+      suitable_months: [1, 2, 3]
+    },
+    {
+      id: 'mock-ency-5',
+      category: '禁忌',
+      content:
+        '水果避雷：患有妊娠期糖尿病的准妈妈应慎食香蕉，其含糖量高且含有几丁质酶过敏原。',
+      suitable_months: [0]
+    },
+    {
+      id: 'mock-ency-6',
+      category: '护理',
+      content:
+        '避免毒素接触：尽量避免使用含有BPA（双酚A）的塑料容器，护肤品建议选用天然成分。',
+      suitable_months: [0]
+    },
+    {
+      id: 'mock-ency-7',
+      category: '发育',
+      content:
+        '听力觉醒：第20周左右，宝宝开始能听到妈妈的心跳和外界的声音了，可以多和TA说话。',
+      suitable_months: [5, 6]
+    },
+    {
+      id: 'mock-ency-8',
+      category: '饮食',
+      content:
+        '补铁秘诀：吃牛肉、猪肝等红肉时，搭配富含VC的橙子或西蓝花，吸收率能提高3-5倍。',
+      suitable_months: [0, 4, 5, 6, 7]
+    },
+    {
+      id: 'mock-ency-9',
+      category: '冷知识',
+      content:
+        '妈妈的心脏会变大：为了给宝宝输送更多血液，孕妈的心脏体积会略微增大，心率也会加快。',
+      suitable_months: [0, 4, 5, 6]
+    },
+    {
+      id: 'mock-ency-10',
+      category: '护理',
+      content:
+        '数胎动：进入第28周后，建议每天固定时间数胎动，这是监测宝宝健康的「晴雨表」。',
+      suitable_months: [7, 8, 9]
+    }
+  ];
   var recipeDetailObj = null;
   var recipeWakeSentinel = null;
 
@@ -1977,7 +2139,15 @@
 
   /** PostgREST 可能返回 int[] 或字符串形式的月份，统一为整数数组 */
   function normalizeSuitableMonths(sm) {
-    if (!sm || !sm.length) return [];
+    if (sm == null) return [];
+    if (typeof sm === 'string') {
+      try {
+        sm = JSON.parse(sm);
+      } catch (e) {
+        return [];
+      }
+    }
+    if (!Array.isArray(sm) || !sm.length) return [];
     return sm
       .map(function (x) {
         return parseInt(String(x), 10);
@@ -2356,6 +2526,140 @@
         (recipeTodayPick.cooking_time || '') + ' · ' + (recipeTodayPick.difficulty || '');
   }
 
+  function getCurrentKnowledgeMonth() {
+    if (pregStatus !== 1) return 0;
+    var st = calculatePregnancyState(pregLmp, null);
+    return num(st.obstetricMonth) || 0;
+  }
+
+  function formatKnowledgeTag(cat) {
+    var c = String(cat || '').trim();
+    if (!c) return '# 孕育百科';
+    if (c === '发育') return '# 胎儿发育';
+    return '# 孕期' + c;
+  }
+
+  function emojiForKnowledgeCategory(cat) {
+    var c = String(cat || '');
+    if (c.indexOf('冷知识') >= 0) return '💡';
+    if (c.indexOf('饮食') >= 0) return '🥗';
+    if (c.indexOf('护理') >= 0) return '🛡';
+    if (c.indexOf('心理') >= 0) return '💭';
+    if (c.indexOf('禁忌') >= 0) return '⚠️';
+    if (c.indexOf('发育') >= 0) return '👶';
+    if (c.indexOf('运动') >= 0) return '🏃';
+    if (c.indexOf('症状') >= 0) return '🤒';
+    return '📖';
+  }
+
+  function knowledgeMatchesMonth(row, om) {
+    var sm = normalizeSuitableMonths(row.suitable_months || []);
+    var m = num(om);
+    return sm.indexOf(m) >= 0 || sm.indexOf(0) >= 0;
+  }
+
+  async function ensureRecipeKnowledgePool(forceRefetch) {
+    var key =
+      String(pregStatus) +
+      '|' +
+      String(pregLmp || '') +
+      '|' +
+      String(getCurrentKnowledgeMonth());
+    if (!forceRefetch && recipeKnowledgeFiltered.length && recipeKnowledgeMonthKey === key) {
+      return;
+    }
+    recipeKnowledgeMonthKey = key;
+    recipeKnowledgeLastId = null;
+    var om = getCurrentKnowledgeMonth();
+    var rows = [];
+    var client = getSb();
+    if (client) {
+      var res = await client.from('pregnancy_knowledge').select('*');
+      if (!res.error && res.data && res.data.length) {
+        rows = res.data.filter(function (k) {
+          return knowledgeMatchesMonth(k, om);
+        });
+      }
+    }
+    if (!rows.length) {
+      rows = RECIPE_KNOWLEDGE_MOCK.filter(function (k) {
+        return knowledgeMatchesMonth(k, om);
+      });
+    }
+    recipeKnowledgeFiltered = rows;
+  }
+
+  function pickRandomKnowledgeRow() {
+    var pool = recipeKnowledgeFiltered;
+    if (!pool.length) return null;
+    if (pool.length === 1) {
+      recipeKnowledgeLastId = pool[0].id;
+      return pool[0];
+    }
+    var lid = recipeKnowledgeLastId;
+    var candidates = pool.filter(function (k) {
+      return String(k.id) !== String(lid);
+    });
+    var pickFrom = candidates.length ? candidates : pool;
+    var idx = Math.floor(Math.random() * pickFrom.length);
+    var row = pickFrom[idx];
+    recipeKnowledgeLastId = row && row.id;
+    return row;
+  }
+
+  function applyKnowledgeRowToDOM(row, fadeIn) {
+    var emojiEl = document.getElementById('recipe-ency-emoji');
+    var catEl = document.getElementById('recipe-ency-cat');
+    var bodyEl = document.getElementById('recipe-ency-content');
+    var inner = document.getElementById('recipe-ency-inner');
+    if (!inner) return;
+    if (!row) {
+      if (emojiEl) emojiEl.textContent = '📖';
+      if (catEl) catEl.textContent = '# 孕育百科';
+      if (bodyEl)
+        bodyEl.textContent = '暂无与本阶段匹配的百科贴士，请稍后再试。';
+    } else {
+      if (emojiEl) emojiEl.textContent = emojiForKnowledgeCategory(row.category);
+      if (catEl) catEl.textContent = formatKnowledgeTag(row.category);
+      if (bodyEl) bodyEl.textContent = row.content || '';
+    }
+    if (fadeIn) {
+      inner.classList.remove('recipe-ency-visible');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          inner.classList.add('recipe-ency-visible');
+        });
+      });
+    } else {
+      inner.classList.add('recipe-ency-visible');
+    }
+  }
+
+  async function loadPregnancyKnowledgeTip(opts) {
+    opts = opts || {};
+    var refetch = !!opts.refetch;
+    var loadingEl = document.getElementById('recipe-ency-loading');
+    var inner = document.getElementById('recipe-ency-inner');
+    if (loadingEl) loadingEl.hidden = false;
+    if (inner) {
+      inner.classList.remove('recipe-ency-visible');
+    }
+    try {
+      await ensureRecipeKnowledgePool(refetch);
+      var row = pickRandomKnowledgeRow();
+      if (loadingEl) loadingEl.hidden = true;
+      applyKnowledgeRowToDOM(row, true);
+    } catch (e) {
+      if (loadingEl) loadingEl.hidden = true;
+      applyKnowledgeRowToDOM(null, true);
+    }
+  }
+
+  function refreshKnowledgeFromPoolOnly() {
+    var row = pickRandomKnowledgeRow();
+    applyKnowledgeRowToDOM(row, true);
+  }
+
   function loadRecipeHubData() {
     return fetchRecipeMetaIndex()
       .then(function () {
@@ -2366,6 +2670,7 @@
         renderTodayCard();
         renderRecipeListRows();
         bindRecipeListScroll();
+        loadPregnancyKnowledgeTip({ refetch: true });
       });
   }
 
@@ -3467,6 +3772,18 @@
   document.getElementById('recipe-today-card').addEventListener('click', async function () {
     if (recipeTodayPick) await openRecipeDetail(recipeTodayPick);
   });
+  var recipeEncyRefresh = document.getElementById('recipe-ency-refresh');
+  if (recipeEncyRefresh) {
+    recipeEncyRefresh.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (recipeKnowledgeFiltered.length > 0) {
+        refreshKnowledgeFromPoolOnly();
+      } else {
+        loadPregnancyKnowledgeTip({ refetch: true });
+      }
+    });
+  }
   document.getElementById('recipe-btn-pregnant').onclick = function () {
     document.getElementById('recipe-lmp-modal').classList.add('visible');
     var inp = document.getElementById('recipe-lmp-input');
