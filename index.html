@@ -140,6 +140,30 @@
       background: rgba(18, 26, 40, 0.88);
       border: 1px solid rgba(0, 255, 204, 0.14);
     }
+    #memo-screen .memo-row.memo-row--pending {
+      opacity: 0.62;
+      border-style: dashed;
+      border-color: rgba(0, 255, 136, 0.28);
+    }
+    @keyframes memoRowEnterIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    #memo-screen .memo-row.memo-row-enter {
+      animation: memoRowEnterIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #memo-screen .memo-sync-badge {
+      font-size: 0.62rem;
+      color: rgba(0, 255, 136, 0.65);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
     #memo-screen .memo-check {
       width: 28px;
       height: 28px;
@@ -357,7 +381,52 @@
       position: relative;
       z-index: 4;
     }
+    #memo-screen .memo-bar-add:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    #memo-screen .memo-bar-add--loading {
+      font-size: 0;
+    }
+    #memo-screen .memo-add-spinner {
+      display: block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(8, 22, 16, 0.25);
+      border-top-color: rgba(8, 22, 16, 0.92);
+      border-radius: 50%;
+      animation: memoAddSpin 0.7s linear infinite;
+    }
+    @keyframes memoAddSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
     #memo-screen .memo-bar-add:active { transform: scale(0.94); }
+    #memo-screen .memo-bar-add:disabled:active { transform: none; }
+    #memo-toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(118px + env(safe-area-inset-bottom, 0px) + var(--memo-kb, 0px));
+      transform: translateX(-50%);
+      z-index: 10080;
+      max-width: min(92vw, 400px);
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: rgba(16, 22, 34, 0.97);
+      border: 1px solid rgba(255, 180, 90, 0.38);
+      color: #e8f0fa;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
+      pointer-events: none;
+    }
+    #memo-toast[hidden] {
+      display: none !important;
+    }
     .ui-swipe-hint {
       font-size: 0.68rem;
       color: rgba(160, 176, 198, 0.52);
@@ -1608,6 +1677,7 @@
     <div id="memo-footer-fixed">
       <p class="memo-swipe-hint-bar">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB · 需 SB_KEY 同步</p>
       <p id="memo-compose-hint" class="memo-compose-hint" role="status" hidden></p>
+      <div id="memo-toast" class="memo-toast" role="alert" hidden></div>
       <div class="memo-bottom-bar" id="memo-bottom-bar">
         <div class="memo-bar-input-wrap" id="memo-input-hitbox">
           <input type="text" class="memo-bar-input" id="memo-input" maxlength="2000" placeholder="添加待办…" enterkeyhint="done" autocomplete="off" />
@@ -3067,6 +3137,44 @@
   var memoRowsCache = [];
   var memoViewportHandlersBound = false;
   var memoComposeHintTimer = null;
+  var memoAddInFlight = false;
+
+  function memoTryVibrate(ms) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(ms != null ? ms : 10);
+    } catch (e) {}
+  }
+
+  function setMemoAddButtonBusy(busy) {
+    var btn = document.getElementById('memo-add-btn');
+    if (!btn) return;
+    btn.disabled = !!busy;
+    btn.classList.toggle('memo-bar-add--loading', !!busy);
+    btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+    if (busy) {
+      btn.innerHTML = '<span class="memo-add-spinner" aria-hidden="true"></span>';
+    } else {
+      btn.innerHTML = '+';
+    }
+  }
+
+  function showMemoToast(msg) {
+    var el = document.getElementById('memo-toast');
+    if (!el) {
+      showMemoComposeHint(msg, true);
+      return;
+    }
+    el.textContent = msg;
+    el.hidden = false;
+    if (showMemoToast._t) {
+      clearTimeout(showMemoToast._t);
+      showMemoToast._t = null;
+    }
+    showMemoToast._t = setTimeout(function () {
+      el.hidden = true;
+      showMemoToast._t = null;
+    }, 4200);
+  }
 
   function showMemoComposeHint(text, isErr) {
     var el = document.getElementById('memo-compose-hint');
@@ -3128,21 +3236,28 @@
   }
 
   function memoRowHtml(m) {
+    var pending = !!m._pending;
     var id = escAttr(m.id);
     var st = num(m.status);
     var done = st === 1;
     var due = m.due_date ? String(m.due_date).slice(0, 10) : '';
     var dueHtml = due ? '<div class="memo-due">' + escHtml(due) + '</div>' : '';
+    var syncHtml = pending
+      ? '<div class="memo-sync-badge" aria-live="polite">同步中…</div>'
+      : '';
     return (
       '<li class="memo-row' +
       (done ? ' memo-done' : '') +
+      (pending ? ' memo-row--pending memo-row-enter' : '') +
       '" data-id="' +
       id +
       '">' +
-      '<button type="button" class="memo-check" data-memo-toggle="' +
+      '<button type="button" class="memo-check"' +
+      (pending ? ' disabled' : '') +
+      ' data-memo-toggle="' +
       id +
       '" aria-label="' +
-      (done ? '标为未完成' : '标为已完成') +
+      (pending ? '同步中' : done ? '标为未完成' : '标为已完成') +
       '">' +
       (done ? '✓' : '') +
       '</button>' +
@@ -3151,6 +3266,7 @@
       escHtml(m.content || '') +
       '</div>' +
       dueHtml +
+      syncHtml +
       '</div></li>'
     );
   }
@@ -3228,6 +3344,7 @@
   }
 
   async function addMemoFromComposer() {
+    if (memoAddInFlight) return;
     var inp = document.getElementById('memo-input');
     var dueEl = document.getElementById('memo-due');
     var raw = inp && inp.value ? inp.value.trim() : '';
@@ -3247,39 +3364,77 @@
       showMemoComposeHint('请先在大厅用昵称登录', true);
       return;
     }
+
+    memoAddInFlight = true;
+    setMemoAddButtonBusy(true);
+
+    var savedText = raw.slice(0, 2000);
+    var savedDue = dueVal;
+    if (inp) {
+      inp.value = '';
+      inp.blur();
+    }
+    if (dueEl) dueEl.value = '';
+    showMemoComposeHint('');
+    memoTryVibrate(10);
+
+    var tempId = 'tmp_' + Date.now() + '_' + ((Math.random() * 1e9) | 0);
+    var nowIso = new Date().toISOString();
+    memoRowsCache.unshift({
+      id: tempId,
+      content: savedText,
+      status: 0,
+      due_date: savedDue || null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      _pending: true
+    });
+    renderMemoListsFromCache();
+    var sc = document.getElementById('memo-list-scroll');
+    if (sc) sc.scrollTop = 0;
+
     var payload = {
       user_id: memoOwner,
-      content: raw.slice(0, 2000),
+      content: savedText,
       status: 0
     };
-    if (dueVal) payload.due_date = dueVal;
+    if (savedDue) payload.due_date = savedDue;
+
     try {
       var r = await c
         .from('pregnancy_memos')
         .insert(payload)
         .select('id,content,status,due_date,created_at,updated_at');
       if (r.error) throw r.error;
+      memoRowsCache = memoRowsCache.filter(function (m) {
+        return String(m.id) !== tempId;
+      });
       if (r.data && r.data[0]) {
         memoRowsCache.unshift(r.data[0]);
-        renderMemoListsFromCache();
       } else {
         await loadMemos();
       }
-      if (inp) inp.value = '';
-      if (dueEl) dueEl.value = '';
-      showMemoComposeHint('');
+      renderMemoListsFromCache();
     } catch (e) {
       console.warn(e);
-      var msg =
-        (e && e.message) ||
-        (e && e.details) ||
-        (typeof e === 'string' ? e : '') ||
-        '请检查网络或已执行 migrations/012、015';
-      showMemoComposeHint('保存失败：' + msg, true);
+      memoRowsCache = memoRowsCache.filter(function (m) {
+        return String(m.id) !== tempId;
+      });
+      if (inp) inp.value = savedText;
+      if (dueEl && savedDue) dueEl.value = savedDue;
+      renderMemoListsFromCache();
+      showMemoToast('📡 网络似乎不稳定，请重试');
+    } finally {
+      memoAddInFlight = false;
+      setMemoAddButtonBusy(false);
     }
   }
 
   async function toggleMemoById(id, prevStatus) {
+    var stub = memoRowsCache.filter(function (m) {
+      return String(m.id) === String(id);
+    })[0];
+    if (stub && stub._pending) return;
     var next = num(prevStatus) === 0 ? 1 : 0;
     var c = getSb();
     var memoOwner = getMemoOwnerKey();
@@ -5345,12 +5500,12 @@
   if (memoScroll) {
     memoScroll.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-memo-toggle]');
-      if (!btn) return;
+      if (!btn || btn.disabled) return;
       var mid = btn.getAttribute('data-memo-toggle');
       var row = memoRowsCache.filter(function (m) {
         return String(m.id) === String(mid);
       })[0];
-      if (!row) return;
+      if (!row || row._pending) return;
       toggleMemoById(mid, row.status);
     });
   }
