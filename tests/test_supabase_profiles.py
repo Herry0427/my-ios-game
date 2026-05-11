@@ -414,6 +414,7 @@ def main() -> int:
     except Exception as ex:
         print(f"SKIP 007: {ex}")
 
+    _delete_memos_for_user(base, anon, test_id)
     _delete_pregnancy_row(base, anon, test_id)
 
     if not _delete_row(base, anon, test_id):
@@ -430,6 +431,27 @@ def main() -> int:
         + ("（含 004 经济字段）" if economy_ok else "（基础字段；请应用 004 以测蛇币/宝箱）")
     )
     return 0
+
+
+def _delete_memos_for_user(base: str, anon: str, user_id: str) -> None:
+    """清除该 user_id 下全部备忘（E2E 收尾，避免测试行残留）。"""
+    headers = {
+        "apikey": anon,
+        "Authorization": f"Bearer {anon}",
+        "Accept": "application/json",
+        "User-Agent": "ios_game-e2e-test/2.0",
+    }
+    try:
+        uid_q = quote(user_id, safe="")
+        req = Request(
+            f"{base}/rest/v1/pregnancy_memos?user_id=eq.{uid_q}",
+            method="DELETE",
+            headers=headers,
+        )
+        with urlopen(req, timeout=60):
+            pass
+    except Exception:
+        pass
 
 
 def _delete_pregnancy_row(base: str, anon: str, test_id: str) -> None:
