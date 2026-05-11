@@ -273,35 +273,50 @@
       border-color: rgba(0, 255, 136, 0.55);
       box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.12);
     }
-    #memo-screen .memo-bar-date-btn {
+    /* 日期：透明 input 铺满 📅 区域，避免 iOS 拒绝程序化 showPicker/click */
+    #memo-screen label.memo-bar-date-slot {
+      position: relative;
+      display: block;
       flex: 0 0 46px;
       width: 46px;
       min-width: 46px;
+      height: 48px;
+      align-self: center;
       border-radius: 14px;
       border: 2px solid rgba(0, 255, 204, 0.28);
       background: rgba(15, 22, 35, 0.95);
-      font-size: 1.25rem;
-      line-height: 1;
+      overflow: visible;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #memo-screen label.memo-bar-date-slot:active { transform: scale(0.96); }
+    #memo-screen .memo-bar-date-face {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-    #memo-screen .memo-bar-date-btn:active { transform: scale(0.96); }
-    #memo-screen .memo-due-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-      opacity: 0;
+      font-size: 1.25rem;
+      line-height: 1;
       pointer-events: none;
+      user-select: none;
+    }
+    #memo-screen .memo-bar-date-native {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      border: none;
+      opacity: 0.03;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 48px;
+      box-sizing: border-box;
+      z-index: 2;
+      color-scheme: dark;
     }
     #memo-screen .memo-bar-add {
       flex: 0 0 48px;
@@ -1578,8 +1593,10 @@
         <div class="memo-bar-input-wrap" id="memo-input-hitbox">
           <input type="text" class="memo-bar-input" id="memo-input" maxlength="2000" placeholder="添加待办…" enterkeyhint="done" autocomplete="off" />
         </div>
-        <button type="button" class="memo-bar-date-btn" id="memo-date-trigger" title="截止日期" aria-label="选择截止日期">📅</button>
-        <input type="date" class="memo-due-hidden" id="memo-due" aria-hidden="true" tabindex="-1" />
+        <label class="memo-bar-date-slot" title="截止日期">
+          <span class="memo-bar-date-face" aria-hidden="true">📅</span>
+          <input type="date" class="memo-bar-date-native" id="memo-due" name="memo_due" autocomplete="off" aria-label="选择截止日期" />
+        </label>
         <button type="button" class="memo-bar-add" id="memo-add-btn" aria-label="添加">+</button>
       </div>
     </div>
@@ -5249,18 +5266,6 @@
       try {
         memoInp.click();
       } catch (err) {}
-    });
-  }
-  var memoDateTrig = document.getElementById('memo-date-trigger');
-  var memoDueHidden = document.getElementById('memo-due');
-  if (memoDateTrig && memoDueHidden) {
-    memoDateTrig.addEventListener('click', function () {
-      if (typeof memoDueHidden.showPicker === 'function') {
-        memoDueHidden.showPicker();
-      } else {
-        memoDueHidden.focus();
-        memoDueHidden.click();
-      }
     });
   }
   var memoScroll = document.getElementById('memo-list-scroll');
