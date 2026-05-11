@@ -57,6 +57,17 @@
     .welcome-bar .cloud-line strong { color: var(--neon-green); font-size: 1.15rem; }
     .arcade-title { font-size: clamp(1.2rem, 4.5vw, 1.6rem); font-weight: 800; letter-spacing: 0.1em; text-align: center; text-shadow: 0 0 20px rgba(0, 255, 204, 0.45); }
     .arcade-sub { text-align: center; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 14px; }
+    .lobby-hi-bar {
+      text-align: center; font-size: 0.92rem; color: var(--neon-magenta); font-weight: 700;
+      margin: 4px 0 10px;
+    }
+    .lobby-hi-bar span { color: var(--neon-green); }
+    .btn-logout-switch {
+      display: block; margin: 16px auto 0; padding: 6px 12px; font-size: 0.62rem;
+      color: rgba(180, 200, 220, 0.55); background: transparent; border: 1px solid rgba(106, 122, 138, 0.35);
+      border-radius: 8px; cursor: pointer; max-width: 520px;
+    }
+    .btn-logout-switch:active { transform: scale(0.98); color: rgba(200, 215, 235, 0.85); }
     .grid-menu { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 520px; margin: 0 auto; width: 100%; }
     @media (min-width: 420px) { .grid-menu { grid-template-columns: repeat(3, 1fr); } }
     .tile-btn {
@@ -1434,12 +1445,14 @@
   <section id="lobby-screen" class="screen active">
     <h1 class="arcade-title">ARCADE HUB</h1>
     <p class="arcade-sub">我的私人空间</p>
+    <p class="lobby-hi-bar">Hi, <span id="lobby-display-name">——</span></p>
     <div class="grid-menu lobby-tile-grid" style="margin-top:10px">
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn coming" disabled>足球赛程 <span class="tile-badge">预留</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
+    <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
   </section>
 
   <section id="memo-screen" class="screen" aria-label="备孕备忘清单">
@@ -1462,7 +1475,7 @@
 
   <section id="snake-home-screen" class="screen hub-screen">
     <div class="welcome-bar">
-      <div class="hi">Welcome, <span id="display-name">——</span></div>
+      <div class="hi">Hi, <span id="display-name">——</span></div>
       <div class="cloud-line">云端最高分: <strong id="cloud-high">—</strong></div>
     </div>
     <div class="wallet-strip" id="wallet-strip">
@@ -1751,9 +1764,11 @@
   var SB_URL = 'https://qfplpzosjcvvyhcotodz.supabase.co';
   var SB_KEY = 'sb_publishable_CxJNsIAs4JRcaPugv2fn1Q_TAKzFmQB';
 
+  /** 仅昵称持久化；profiles 主键缓存在内存 sessionProfilePk（可与昵称相同） */
   var STORAGE_USERID = 'userId';
   var LEGACY_PROFILE_ID = 'myArcadeHub_profileId';
   var STORAGE_NAME = 'myArcadeHub_nickname';
+  var sessionProfilePk = '';
 
   /** ========= 经济 / 掉落（只改这些常数即可调平衡） =========
    * 每 1 点「长度分」= SC_PER_LEN 蛇币；局末 CRATE_DROP_PROB 概率掉未开启宝箱。
@@ -2140,7 +2155,7 @@
   }
 
   async function fetchPregnancyUserConfig() {
-    if (!getUserId()) {
+    if (!getMemoOwnerKey()) {
       pregBabyNickname = '';
       return;
     }
@@ -2149,7 +2164,7 @@
       pregBabyNickname = loadBabyNicknameFromStorage();
       return;
     }
-    var uid = getUserId();
+    var uid = getMemoOwnerKey();
     try {
       var r = await c
         .from('pregnancy_user_config')
@@ -2175,7 +2190,7 @@
       saveBabyNicknameToStorage(pregBabyNickname);
       return { ok: false };
     }
-    var uid = getUserId();
+    var uid = getMemoOwnerKey();
     if (!uid) return { ok: false };
     var nickClean = sanitizeBabyNickname(pregBabyNickname);
     pregBabyNickname = nickClean;
@@ -2415,10 +2430,11 @@
       updateHubWalletUI();
       return;
     }
-    var id = getUserId();
+    var id = getProfileRowId();
     if (!id) {
       if (el) el.textContent = '—';
       updateHubWalletUI();
+      syncHiLabels();
       return;
     }
     setSync(true);
@@ -2438,7 +2454,7 @@
           localStorage.removeItem(STORAGE_PREG_BABY_NICKNAME);
         } catch (e) {}
         if (el) el.textContent = '—';
-        document.getElementById('display-name').textContent = '——';
+        syncHiLabels();
         updateHubWalletUI();
         var nm = document.getElementById('nickname-modal');
         if (nm) nm.classList.add('visible');
@@ -2446,7 +2462,7 @@
       }
       applyProfileRow(r.data);
       if (el) el.textContent = String(cloudHigh);
-      document.getElementById('display-name').textContent = getNickname() || '——';
+      syncHiLabels();
       updateHubWalletUI();
     } catch (e) {
       console.warn(e);
@@ -2461,7 +2477,7 @@
     if (!c) {
       return { ok: false, reason: 'no_client', newUnlocks: [], earnedCoins: 0, crateDropped: false };
     }
-    var id = getUserId();
+    var id = getProfileRowId();
     if (!id) {
       return { ok: false, reason: 'no_user', newUnlocks: [], earnedCoins: 0, crateDropped: false };
     }
@@ -2543,7 +2559,7 @@
   async function syncProfileFull() {
     var c = getSb();
     if (!c) return { ok: false };
-    var id = getUserId();
+    var id = getProfileRowId();
     if (!id) return { ok: false };
     var name = getNickname() || 'Player';
     setSync(true);
@@ -2578,7 +2594,7 @@
   async function upsertNicknameOnly(nm) {
     var c = getSb();
     if (!c) return { ok: true };
-    var id = getUserId();
+    var id = getProfileRowId();
     if (!id) return { ok: false };
     setSync(true);
     try {
@@ -2628,26 +2644,32 @@
   }
 
   function clearArcadeSession() {
+    sessionProfilePk = '';
+    pregBabyNickname = '';
     try {
       localStorage.removeItem(STORAGE_USERID);
       localStorage.removeItem(STORAGE_NAME);
       localStorage.removeItem(LEGACY_PROFILE_ID);
+      localStorage.removeItem(STORAGE_PREG_BABY_NICKNAME);
     } catch (e) {}
   }
 
-  /** 仅在昵称登录成功后写入；不再静默生成随机 id（档案主键与昵称登录绑定） */
-  function getUserId() {
-    var id = localStorage.getItem(STORAGE_USERID);
-    if (id) return id;
-    var leg = localStorage.getItem(LEGACY_PROFILE_ID);
-    if (leg) {
-      try {
-        localStorage.setItem(STORAGE_USERID, leg);
-        localStorage.removeItem(LEGACY_PROFILE_ID);
-      } catch (e) {}
-      return leg;
-    }
-    return '';
+  /** profiles 表主键（新用户等于昵称；历史数据可能为 UUID） */
+  function getProfileRowId() {
+    return sessionProfilePk || '';
+  }
+
+  /** 备忘 / 食谱个人配置的 user_id，恒等于当前登录昵称 */
+  function getMemoOwnerKey() {
+    return getNickname();
+  }
+
+  function syncHiLabels() {
+    var n = getNickname() ? getNickname() : '——';
+    var lobbyEl = document.getElementById('lobby-display-name');
+    var snakeEl = document.getElementById('display-name');
+    if (lobbyEl) lobbyEl.textContent = n;
+    if (snakeEl) snakeEl.textContent = n;
   }
 
   async function loginOrRegisterByNickname(trimmedNick) {
@@ -2666,43 +2688,67 @@
     if (!d || typeof d !== 'object') return { ok: false, error: 'bad_response' };
     if (!d.ok) return { ok: false, error: d.error || 'rpc_failed' };
     try {
-      localStorage.setItem(STORAGE_USERID, String(d.id));
+      sessionProfilePk = String(d.id);
       localStorage.setItem(STORAGE_NAME, String(d.nickname || trimmedNick).trim());
     } catch (e) {
       return { ok: false, error: 'storage' };
     }
     return { ok: true, created: !!d.created };
   }
-  function hasNickname() { var n = localStorage.getItem(STORAGE_NAME); return !!(n && String(n).trim()); }
-  function getNickname() { return (localStorage.getItem(STORAGE_NAME) || '').trim(); }
+  function hasNickname() {
+    var n = localStorage.getItem(STORAGE_NAME);
+    return !!(n && String(n).trim());
+  }
+  function getNickname() {
+    return (localStorage.getItem(STORAGE_NAME) || '').trim();
+  }
 
-  /** 已登录则拉档案；未登录或档案 id 失效则弹出昵称登录 */
+  /** localStorage 有昵称则 RPC 对碰恢复 sessionProfilePk；失败则重新登录 */
   async function bootstrapProfileAndNicknameModal() {
     var modal = document.getElementById('nickname-modal');
     var inp = document.getElementById('nickname-input');
-    var disp = document.getElementById('display-name');
     var warn = document.getElementById('nickname-cloud-warn');
     if (warn) {
       warn.hidden = true;
       warn.textContent = '';
     }
-    if (disp) disp.textContent = getNickname() || '——';
-    if (getUserId() && getSb()) await fetchProfile();
-    if (disp) disp.textContent = getNickname() || '——';
-    if (getUserId() && hasNickname()) {
-      if (inp) inp.value = getNickname();
-      if (modal) modal.classList.remove('visible');
-      await fetchPregnancyUserConfig();
+    syncHiLabels();
+
+    var nick = getNickname();
+    if (!nick) {
+      sessionProfilePk = '';
+      if (inp) inp.value = '';
+      if (modal) modal.classList.add('visible');
       return;
     }
     if (!getSb()) {
+      sessionProfilePk = '';
       if (warn) {
         warn.textContent = '请先配置 SB_KEY 并联网：昵称登录需要连接 Supabase。';
         warn.hidden = false;
       }
+      if (modal) modal.classList.add('visible');
+      return;
     }
-    if (inp) inp.value = '';
-    if (modal) modal.classList.add('visible');
+
+    var done = await loginOrRegisterByNickname(nick);
+    if (!done.ok) {
+      sessionProfilePk = '';
+      if (warn && done.error === 'no_client') {
+        warn.textContent = '请先配置 SB_KEY 并联网：昵称登录需要 Supabase。';
+        warn.hidden = false;
+      }
+      if (inp) inp.value = nick;
+      if (modal) modal.classList.add('visible');
+      syncHiLabels();
+      return;
+    }
+
+    await fetchProfile();
+    await fetchPregnancyUserConfig();
+    syncHiLabels();
+    if (inp) inp.value = getNickname();
+    if (modal) modal.classList.remove('visible');
   }
 
   var currentView = 'lobby';
@@ -2939,10 +2985,10 @@
       memoRowsCache = [];
       return;
     }
-    var uid = getUserId();
-    if (!uid) {
+    var memoOwner = getMemoOwnerKey();
+    if (!memoOwner) {
       ul.innerHTML =
-        '<li class="memo-empty">请先在大厅用昵称登录；备忘按账号区分，互不可见。</li>';
+        '<li class="memo-empty">请先在大厅用昵称登录；备忘按昵称隔离。</li>';
       memoRowsCache = [];
       return;
     }
@@ -2950,7 +2996,7 @@
       var r = await c
         .from('pregnancy_memos')
         .select('id,content,status,due_date,created_at')
-        .eq('user_id', uid);
+        .eq('user_id', memoOwner);
       if (r.error) throw r.error;
       memoRowsCache = Array.isArray(r.data) ? r.data : [];
       renderMemoListFromCache();
@@ -2973,13 +3019,13 @@
       alert('请先配置 Supabase 密钥以保存备忘。');
       return;
     }
-    var uid = getUserId();
-    if (!uid) {
+    var memoOwner = getMemoOwnerKey();
+    if (!memoOwner) {
       alert('请先在大厅用昵称登录。');
       return;
     }
     var payload = {
-      user_id: uid,
+      user_id: memoOwner,
       content: raw.slice(0, 2000),
       status: 0,
       due_date: dueVal || null
@@ -3003,8 +3049,8 @@
   async function toggleMemoById(id, prevStatus) {
     var next = num(prevStatus) === 0 ? 1 : 0;
     var c = getSb();
-    var uid = getUserId();
-    if (!uid) return;
+    var memoOwner = getMemoOwnerKey();
+    if (!memoOwner) return;
     memoRowsCache = memoRowsCache.map(function (m) {
       return String(m.id) === String(id) ? Object.assign({}, m, { status: next }) : m;
     });
@@ -3015,7 +3061,7 @@
         .from('pregnancy_memos')
         .update({ status: next })
         .eq('id', id)
-        .eq('user_id', uid);
+        .eq('user_id', memoOwner);
       if (r.error) throw r.error;
     } catch (e) {
       console.warn(e);
@@ -5005,6 +5051,10 @@
   document.getElementById('btn-enter-memo').onclick = function () {
     goToView('memo_screen');
   };
+  document.getElementById('btn-logout-switch').onclick = function () {
+    clearArcadeSession();
+    location.reload();
+  };
   var memoAdd = document.getElementById('memo-add-btn');
   if (memoAdd) memoAdd.onclick = function () { addMemoFromComposer(); };
   var memoInp = document.getElementById('memo-input');
@@ -5072,16 +5122,21 @@
         }
         return;
       }
+      var er = done.error;
+      var erStr = typeof er === 'string' ? er : er && er.message ? String(er.message) : '';
+      try {
+        console.warn('[nickname login]', er || done);
+      } catch (e) {}
+      var rpcMissing =
+        erStr && /function|schema|rpc|404|PGRST/i.test(erStr);
       if (dupEl) {
-        var er = done.error;
-        var erStr = typeof er === 'string' ? er : er && er.message ? String(er.message) : '';
         dupEl.textContent =
           er === 'empty'
             ? '昵称不能为空'
             : er === 'too_long'
               ? '昵称过长'
-              : erStr && /function|schema|rpc/i.test(erStr)
-                ? '请先在后端执行 migrations/013_login_by_nickname.sql'
+              : rpcMissing
+                ? '暂时无法登录：请在 Supabase → SQL Editor 依次执行仓库内 migrations/013_login_by_nickname.sql 与 014_login_nickname_as_profile_id.sql，执行成功后刷新本页。'
                 : '登录失败：' + (erStr || '请检查网络');
         dupEl.hidden = false;
       }
@@ -5090,6 +5145,7 @@
     document.getElementById('nickname-modal').classList.remove('visible');
     await fetchProfile();
     await fetchPregnancyUserConfig();
+    syncHiLabels();
     cloudBanner();
   };
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-profiles 表集成测试（PostgREST / anon），含 unlockedSkins、currentSkin、bigint highScore。
+profiles 表集成测试（PostgREST / anon），含 unlockedSkins、currentSkin、bigint highScore；
+可选 RPC login_or_register_by_nickname（013/014）及 pregnancy_memos 按昵称 user_id 隔离。
 流程：upsert 测试行 → GET 校验数组与字段 → DELETE。
 
 退出码：0 成功或完全 SKIP；1 HTTP/校验失败；2 仅有 Management Token 无 anon。
@@ -193,16 +194,80 @@ def main() -> int:
                 _delete_row(base, anon, rpc_id)
                 _delete_row(base, anon, test_id)
                 return 1
+            if rpc_id == rpc_nick:
+                print("INFO: profiles.id 与昵称一致（已应用 migrations/014）")
+            # --- pregnancy_memos：user_id = 昵称字符串，与他人隔离 ---
+            memo_iso_url = f"{base}/rest/v1/pregnancy_memos"
+            memo_iso_headers = {**headers_base, "Prefer": "return=representation"}
+            code_iso, iso_body = http_json(
+                "POST",
+                memo_iso_url,
+                memo_iso_headers,
+                [
+                    {
+                        "user_id": rpc_nick,
+                        "content": "e2e_iso_owner_only",
+                        "status": 0,
+                    }
+                ],
+            )
+            if code_iso in (200, 201) and isinstance(iso_body, list) and iso_body:
+                iso_mid = iso_body[0].get("id")
+                wife_uid = "e2e_wife_" + uuid.uuid4().hex[:8]
+                sel_wife = (
+                    f"{base}/rest/v1/pregnancy_memos?user_id=eq.{quote(wife_uid, safe='')}"
+                    "&select=content"
+                )
+                _, rows_w = http_json("GET", sel_wife, headers_base, None)
+                leaked = False
+                if isinstance(rows_w, list):
+                    leaked = any(
+                        "e2e_iso_owner_only" in str(x.get("content", ""))
+                        for x in rows_w
+                    )
+                sel_self = (
+                    f"{base}/rest/v1/pregnancy_memos?user_id=eq.{quote(rpc_nick, safe='')}"
+                    "&select=content"
+                )
+                _, rows_s = http_json("GET", sel_self, headers_base, None)
+                has_own = isinstance(rows_s, list) and any(
+                    "e2e_iso_owner_only" in str(x.get("content", "")) for x in rows_s
+                )
+                try:
+                    del_iso = (
+                        f"{base}/rest/v1/pregnancy_memos?id=eq.{quote(str(iso_mid), safe='')}"
+                        "&user_id=eq." + quote(rpc_nick, safe="")
+                    )
+                    http_json("DELETE", del_iso, headers_base)
+                except Exception:
+                    pass
+                if leaked or not has_own:
+                    print(
+                        "FAIL: pregnancy_memos 昵称隔离校验失败 "
+                        f"leaked={leaked} has_own={has_own}",
+                        file=sys.stderr,
+                    )
+                    _delete_row(base, anon, rpc_id)
+                    _delete_row(base, anon, test_id)
+                    return 1
+                print("OK: pregnancy_memos 按昵称 user_id 隔离（前端备忘）")
+            elif code_iso == 404:
+                print("SKIP pregnancy_memos 隔离：未建表 012")
             _delete_row(base, anon, rpc_id)
-            print("OK: login_or_register_by_nickname 新建与大小写不敏感进入（013）")
+            print("OK: login_or_register_by_nickname 新建与大小写不敏感进入（013/014）")
         elif code_rpc == 404:
-            print("SKIP login_or_register_by_nickname：请执行 migrations/013_login_by_nickname.sql")
+            print(
+                "SKIP login_or_register_by_nickname：请执行 migrations/013_login_by_nickname.sql "
+                "与 014_login_nickname_as_profile_id.sql"
+            )
         else:
             print(f"SKIP login_or_register_by_nickname：HTTP {code_rpc} body={rpc_body}")
     except HTTPError as e:
         err_rpc = e.read().decode("utf-8", errors="replace") if e.fp else ""
         if e.code == 404:
-            print("SKIP login_or_register_by_nickname：请执行 migrations/013_login_by_nickname.sql")
+            print(
+                "SKIP login_or_register_by_nickname：请执行 migrations/013 与 014（RPC）"
+            )
         else:
             print(f"SKIP login_or_register_by_nickname：HTTP {e.code} {err_rpc}")
 
