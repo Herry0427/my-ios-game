@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -343,6 +344,73 @@ def main() -> int:
             print("SKIP pregnancy_memos：未建表，请执行 migrations/012_pregnancy_memos.sql")
         else:
             print(f"SKIP pregnancy_memos：POST {code_m} {mbody}")
+
+        # --- 015：备忘无 due_date + 48h 保洁（与 index.html 逻辑一致） ---
+        try:
+            memo_url_pm = f"{base}/rest/v1/pregnancy_memos"
+            mh_rep = {**headers_base, "Prefer": "return=representation"}
+            c_nd, b_nd = http_json(
+                "POST",
+                memo_url_pm,
+                mh_rep,
+                [{"user_id": test_id, "content": "e2e_buy_apple_no_due", "status": 0}],
+            )
+            if c_nd in (200, 201) and isinstance(b_nd, list) and b_nd:
+                nid = b_nd[0].get("id")
+                dd = b_nd[0].get("due_date")
+                if dd not in (None, ""):
+                    print(f"FAIL: 无日期录入后期望 due_date 为空，实际 {dd}", file=sys.stderr)
+                    _delete_row(base, anon, test_id)
+                    return 1
+                print("OK: pregnancy_memos 无截止日期时 due_date 为空（备忘录入）")
+                try:
+                    http_json(
+                        "DELETE",
+                        f"{memo_url_pm}?id=eq.{quote(str(nid), safe='')}&user_id=eq.{quote(test_id, safe='')}",
+                        headers_base,
+                    )
+                except Exception:
+                    pass
+
+            old_ts = (datetime.now(timezone.utc) - timedelta(days=3)).strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3] + "Z"
+            c_st, b_st = http_json(
+                "POST",
+                memo_url_pm,
+                mh_rep,
+                [
+                    {
+                        "user_id": test_id,
+                        "content": "e2e_stale_done_48h",
+                        "status": 1,
+                        "updated_at": old_ts,
+                    }
+                ],
+            )
+            if c_st in (200, 201) and isinstance(b_st, list) and b_st:
+                sid = str(b_st[0].get("id"))
+                cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+                cutoff_s = cutoff.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+                del_url = (
+                    f"{memo_url_pm}?user_id=eq.{quote(test_id, safe='')}"
+                    "&status=eq.1&updated_at=lt." + quote(cutoff_s, safe="")
+                )
+                http_json("DELETE", del_url, headers_base)
+                chk = f"{memo_url_pm}?id=eq.{quote(sid, safe='')}&select=id"
+                _, rows_chk = http_json("GET", chk, headers_base, None)
+                if isinstance(rows_chk, list) and len(rows_chk) != 0:
+                    print("FAIL: 48h 保洁后陈旧已完成项应已从库中删除", file=sys.stderr)
+                    _delete_row(base, anon, test_id)
+                    return 1
+                print("OK: pregnancy_memos 48h 保洁删除陈旧已完成（015）")
+            else:
+                print(
+                    "SKIP pregnancy_memos 48h 保洁：插入带 updated_at 失败（确认已执行 migrations/015）",
+                    file=sys.stderr,
+                )
+        except Exception as ex015:
+            print(f"WARN memo 015 附加测试: {ex015}")
     except Exception as ex:
         print(f"SKIP 007: {ex}")
 

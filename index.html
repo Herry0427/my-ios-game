@@ -83,21 +83,23 @@
       grid-template-columns: 1fr !important;
       max-width: 520px;
     }
-    /* —— 备孕备忘清单 memo-screen —— */
+    /* —— 备孕备忘清单 memo-screen（底部录入栏 + 双列表） —— */
     #memo-screen.screen {
       min-height: 100dvh;
       min-height: 100svh;
       display: flex;
       flex-direction: column;
-      padding: calc(10px + var(--safe-top)) max(14px, var(--safe-right)) calc(14px + var(--safe-bottom)) max(14px, var(--safe-left));
+      padding: calc(10px + var(--safe-top)) max(14px, var(--safe-right)) 0 max(14px, var(--safe-left));
       box-sizing: border-box;
       overflow: hidden;
+      --memo-kb: 0px;
+      --memo-footer-stack-h: 118px;
     }
     #memo-screen .memo-topbar {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       flex-shrink: 0;
     }
     #memo-screen .memo-title {
@@ -110,62 +112,22 @@
       margin: 0;
       text-align: center;
     }
-    #memo-screen .memo-composer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: stretch;
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-    #memo-screen .memo-input {
-      flex: 1 1 160px;
-      min-width: 0;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 2px solid rgba(0, 255, 204, 0.28);
-      background: rgba(12, 18, 28, 0.96);
-      color: #e8f4ff;
-      font-size: 0.92rem;
-    }
-    #memo-screen .memo-input::placeholder { color: rgba(180, 200, 220, 0.45); }
-    #memo-screen .memo-date-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 10px;
-      border-radius: 12px;
-      border: 2px solid rgba(0, 255, 204, 0.22);
-      background: rgba(15, 22, 35, 0.9);
-      font-size: 0.78rem;
-      color: var(--text-dim);
-    }
-    #memo-screen .memo-date {
-      border: none;
-      background: transparent;
-      color: var(--neon-cyan);
-      font-size: 0.82rem;
-      padding: 10px 4px;
-      min-width: 0;
-    }
-    #memo-screen .memo-add {
-      padding: 12px 18px;
-      border-radius: 12px;
-      border: 2px solid rgba(255, 77, 136, 0.45);
-      background: linear-gradient(145deg, rgba(70, 24, 55, 0.92), rgba(28, 12, 38, 0.96));
-      color: #fff;
-      font-weight: 700;
-      font-size: 0.82rem;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    #memo-screen .memo-add:active { transform: scale(0.96); }
-    #memo-screen .memo-list-wrap {
+    #memo-screen .memo-list-scroll {
       flex: 1;
       min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      padding-bottom: calc(var(--memo-footer-stack-h) + env(safe-area-inset-bottom, 0px));
+    }
+    #memo-screen .memo-section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: rgba(0, 255, 204, 0.55);
+      margin: 8px 4px 6px;
+      text-transform: uppercase;
     }
     #memo-screen .memo-list { margin: 0; padding: 0; list-style: none; }
     #memo-screen .memo-row {
@@ -195,12 +157,15 @@
       -webkit-tap-highlight-color: transparent;
     }
     #memo-screen .memo-row.memo-done .memo-check {
-      border-color: rgba(57, 255, 20, 0.55);
-      background: rgba(57, 255, 20, 0.12);
+      border-color: #00cc66;
+      background: #00ff88;
+      color: rgba(10, 24, 18, 0.96);
+      font-weight: 800;
     }
     #memo-screen .memo-row.memo-done .memo-text {
       text-decoration: line-through;
-      opacity: 0.52;
+      color: rgba(150, 165, 185, 0.72);
+      opacity: 1;
     }
     #memo-screen .memo-body { flex: 1; min-width: 0; }
     #memo-screen .memo-text {
@@ -218,9 +183,148 @@
     #memo-screen .memo-empty {
       text-align: center;
       color: var(--text-dim);
-      padding: 36px 16px;
+      padding: 28px 16px;
       font-size: 0.88rem;
+      list-style: none;
     }
+    #memo-screen .memo-empty--inline {
+      padding: 14px 12px;
+      font-size: 0.78rem;
+      opacity: 0.85;
+    }
+    #memo-screen .memo-divider-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 14px;
+      padding: 0 4px;
+    }
+    #memo-screen .memo-divider-line::before,
+    #memo-screen .memo-divider-line::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.35), transparent);
+    }
+    #memo-screen .memo-divider-text {
+      font-size: 0.58rem;
+      letter-spacing: 0.02em;
+      color: rgba(120, 170, 150, 0.65);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #memo-screen #memo-footer-fixed {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 60;
+      transform: translateY(calc(-1 * var(--memo-kb)));
+      will-change: transform;
+      background: linear-gradient(180deg, transparent 0%, rgba(8, 12, 20, 0.97) 28%);
+      pointer-events: none;
+    }
+    #memo-screen #memo-footer-fixed > * {
+      pointer-events: auto;
+    }
+    #memo-screen .memo-swipe-hint-bar {
+      margin: 0;
+      padding: 4px max(14px, var(--safe-left)) 6px max(14px, var(--safe-right));
+      font-size: 0.58rem;
+      color: rgba(140, 160, 185, 0.48);
+      text-align: center;
+      line-height: 1.35;
+    }
+    #memo-screen .memo-bottom-bar {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: min(10px, 2vw);
+      padding: 8px max(12px, var(--safe-left)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, var(--safe-right));
+      border-top: 1px solid rgba(0, 255, 136, 0.12);
+      background: rgba(10, 14, 22, 0.98);
+      backdrop-filter: blur(10px);
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    #memo-screen .memo-bar-input-wrap {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+    }
+    #memo-screen .memo-bar-input {
+      width: 100%;
+      min-width: 0;
+      padding: 12px 16px;
+      border-radius: 18px;
+      border: 2px solid rgba(0, 255, 204, 0.28);
+      background: rgba(12, 18, 28, 0.96);
+      color: #e8f4ff;
+      font-size: 16px;
+      line-height: 1.35;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    #memo-screen .memo-bar-input::placeholder { color: rgba(180, 200, 220, 0.45); }
+    #memo-screen .memo-bar-input:focus {
+      outline: none;
+      border-color: rgba(0, 255, 136, 0.55);
+      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.12);
+    }
+    #memo-screen .memo-bar-date-btn {
+      flex: 0 0 46px;
+      width: 46px;
+      min-width: 46px;
+      border-radius: 14px;
+      border: 2px solid rgba(0, 255, 204, 0.28);
+      background: rgba(15, 22, 35, 0.95);
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #memo-screen .memo-bar-date-btn:active { transform: scale(0.96); }
+    #memo-screen .memo-due-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #memo-screen .memo-bar-add {
+      flex: 0 0 48px;
+      width: 48px;
+      min-width: 48px;
+      height: 48px;
+      align-self: center;
+      border-radius: 50%;
+      border: none;
+      background: #00ff88;
+      color: rgba(8, 22, 16, 0.98);
+      font-size: 1.65rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-shadow: 0 4px 14px rgba(0, 255, 136, 0.22);
+      -webkit-tap-highlight-color: transparent;
+    }
+    #memo-screen .memo-bar-add:active { transform: scale(0.94); }
     .ui-swipe-hint {
       font-size: 0.68rem;
       color: rgba(160, 176, 198, 0.52);
@@ -1459,18 +1563,26 @@
     <div class="memo-topbar">
       <h2 class="memo-title">备忘清单</h2>
     </div>
-    <div class="memo-composer">
-      <input type="text" class="memo-input" id="memo-input" maxlength="2000" placeholder="添加待办…" enterkeyhint="done" autocomplete="off" />
-      <div class="memo-date-wrap" title="可选截止日期">
-        <span aria-hidden="true">📅</span>
-        <input type="date" class="memo-date" id="memo-due" />
+    <div class="memo-list-scroll" id="memo-list-scroll">
+      <div class="memo-section-label">进行中</div>
+      <ul class="memo-list" id="memo-list-active"></ul>
+      <div class="memo-divider-line" aria-hidden="true">
+        <span class="memo-divider-text">-- 已完成任务 · 只保留48小时 --</span>
       </div>
-      <button type="button" class="memo-add" id="memo-add-btn">添加</button>
+      <div class="memo-section-label">已完成</div>
+      <ul class="memo-list" id="memo-list-done"></ul>
     </div>
-    <div class="memo-list-wrap">
-      <ul class="memo-list" id="memo-list"></ul>
+    <div id="memo-footer-fixed">
+      <p class="memo-swipe-hint-bar">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB · 需 SB_KEY 同步</p>
+      <div class="memo-bottom-bar" id="memo-bottom-bar">
+        <div class="memo-bar-input-wrap" id="memo-input-hitbox">
+          <input type="text" class="memo-bar-input" id="memo-input" maxlength="2000" placeholder="添加待办…" enterkeyhint="done" autocomplete="off" />
+        </div>
+        <button type="button" class="memo-bar-date-btn" id="memo-date-trigger" title="截止日期" aria-label="选择截止日期">📅</button>
+        <input type="date" class="memo-due-hidden" id="memo-due" aria-hidden="true" tabindex="-1" />
+        <button type="button" class="memo-bar-add" id="memo-add-btn" aria-label="添加">+</button>
+      </div>
     </div>
-    <p class="ui-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB · 备忘同步需配置 SB_KEY</p>
   </section>
 
   <section id="snake-home-screen" class="screen hub-screen">
@@ -2917,94 +3029,140 @@
   }
 
   var memoRowsCache = [];
+  var memoViewportHandlersBound = false;
 
-  function sortMemoRows(rows) {
-    return rows.slice().sort(function (a, b) {
-      var sa = num(a.status);
-      var sb = num(b.status);
-      if (sa !== sb) return sa - sb;
-      var da = a.due_date ? String(a.due_date).slice(0, 10) : '';
-      var db = b.due_date ? String(b.due_date).slice(0, 10) : '';
-      if (da && db && da !== db) return da < db ? -1 : 1;
-      if (da && !db) return -1;
-      if (!da && db) return 1;
-      var ta = new Date(a.created_at || 0).getTime();
-      var tb = new Date(b.created_at || 0).getTime();
-      return tb - ta;
+  function bindMemoViewportForMemoScreen() {
+    if (memoViewportHandlersBound || !window.visualViewport) return;
+    memoViewportHandlersBound = true;
+    function syncMemoKb() {
+      var ms = document.getElementById('memo-screen');
+      if (!ms || !ms.classList.contains('active')) return;
+      var vv = window.visualViewport;
+      var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      ms.style.setProperty('--memo-kb', overlap + 'px');
+    }
+    window.visualViewport.addEventListener('resize', syncMemoKb);
+    window.visualViewport.addEventListener('scroll', syncMemoKb);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(syncMemoKb, 380);
     });
+    syncMemoKb();
   }
 
-  function renderMemoListFromCache() {
-    var ul = document.getElementById('memo-list');
-    if (!ul) return;
-    var sorted = sortMemoRows(memoRowsCache);
-    if (!sorted.length) {
-      ul.innerHTML = '<li class="memo-empty">暂无备忘，输入一条试试吧。</li>';
+  async function cleanupStaleCompletedMemos() {
+    var c = getSb();
+    var memoOwner = getMemoOwnerKey();
+    if (!c || !memoOwner) return;
+    var cutoffIso = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    try {
+      await c
+        .from('pregnancy_memos')
+        .delete()
+        .eq('user_id', memoOwner)
+        .eq('status', 1)
+        .lt('updated_at', cutoffIso);
+    } catch (e) {
+      console.warn('[memo cleanup]', e);
+    }
+  }
+
+  function memoRowHtml(m) {
+    var id = escAttr(m.id);
+    var st = num(m.status);
+    var done = st === 1;
+    var due = m.due_date ? String(m.due_date).slice(0, 10) : '';
+    var dueHtml = due ? '<div class="memo-due">' + escHtml(due) + '</div>' : '';
+    return (
+      '<li class="memo-row' +
+      (done ? ' memo-done' : '') +
+      '" data-id="' +
+      id +
+      '">' +
+      '<button type="button" class="memo-check" data-memo-toggle="' +
+      id +
+      '" aria-label="' +
+      (done ? '标为未完成' : '标为已完成') +
+      '">' +
+      (done ? '✓' : '') +
+      '</button>' +
+      '<div class="memo-body">' +
+      '<div class="memo-text">' +
+      escHtml(m.content || '') +
+      '</div>' +
+      dueHtml +
+      '</div></li>'
+    );
+  }
+
+  function renderMemoListsFromCache() {
+    var ulA = document.getElementById('memo-list-active');
+    var ulD = document.getElementById('memo-list-done');
+    if (!ulA || !ulD) return;
+    var active = memoRowsCache.filter(function (m) {
+      return num(m.status) !== 1;
+    });
+    var done = memoRowsCache.filter(function (m) {
+      return num(m.status) === 1;
+    });
+    active.sort(function (a, b) {
+      return (
+        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+    });
+    done.sort(function (a, b) {
+      return (
+        new Date(b.updated_at || b.created_at || 0).getTime() -
+        new Date(a.updated_at || a.created_at || 0).getTime()
+      );
+    });
+    if (!memoRowsCache.length) {
+      ulA.innerHTML =
+        '<li class="memo-empty">暂无备忘，在底部输入一条试试吧。</li>';
+      ulD.innerHTML = '';
       return;
     }
-    ul.innerHTML = sorted
-      .map(function (m) {
-        var id = escAttr(m.id);
-        var st = num(m.status);
-        var done = st === 1;
-        var due = m.due_date ? String(m.due_date).slice(0, 10) : '';
-        var dueHtml = due
-          ? '<div class="memo-due">' + escHtml(due) + '</div>'
-          : '';
-        return (
-          '<li class="memo-row' +
-          (done ? ' memo-done' : '') +
-          '" data-id="' +
-          id +
-          '">' +
-          '<button type="button" class="memo-check" data-memo-toggle="' +
-          id +
-          '" aria-label="' +
-          (done ? '标为未完成' : '标为已完成') +
-          '">' +
-          (done ? '✓' : '') +
-          '</button>' +
-          '<div class="memo-body">' +
-          '<div class="memo-text">' +
-          escHtml(m.content || '') +
-          '</div>' +
-          dueHtml +
-          '</div></li>'
-        );
-      })
-      .join('');
+    ulA.innerHTML =
+      active.map(memoRowHtml).join('') ||
+      '<li class="memo-empty memo-empty--inline">暂无进行中</li>';
+    ulD.innerHTML = done.map(memoRowHtml).join('');
   }
 
   async function loadMemos() {
-    var ul = document.getElementById('memo-list');
+    bindMemoViewportForMemoScreen();
+    var ulA = document.getElementById('memo-list-active');
+    var ulD = document.getElementById('memo-list-done');
     var c = getSb();
-    if (!ul) return;
+    if (!ulA || !ulD) return;
     if (!c) {
-      ul.innerHTML =
-        '<li class="memo-empty">未连接云端：请在源码填写 <code>SB_KEY</code> 或使用 localStorage.myArcadeHub_sb_key。</li>';
       memoRowsCache = [];
+      ulA.innerHTML =
+        '<li class="memo-empty">未连接云端：请在源码填写 <code>SB_KEY</code> 或使用 localStorage.myArcadeHub_sb_key。</li>';
+      ulD.innerHTML = '';
       return;
     }
     var memoOwner = getMemoOwnerKey();
     if (!memoOwner) {
-      ul.innerHTML =
-        '<li class="memo-empty">请先在大厅用昵称登录；备忘按昵称隔离。</li>';
       memoRowsCache = [];
+      ulA.innerHTML =
+        '<li class="memo-empty">请先在大厅用昵称登录；备忘按昵称隔离。</li>';
+      ulD.innerHTML = '';
       return;
     }
+    await cleanupStaleCompletedMemos();
     try {
       var r = await c
         .from('pregnancy_memos')
-        .select('id,content,status,due_date,created_at')
+        .select('id,content,status,due_date,created_at,updated_at')
         .eq('user_id', memoOwner);
       if (r.error) throw r.error;
       memoRowsCache = Array.isArray(r.data) ? r.data : [];
-      renderMemoListFromCache();
+      renderMemoListsFromCache();
     } catch (e) {
       console.warn(e);
       memoRowsCache = [];
-      ul.innerHTML =
-        '<li class="memo-empty">加载失败（若尚未建表请执行 migrations/012_pregnancy_memos.sql）。</li>';
+      ulA.innerHTML =
+        '<li class="memo-empty">加载失败（若尚未建表请执行 migrations/012、015）。</li>';
+      ulD.innerHTML = '';
     }
   }
 
@@ -3034,15 +3192,15 @@
       var r = await c
         .from('pregnancy_memos')
         .insert(payload)
-        .select('id,content,status,due_date,created_at');
+        .select('id,content,status,due_date,created_at,updated_at');
       if (r.error) throw r.error;
       if (r.data && r.data[0]) memoRowsCache.unshift(r.data[0]);
       if (inp) inp.value = '';
       if (dueEl) dueEl.value = '';
-      renderMemoListFromCache();
+      renderMemoListsFromCache();
     } catch (e) {
       console.warn(e);
-      alert('保存失败，请确认已执行 migrations/012。');
+      alert('保存失败，请确认已执行 migrations/012、015。');
     }
   }
 
@@ -3051,18 +3209,34 @@
     var c = getSb();
     var memoOwner = getMemoOwnerKey();
     if (!memoOwner) return;
+    var optimisticTs = new Date().toISOString();
     memoRowsCache = memoRowsCache.map(function (m) {
-      return String(m.id) === String(id) ? Object.assign({}, m, { status: next }) : m;
+      return String(m.id) === String(id)
+        ? Object.assign({}, m, { status: next, updated_at: optimisticTs })
+        : m;
     });
-    renderMemoListFromCache();
+    renderMemoListsFromCache();
     if (!c) return;
     try {
       var r = await c
         .from('pregnancy_memos')
         .update({ status: next })
         .eq('id', id)
-        .eq('user_id', memoOwner);
+        .eq('user_id', memoOwner)
+        .select('id,status,updated_at')
+        .maybeSingle();
       if (r.error) throw r.error;
+      if (r.data) {
+        memoRowsCache = memoRowsCache.map(function (m) {
+          return String(m.id) === String(r.data.id)
+            ? Object.assign({}, m, {
+                status: r.data.status,
+                updated_at: r.data.updated_at || m.updated_at
+              })
+            : m;
+        });
+        renderMemoListsFromCache();
+      }
     } catch (e) {
       console.warn(e);
       await loadMemos();
@@ -5066,13 +5240,38 @@
       }
     });
   }
-  var memoUl = document.getElementById('memo-list');
-  if (memoUl) {
-    memoUl.addEventListener('click', function (e) {
+  var memoHitbox = document.getElementById('memo-input-hitbox');
+  if (memoHitbox && memoInp) {
+    memoHitbox.addEventListener('click', function (e) {
+      if (e.target === memoInp) return;
+      e.preventDefault();
+      memoInp.focus();
+      try {
+        memoInp.click();
+      } catch (err) {}
+    });
+  }
+  var memoDateTrig = document.getElementById('memo-date-trigger');
+  var memoDueHidden = document.getElementById('memo-due');
+  if (memoDateTrig && memoDueHidden) {
+    memoDateTrig.addEventListener('click', function () {
+      if (typeof memoDueHidden.showPicker === 'function') {
+        memoDueHidden.showPicker();
+      } else {
+        memoDueHidden.focus();
+        memoDueHidden.click();
+      }
+    });
+  }
+  var memoScroll = document.getElementById('memo-list-scroll');
+  if (memoScroll) {
+    memoScroll.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-memo-toggle]');
       if (!btn) return;
       var mid = btn.getAttribute('data-memo-toggle');
-      var row = memoRowsCache.filter(function (m) { return String(m.id) === String(mid); })[0];
+      var row = memoRowsCache.filter(function (m) {
+        return String(m.id) === String(mid);
+      })[0];
       if (!row) return;
       toggleMemoById(mid, row.status);
     });
