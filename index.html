@@ -1382,11 +1382,11 @@
 
   <div id="nickname-modal" class="modal-root" aria-modal="true" role="dialog">
     <div class="modal-pixel">
-      <h2>PLAYER NAME<br/>输入你的昵称</h2>
-      <input id="nickname-input" type="text" maxlength="16" placeholder="NICKNAME" autocomplete="username" />
+      <h2>昵称登录<br/><span style="font-size:0.72em;font-weight:600">已有档案则进入；没有则自动新建</span></h2>
+      <input id="nickname-input" type="text" maxlength="16" placeholder="例如 Herry / 老婆昵称" autocomplete="nickname" name="arcade_nickname" />
       <p id="nickname-cloud-warn" class="nick-warn" hidden></p>
       <p id="nickname-dup-msg" class="nick-warn" hidden></p>
-      <div style="text-align:center"><button type="button" id="nickname-confirm">START</button></div>
+      <div style="text-align:center"><button type="button" id="nickname-confirm">进入</button></div>
     </div>
   </div>
 
@@ -2140,6 +2140,10 @@
   }
 
   async function fetchPregnancyUserConfig() {
+    if (!getUserId()) {
+      pregBabyNickname = '';
+      return;
+    }
     var c = getSb();
     if (!c) {
       pregBabyNickname = loadBabyNicknameFromStorage();
@@ -2172,6 +2176,7 @@
       return { ok: false };
     }
     var uid = getUserId();
+    if (!uid) return { ok: false };
     var nickClean = sanitizeBabyNickname(pregBabyNickname);
     pregBabyNickname = nickClean;
     setSync(true);
@@ -2410,9 +2415,14 @@
       updateHubWalletUI();
       return;
     }
+    var id = getUserId();
+    if (!id) {
+      if (el) el.textContent = '—';
+      updateHubWalletUI();
+      return;
+    }
     setSync(true);
     try {
-      var id = getUserId();
       var r = await c
         .from('profiles')
         .select(
@@ -2421,6 +2431,19 @@
         .eq('id', id)
         .maybeSingle();
       if (r.error) throw r.error;
+      if (!r.data) {
+        clearArcadeSession();
+        pregBabyNickname = '';
+        try {
+          localStorage.removeItem(STORAGE_PREG_BABY_NICKNAME);
+        } catch (e) {}
+        if (el) el.textContent = '—';
+        document.getElementById('display-name').textContent = '——';
+        updateHubWalletUI();
+        var nm = document.getElementById('nickname-modal');
+        if (nm) nm.classList.add('visible');
+        return;
+      }
       applyProfileRow(r.data);
       if (el) el.textContent = String(cloudHigh);
       document.getElementById('display-name').textContent = getNickname() || '——';
@@ -2439,6 +2462,9 @@
       return { ok: false, reason: 'no_client', newUnlocks: [], earnedCoins: 0, crateDropped: false };
     }
     var id = getUserId();
+    if (!id) {
+      return { ok: false, reason: 'no_user', newUnlocks: [], earnedCoins: 0, crateDropped: false };
+    }
     var name = getNickname() || 'Player';
     var selRemote = await c
       .from('profiles')
@@ -2518,6 +2544,7 @@
     var c = getSb();
     if (!c) return { ok: false };
     var id = getUserId();
+    if (!id) return { ok: false };
     var name = getNickname() || 'Player';
     setSync(true);
     try {
@@ -2551,9 +2578,10 @@
   async function upsertNicknameOnly(nm) {
     var c = getSb();
     if (!c) return { ok: true };
+    var id = getUserId();
+    if (!id) return { ok: false };
     setSync(true);
     try {
-      var id = getUserId();
       var ex = await c
         .from('profiles')
         .select(
@@ -2599,25 +2627,83 @@
     } finally { setSync(false); }
   }
 
+  function clearArcadeSession() {
+    try {
+      localStorage.removeItem(STORAGE_USERID);
+      localStorage.removeItem(STORAGE_NAME);
+      localStorage.removeItem(LEGACY_PROFILE_ID);
+    } catch (e) {}
+  }
+
+  /** 仅在昵称登录成功后写入；不再静默生成随机 id（档案主键与昵称登录绑定） */
   function getUserId() {
     var id = localStorage.getItem(STORAGE_USERID);
-    if (!id) {
-      var leg = localStorage.getItem(LEGACY_PROFILE_ID);
-      if (leg) {
-        id = leg;
-        localStorage.setItem(STORAGE_USERID, id);
-        try { localStorage.removeItem(LEGACY_PROFILE_ID); } catch (e) {}
-      } else {
-        id = crypto.randomUUID
-          ? crypto.randomUUID()
-          : 'u-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-        localStorage.setItem(STORAGE_USERID, id);
+    if (id) return id;
+    var leg = localStorage.getItem(LEGACY_PROFILE_ID);
+    if (leg) {
+      try {
+        localStorage.setItem(STORAGE_USERID, leg);
+        localStorage.removeItem(LEGACY_PROFILE_ID);
+      } catch (e) {}
+      return leg;
+    }
+    return '';
+  }
+
+  async function loginOrRegisterByNickname(trimmedNick) {
+    var c = getSb();
+    if (!c) return { ok: false, error: 'no_client' };
+    var rpc = await c.rpc('login_or_register_by_nickname', { p_nick: trimmedNick });
+    if (rpc.error) return { ok: false, error: rpc.error };
+    var d = rpc.data;
+    if (typeof d === 'string') {
+      try {
+        d = JSON.parse(d);
+      } catch (e) {
+        return { ok: false, error: 'bad_response' };
       }
     }
-    return id;
+    if (!d || typeof d !== 'object') return { ok: false, error: 'bad_response' };
+    if (!d.ok) return { ok: false, error: d.error || 'rpc_failed' };
+    try {
+      localStorage.setItem(STORAGE_USERID, String(d.id));
+      localStorage.setItem(STORAGE_NAME, String(d.nickname || trimmedNick).trim());
+    } catch (e) {
+      return { ok: false, error: 'storage' };
+    }
+    return { ok: true, created: !!d.created };
   }
   function hasNickname() { var n = localStorage.getItem(STORAGE_NAME); return !!(n && String(n).trim()); }
   function getNickname() { return (localStorage.getItem(STORAGE_NAME) || '').trim(); }
+
+  /** 已登录则拉档案；未登录或档案 id 失效则弹出昵称登录 */
+  async function bootstrapProfileAndNicknameModal() {
+    var modal = document.getElementById('nickname-modal');
+    var inp = document.getElementById('nickname-input');
+    var disp = document.getElementById('display-name');
+    var warn = document.getElementById('nickname-cloud-warn');
+    if (warn) {
+      warn.hidden = true;
+      warn.textContent = '';
+    }
+    if (disp) disp.textContent = getNickname() || '——';
+    if (getUserId() && getSb()) await fetchProfile();
+    if (disp) disp.textContent = getNickname() || '——';
+    if (getUserId() && hasNickname()) {
+      if (inp) inp.value = getNickname();
+      if (modal) modal.classList.remove('visible');
+      await fetchPregnancyUserConfig();
+      return;
+    }
+    if (!getSb()) {
+      if (warn) {
+        warn.textContent = '请先配置 SB_KEY 并联网：昵称登录需要连接 Supabase。';
+        warn.hidden = false;
+      }
+    }
+    if (inp) inp.value = '';
+    if (modal) modal.classList.add('visible');
+  }
 
   var currentView = 'lobby';
   var VIEW_TO_SCREEN = {
@@ -2854,6 +2940,12 @@
       return;
     }
     var uid = getUserId();
+    if (!uid) {
+      ul.innerHTML =
+        '<li class="memo-empty">请先在大厅用昵称登录；备忘按账号区分，互不可见。</li>';
+      memoRowsCache = [];
+      return;
+    }
     try {
       var r = await c
         .from('pregnancy_memos')
@@ -2882,6 +2974,10 @@
       return;
     }
     var uid = getUserId();
+    if (!uid) {
+      alert('请先在大厅用昵称登录。');
+      return;
+    }
     var payload = {
       user_id: uid,
       content: raw.slice(0, 2000),
@@ -2908,6 +3004,7 @@
     var next = num(prevStatus) === 0 ? 1 : 0;
     var c = getSb();
     var uid = getUserId();
+    if (!uid) return;
     memoRowsCache = memoRowsCache.map(function (m) {
       return String(m.id) === String(id) ? Object.assign({}, m, { status: next }) : m;
     });
@@ -3976,7 +4073,7 @@
     if (!c) { listEl.innerHTML = '<div class="lb-empty">未连接 SB_KEY</div>'; return; }
     setSync(true);
     try {
-      // profiles.id 主键 = 每设备 userId 一行，按 highScore 降序即每人最高分榜
+      // profiles.id = 昵称登录后的档案主键；每人一行，按 highScore 降序
       var r = await c
         .from('profiles')
         .select('id, nickname, highScore')
@@ -4955,38 +5052,44 @@
   };
   document.getElementById('nickname-confirm').onclick = async function () {
     var dupEl = document.getElementById('nickname-dup-msg');
-    if (dupEl) { dupEl.hidden = true; dupEl.textContent = ''; }
+    var warn = document.getElementById('nickname-cloud-warn');
+    if (dupEl) {
+      dupEl.hidden = true;
+      dupEl.textContent = '';
+    }
+    if (warn) {
+      warn.hidden = true;
+      warn.textContent = '';
+    }
     var inp = document.getElementById('nickname-input');
     var raw = inp && inp.value.trim() ? inp.value.trim().slice(0, 16) : '玩家' + ((Math.random() * 9000 + 1000) | 0);
-    var c = getSb();
-    if (c) {
-      var avail = await c.rpc('is_nickname_available', { p_nick: raw, p_uid: getUserId() });
-      if (avail.error) {
-        if (dupEl) {
-          dupEl.textContent = '昵称校验失败，请稍后重试';
-          dupEl.hidden = false;
+    var done = await loginOrRegisterByNickname(raw);
+    if (!done.ok) {
+      if (done.error === 'no_client') {
+        if (warn) {
+          warn.textContent = '未连接云端：请配置 SB_KEY 或使用 localStorage.myArcadeHub_sb_key。';
+          warn.hidden = false;
         }
         return;
       }
-      if (avail.data === false) {
-        if (dupEl) {
-          dupEl.textContent = '该昵称已被大触抢先，换一个吧';
-          dupEl.hidden = false;
-        }
-        return;
+      if (dupEl) {
+        var er = done.error;
+        var erStr = typeof er === 'string' ? er : er && er.message ? String(er.message) : '';
+        dupEl.textContent =
+          er === 'empty'
+            ? '昵称不能为空'
+            : er === 'too_long'
+              ? '昵称过长'
+              : erStr && /function|schema|rpc/i.test(erStr)
+                ? '请先在后端执行 migrations/013_login_by_nickname.sql'
+                : '登录失败：' + (erStr || '请检查网络');
+        dupEl.hidden = false;
       }
+      return;
     }
-    localStorage.setItem(STORAGE_NAME, raw);
     document.getElementById('nickname-modal').classList.remove('visible');
-    var saved = await upsertNicknameOnly(raw);
-    if (!saved.ok && dupEl) {
-      dupEl.textContent = saved.duplicate
-        ? '该昵称已被大触抢先，换一个吧'
-        : '保存失败，请检查网络后重试';
-      dupEl.hidden = false;
-      document.getElementById('nickname-modal').classList.add('visible');
-      localStorage.removeItem(STORAGE_NAME);
-    }
+    await fetchProfile();
+    await fetchPregnancyUserConfig();
     cloudBanner();
   };
 
@@ -5003,13 +5106,10 @@
   requestAnimationFrame(function () { layoutSnakeScreen(); });
 
   if (resolveSbKey()) document.getElementById('supabase-hint').style.display = 'none';
-  getUserId();
   cloudBanner();
-  document.getElementById('display-name').textContent = getNickname() || '——';
-  if (!hasNickname()) document.getElementById('nickname-modal').classList.add('visible');
-  else fetchProfile();
   initEdgeSwipeBack();
   goToView('lobby');
+  bootstrapProfileAndNicknameModal();
 })();
   </script>
 </body>

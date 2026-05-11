@@ -172,6 +172,40 @@ def main() -> int:
             _delete_row(base, anon, test_id)
             return 1
 
+    # --- migrations/013：login_or_register_by_nickname ---
+    rpc_nick = f"rpc_{uuid.uuid4().hex[:10]}"
+    rpc_url = f"{base}/rest/v1/rpc/login_or_register_by_nickname"
+    try:
+        code_rpc, rpc_body = http_json("POST", rpc_url, headers_base, {"p_nick": rpc_nick})
+        if code_rpc == 200 and isinstance(rpc_body, dict) and rpc_body.get("ok") and rpc_body.get("id"):
+            rpc_id = str(rpc_body["id"])
+            if rpc_body.get("created") is not True:
+                print("WARN: login_or_register_by_nickname 首次应 created=true", file=sys.stderr)
+            _, rpc_body2 = http_json(
+                "POST", rpc_url, headers_base, {"p_nick": rpc_nick.upper()}
+            )
+            if (
+                not isinstance(rpc_body2, dict)
+                or not rpc_body2.get("ok")
+                or str(rpc_body2.get("id")) != rpc_id
+            ):
+                print(f"FAIL: 同昵称二次进入 id 不一致 {rpc_body2}", file=sys.stderr)
+                _delete_row(base, anon, rpc_id)
+                _delete_row(base, anon, test_id)
+                return 1
+            _delete_row(base, anon, rpc_id)
+            print("OK: login_or_register_by_nickname 新建与大小写不敏感进入（013）")
+        elif code_rpc == 404:
+            print("SKIP login_or_register_by_nickname：请执行 migrations/013_login_by_nickname.sql")
+        else:
+            print(f"SKIP login_or_register_by_nickname：HTTP {code_rpc} body={rpc_body}")
+    except HTTPError as e:
+        err_rpc = e.read().decode("utf-8", errors="replace") if e.fp else ""
+        if e.code == 404:
+            print("SKIP login_or_register_by_nickname：请执行 migrations/013_login_by_nickname.sql")
+        else:
+            print(f"SKIP login_or_register_by_nickname：HTTP {e.code} {err_rpc}")
+
     # --- migrations/007：pregnancy_user_config + pregnancy_recipes ---
     try:
         pconf_url = f"{base}/rest/v1/pregnancy_user_config"
