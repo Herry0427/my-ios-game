@@ -208,6 +208,42 @@ def main() -> int:
                 f"OK: pregnancy_recipes 可读 {len(rbody)} 条（007）"
                 + ("；命中牛腩" if hit else "（尚无牛腩标题时请执行 migrations/007）")
             )
+
+        # --- migrations/012：pregnancy_memos ---
+        memo_headers = {**headers_base, "Prefer": "return=representation"}
+        memo_ins = {
+            "user_id": test_id,
+            "content": "e2e_memo_row_delete_me",
+            "status": 0,
+            "due_date": "2026-06-01",
+        }
+        memo_url = f"{base}/rest/v1/pregnancy_memos"
+        code_m, mbody = http_json("POST", memo_url, memo_headers, [memo_ins])
+        if code_m in (200, 201) and isinstance(mbody, list) and mbody:
+            mid = mbody[0].get("id")
+            patch_u = (
+                f"{base}/rest/v1/pregnancy_memos?id=eq.{quote(str(mid), safe='')}"
+                "&user_id=eq." + quote(test_id, safe="")
+            )
+            code_u, _ = http_json(
+                "PATCH",
+                patch_u,
+                {**headers_base, "Content-Type": "application/json"},
+                {"status": 1},
+            )
+            del_mem = (
+                f"{base}/rest/v1/pregnancy_memos?id=eq.{quote(str(mid), safe='')}"
+                "&user_id=eq." + quote(test_id, safe="")
+            )
+            http_json("DELETE", del_mem, headers_base)
+            if code_u in (200, 204):
+                print("OK: pregnancy_memos 写入/更新/删除（012）")
+            else:
+                print(f"WARN: pregnancy_memos PATCH {code_u}")
+        elif code_m == 404 or (isinstance(mbody, dict) and "relation" in str(mbody).lower()):
+            print("SKIP pregnancy_memos：未建表，请执行 migrations/012_pregnancy_memos.sql")
+        else:
+            print(f"SKIP pregnancy_memos：POST {code_m} {mbody}")
     except Exception as ex:
         print(f"SKIP 007: {ex}")
 
