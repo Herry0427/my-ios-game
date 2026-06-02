@@ -37,6 +37,7 @@ ok(html.indexOf('receipt_home') >= 0, '路由');
 ok(receiptCode.indexOf('nav_calendar') >= 0, '纸上日历按钮');
 ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');
 ok(receiptCode.indexOf('hitAtClient') >= 0, '编辑页屏幕坐标点选');
+ok(receiptCode.indexOf('flatPositions') >= 0, '编辑日历纸面保持平整');
 ok(receiptCode.indexOf('开源节流') >= 0, '底部文案开源节流');
 ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');

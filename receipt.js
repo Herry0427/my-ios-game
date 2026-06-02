@@ -107,8 +107,37 @@
     for (i = 0; i < items.length; i++) {
       var price = String(items[i].price || '');
       if (price.indexOf('¥') >= 0 || price.indexOf('￥') >= 0) return '¥';
+      if (price.indexOf('$') >= 0) return '$';
     }
-    return '$';
+    return '¥';
+  }
+
+  function isPlaceholderItem(item) {
+    var name = String(item.name || '').trim();
+    return (!name || name === '****') && parsePrice(item.price) <= 0;
+  }
+
+  function pruneEmptyItems(items) {
+    var kept = [];
+    var i;
+    if (!items || !items.length) {
+      return [{ qty: 1, name: '****', price: '¥0.00' }];
+    }
+    for (i = 0; i < items.length; i++) {
+      if (!isPlaceholderItem(items[i])) kept.push(items[i]);
+    }
+    if (!kept.length) return [{ qty: 1, name: '****', price: '¥0.00' }];
+    return kept;
+  }
+
+  function normalizeFooterLines(footer) {
+    var lines = footer && footer.length ? footer.slice() : ['开源节流'];
+    var i;
+    for (i = 0; i < lines.length; i++) {
+      var t = String(lines[i] || '').trim();
+      if (t === '谢谢惠顾！' || t === '谢谢惠顾') lines[i] = '开源节流';
+    }
+    return lines;
   }
 
   function formatMoney(value, currency) {
@@ -133,6 +162,7 @@
       if (Object.prototype.hasOwnProperty.call(raw, key)) cfg[key] = raw[key];
     }
     if (!cfg.items || !cfg.items.length) cfg.items = [{ qty: 1, name: '****', price: '¥0.00' }];
+    cfg.items = pruneEmptyItems(cfg.items);
     if (raw.autoTotal !== false) {
       if (!cfg.currency) cfg.currency = detectCurrency(cfg.items);
       var subtotalNum = sumItems(cfg.items);
@@ -140,6 +170,7 @@
       cfg.total = cfg.subtotal;
     }
     if (!cfg.footer || !cfg.footer.length) cfg.footer = ['开源节流'];
+    cfg.footer = normalizeFooterLines(cfg.footer);
     return cfg;
   }
 
@@ -393,7 +424,8 @@
         y: PAPER_BTN_Y,
         w: w,
         h: PAPER_BTN_H,
-        center: true
+        center: true,
+        fullHit: true
       },
       {
         id: rightId,
@@ -402,7 +434,8 @@
         y: PAPER_BTN_Y,
         w: w,
         h: PAPER_BTN_H,
-        center: true
+        center: true,
+        fullHit: true
       }
     ];
   }
@@ -1154,7 +1187,7 @@
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
-    this.renderer.domElement.style.touchAction = 'none';
+    this.renderer.domElement.style.touchAction = 'manipulation';
     bindReceiptGyroTouch(this.renderer.domElement);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     var dirLight = new THREE.DirectionalLight(0xfffdfa, 0.85);
@@ -1174,6 +1207,11 @@
     var segX = this.mode === 'receipt' ? 14 : 10;
     var segY = this.mode === 'receipt' ? 28 : 22;
     this.physics = new PhysicsPaper(PAPER_W, PAPER_H, segX, segY);
+    this.flatPositions = [];
+    var fp;
+    for (fp = 0; fp < this.physics.particles.length; fp++) {
+      this.flatPositions.push(this.physics.particles[fp].pos.clone());
+    }
     this.geometry = new THREE.PlaneGeometry(PAPER_W, PAPER_H, segX, segY);
     this.material = new THREE.MeshStandardMaterial({
       map: null,
@@ -1320,12 +1358,27 @@
     };
   }
 
+  function isClientOnPaper(view, clientX, clientY) {
+    var ps = paperScreenBounds(view);
+    if (!ps) return false;
+    return (
+      clientX >= ps.minSx &&
+      clientX <= ps.maxSx &&
+      clientY >= ps.minSy &&
+      clientY <= ps.maxSy
+    );
+  }
+
+  ReceiptPaperView.prototype.resolveHitAtClient = function (clientX, clientY) {
+    var pt = clientPointToTexture(this, clientX, clientY);
+    if (!pt) return null;
+    return this.resolveRegionHit(pt);
+  };
+
   ReceiptPaperView.prototype.hitAtClient = function (clientX, clientY) {
     if (!this.renderer || !this.mesh) return null;
     if (this.mode === 'edit' || this.mode === 'calendar') {
-      var ptEdit = clientPointToTexture(this, clientX, clientY);
-      if (ptEdit) return this.resolveRegionHit(ptEdit);
-      return null;
+      return this.resolveHitAtClient(clientX, clientY);
     }
     var nav = this.navHitAtClient(clientX, clientY);
     if (nav) return nav;
@@ -1363,18 +1416,18 @@
     if (e.button !== 0) return;
     this.setMouse(e);
     var hit = this.pick();
-    var regionHit = this.hitAtClient(e.clientX, e.clientY);
+    var regionHit = this.resolveHitAtClient(e.clientX, e.clientY);
     if (!regionHit && hit && hit.uv) {
       regionHit = this.resolveRegionHit(uvToCanvas(hit.uv));
     }
-    if (!hit && !regionHit) return;
+    var onPaper = isClientOnPaper(this, e.clientX, e.clientY);
+    if (!regionHit && !onPaper) return;
     if (e.cancelable) e.preventDefault();
     try {
       this.renderer.domElement.setPointerCapture(e.pointerId);
     } catch (err) {}
     this.pointer.down = true;
     this.pointer.dragging = false;
-    this.pointer.interactive = false;
     this.pointer.downTime = Date.now();
     this.pointer.downClientX = e.clientX;
     this.pointer.downClientY = e.clientY;
@@ -1383,22 +1436,28 @@
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = hit ? hit.point.clone() : null;
     this.pointer.regionHit = regionHit;
-    if (
-      this.pointer.regionHit &&
-      (isNavHit(this.pointer.regionHit) || this.mode === 'edit' || this.mode === 'calendar')
-    ) {
+    if (this.mode === 'edit' || this.mode === 'calendar') {
       this.pointer.interactive = true;
+    } else if (regionHit && isNavHit(regionHit)) {
+      this.pointer.interactive = true;
+    } else {
+      this.pointer.interactive = false;
     }
   };
 
   ReceiptPaperView.prototype.onPointerMove = function (e) {
     if (!this.pointer.down) return;
-    if (this.pointer.interactive) return;
+    if (this.pointer.interactive || this.mode === 'edit' || this.mode === 'calendar') return;
     if (e.cancelable) e.preventDefault();
     var dx = e.clientX - this.pointer.x;
     var dy = e.clientY - this.pointer.y;
-    if (!this.pointer.dragging && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+    var dragThreshold = this.mode === 'receipt' ? 40 : DRAG_THRESHOLD;
+    if (!this.pointer.dragging && dx * dx + dy * dy > dragThreshold * dragThreshold) {
       this.pointer.dragging = true;
+      if (!this.pointer.hitPoint) {
+        this.pointer.dragging = false;
+        return;
+      }
       this.grabIndex = -1;
       var minDist = Infinity;
       var localHit = this.mesh.worldToLocal(this.pointer.hitPoint.clone());
@@ -1521,15 +1580,26 @@
       var dt = Math.min(self.clock.getDelta(), 0.025);
       var dragIdx = -1;
       var dragPos = new THREE.Vector3();
+      var posAttr = self.geometry.attributes.position;
+      var j;
       if (self.pointer.down && self.pointer.dragging && self.grabIndex !== -1) {
         dragIdx = self.grabIndex;
         dragPos = self.dragTargetPos;
       }
-      self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
-      var posAttr = self.geometry.attributes.position;
-      var j;
-      for (j = 0; j < self.physics.particles.length; j++) {
-        posAttr.setXYZ(j, self.physics.particles[j].pos.x, self.physics.particles[j].pos.y, self.physics.particles[j].pos.z);
+      if (self.mode === 'edit' || self.mode === 'calendar') {
+        for (j = 0; j < self.physics.particles.length; j++) {
+          posAttr.setXYZ(
+            j,
+            self.flatPositions[j].x,
+            self.flatPositions[j].y,
+            self.flatPositions[j].z
+          );
+        }
+      } else {
+        self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
+        for (j = 0; j < self.physics.particles.length; j++) {
+          posAttr.setXYZ(j, self.physics.particles[j].pos.x, self.physics.particles[j].pos.y, self.physics.particles[j].pos.z);
+        }
       }
       posAttr.needsUpdate = true;
       self.geometry.computeVertexNormals();
@@ -1687,15 +1757,21 @@
     pruneEmptyReceiptDays();
     state.calYear = state.selectedDate.getFullYear();
     state.calMonth = state.selectedDate.getMonth();
+    state.currentCfg = loadDayConfig(state.selectedDate);
+    scanDatesWithData();
+    stopAllScenes();
+    onReceiptScreenEnter();
+    var s = getScene(modeKey, canvasId, paperMode);
+    if (s) {
+      s.start();
+      if (paperMode !== 'receipt') s.refresh();
+      scheduleReceiptResize(s);
+    }
     syncReceiptFromCloud().then(function () {
       state.currentCfg = loadDayConfig(state.selectedDate);
       scanDatesWithData();
-      stopAllScenes();
-      onReceiptScreenEnter();
-      var s = getScene(modeKey, canvasId, paperMode);
-      if (s) {
-        s.start();
-        if (paperMode !== 'receipt' && s.running) s.refresh();
+      if (s && s.running) {
+        s.refresh();
         scheduleReceiptResize(s);
       }
     });
