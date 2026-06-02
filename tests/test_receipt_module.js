@@ -28,8 +28,9 @@ ok(t.normalizeReceiptConfig({ items: [{ qty: 2, name: 'a', price: '¥10.00' }] }
   ok(t.normalizeReceiptConfig(cfg).items.length === 2, '增加空行后保留一行待编辑占位');
 })();
 ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '****', price: '¥0.00' }] }), '空小票无蓝点');
-ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥0.00' }] }), '零金额无蓝点');
-ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有金额才有蓝点');
+ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥0.00' }] }), '有名称无金额仍应保存');
+ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有金额可保存');
+ok(receiptCode.indexOf('function cloudOp') >= 0, '云端操作用 Promise.resolve 包装');
 var k1 = t.randomTerminalForDate(new Date(2026, 5, 1));
 var k2 = t.randomTerminalForDate(new Date(2026, 5, 1));
 ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');

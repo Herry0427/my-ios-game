@@ -194,14 +194,36 @@
     return normalizeReceiptConfig(raw);
   }
 
+  function receiptItemTouched(item) {
+    if (!item) return false;
+    var name = String(item.name || '').trim();
+    if (name && name !== '****' && name !== '未命名') return true;
+    var price = parsePrice(item.price);
+    if (price > 0) return true;
+    var q = parseFloat(item.qty);
+    return !isNaN(q) && q > 1;
+  }
+
   function receiptConfigHasData(raw) {
     var cfg;
+    var i;
     try {
       cfg = normalizeReceiptConfig(typeof raw === 'string' ? JSON.parse(raw) : raw);
     } catch (e) {
       return false;
     }
-    return sumItems(cfg.items) > 0;
+    if (sumItems(cfg.items) > 0) return true;
+    for (i = 0; i < cfg.items.length; i++) {
+      if (receiptItemTouched(cfg.items[i])) return true;
+    }
+    return false;
+  }
+
+  function cloudOp(promiseOrBuilder) {
+    return Promise.resolve(promiseOrBuilder).catch(function (e) {
+      console.warn('[receipt cloud]', e);
+      return null;
+    });
   }
 
   function pruneEmptyReceiptDays() {
@@ -358,9 +380,7 @@
     if (!tasks.length) return Promise.resolve();
     return Promise.all(
       tasks.map(function (p) {
-        return p.catch(function () {
-          return null;
-        });
+        return cloudOp(p);
       })
     );
   }
@@ -405,14 +425,10 @@
     var owner = getReceiptOwnerKey();
     if (!c || !owner) return;
     if (!receiptConfigHasData(state.currentCfg)) {
-      deleteReceiptDayCloud(c, owner, dayKey).catch(function (e) {
-        console.warn('[receipt cloud delete]', e);
-      });
+      cloudOp(deleteReceiptDayCloud(c, owner, dayKey));
       return;
     }
-    upsertReceiptDayCloud(c, owner, dayKey, state.currentCfg).catch(function (e) {
-      console.warn('[receipt cloud upsert]', e);
-    });
+    cloudOp(upsertReceiptDayCloud(c, owner, dayKey, state.currentCfg));
   }
 
   function loadDayConfig(d) {
