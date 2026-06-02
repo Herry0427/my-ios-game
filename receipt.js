@@ -14,14 +14,12 @@
   var STORAGE_PREFIX = 'receipt_day_';
   var PAPER_BASE_W = 3.84;
   var PAPER_BASE_H = 7.68;
-  var PAPER_DISPLAY_SCALE = 1.582;
-  var PAPER_W = PAPER_BASE_W * PAPER_DISPLAY_SCALE;
-  var PAPER_H = PAPER_BASE_H * PAPER_DISPLAY_SCALE;
+  var RECEIPT_TARGET_FILL_W = 0.94;
+  var RECEIPT_TARGET_FILL_H = 0.88;
+  var PAPER_W = PAPER_BASE_W;
+  var PAPER_H = PAPER_BASE_H;
   var CAMERA_Y = -0.35;
   var CAMERA_FOV = 40;
-  var RECEIPT_BROWSER_REF_H = 740;
-  var RECEIPT_FIT_MARGIN_V = 0.11;
-  var RECEIPT_FIT_MARGIN_H = 0.06;
   var PAPER_BTN_Y = TEX_H - 58;
   var PAPER_BTN_H = 44;
   var PAPER_NAV_PAD = 48;
@@ -872,18 +870,10 @@
   function computeReceiptCameraZ(w, h) {
     var vFovRad = CAMERA_FOV * Math.PI / 180;
     var aspect = w / Math.max(h, 1);
-    var fitH = PAPER_BASE_H + 0.14;
-    var fitW = PAPER_BASE_W + 0.08;
     var halfTan = Math.tan(vFovRad / 2);
-    var zH = fitH / (2 * halfTan * (1 - 2 * RECEIPT_FIT_MARGIN_V));
-    var zW = fitW / (2 * halfTan * aspect * (1 - 2 * RECEIPT_FIT_MARGIN_H));
-    var z = Math.max(zH, zW, 8);
-    if (h > RECEIPT_BROWSER_REF_H) {
-      z *= h / RECEIPT_BROWSER_REF_H;
-    } else if (isReceiptStandalone() && h > RECEIPT_BROWSER_REF_H * 0.94) {
-      z *= 1.12;
-    }
-    return z;
+    var zH = PAPER_H / (2 * halfTan * RECEIPT_TARGET_FILL_H);
+    var zW = PAPER_W / (2 * halfTan * aspect * RECEIPT_TARGET_FILL_W);
+    return Math.max(zH, zW, 8);
   }
 
   function fitReceiptCamera(camera, w, h) {
@@ -1576,6 +1566,7 @@
       randomTerminalForDate: randomTerminalForDate,
       dateKey: dateKey,
       receiptConfigHasData: receiptConfigHasData,
+      computeReceiptCameraZ: computeReceiptCameraZ,
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;
         if (!s || !s.mesh) return { error: 'no_home_scene' };

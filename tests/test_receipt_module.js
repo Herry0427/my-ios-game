@@ -41,8 +41,16 @@ ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
 ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
 ok(receiptCode.indexOf('pruneEmptyReceiptDays') >= 0, '启动清理空小票键');
-ok(receiptCode.indexOf('PAPER_BASE_W') >= 0, '纸面基准宽');
-ok(/fitH\s*=\s*PAPER_BASE_H/.test(receiptCode), '相机按基准纸面取景');
+ok(receiptCode.indexOf('RECEIPT_TARGET_FILL_W') >= 0, '纸面目标宽度占比');
+ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
+(function () {
+  var z = t.computeReceiptCameraZ(390, 700);
+  var halfTan = Math.tan((40 * Math.PI / 180) / 2);
+  var aspect = 390 / 700;
+  var fillW = 3.84 / (2 * z * halfTan * aspect);
+  var fillH = 7.68 / (2 * z * halfTan);
+  ok(Math.abs(fillW - 0.94) < 0.03 || Math.abs(fillH - 0.88) < 0.03, '手机屏占比接近绿框');
+})();
 ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
