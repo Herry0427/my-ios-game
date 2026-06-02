@@ -10,8 +10,9 @@
   var TAP_MAX_MS = 360;
   var HIT_PAD = 24;
   var STORAGE_PREFIX = 'receipt_day_';
-  var PAPER_W = 3.84;
-  var PAPER_H = 7.68;
+  var PAPER_DISPLAY_SCALE = 0.9;
+  var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
+  var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
   var CAMERA_Z = 10.5;
   var CAMERA_Y = -0.35;
   var PAPER_BTN_Y = TEX_H - 112;
