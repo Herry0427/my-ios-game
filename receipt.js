@@ -33,7 +33,7 @@
       { qty: 2, name: '****', price: '¥0.00' },
       { qty: 1, name: '****', price: '¥0.00' }
     ],
-    footer: ['谢谢惠顾！']
+    footer: ['开源节流']
   };
 
   var state = {
@@ -139,7 +139,7 @@
       cfg.subtotal = formatMoney(subtotalNum, cfg.currency);
       cfg.total = cfg.subtotal;
     }
-    if (!cfg.footer || !cfg.footer.length) cfg.footer = ['谢谢惠顾！'];
+    if (!cfg.footer || !cfg.footer.length) cfg.footer = ['开源节流'];
     return cfg;
   }
 
@@ -430,7 +430,11 @@
       hitH = fontSize + NAV_LABEL_PAD_Y * 2;
       hitX = b.center ? tx - tw / 2 - NAV_LABEL_PAD_X : tx - NAV_LABEL_PAD_X;
       hitY = ty - fontSize - NAV_LABEL_PAD_Y + 2;
-      regions.push({ id: b.id, x: hitX, y: hitY, w: hitW, h: hitH });
+      if (b.fullHit) {
+        regions.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h });
+      } else {
+        regions.push({ id: b.id, x: hitX, y: hitY, w: hitW, h: hitH });
+      }
       ctx.fillStyle = '#333';
       ctx.fillText(b.label, tx, ty);
     }
@@ -694,7 +698,8 @@
           y: PAPER_BTN_Y,
           w: TEX_W - PAPER_NAV_PAD * 2,
           h: PAPER_BTN_H,
-          center: true
+          center: true,
+          fullHit: true
         }
       ])
     );
@@ -1259,6 +1264,21 @@
     return hitNavRegion(this.hitRegions, pt.x, pt.y);
   };
 
+  function clientPointToTexture(view, clientX, clientY) {
+    var ps = paperScreenBounds(view);
+    if (!ps) return null;
+    var bw = ps.maxSx - ps.minSx;
+    var bh = ps.maxSy - ps.minSy;
+    if (bw < 8 || bh < 8) return null;
+    if (clientX < ps.minSx || clientX > ps.maxSx || clientY < ps.minSy || clientY > ps.maxSy) {
+      return null;
+    }
+    return {
+      x: ((clientX - ps.minSx) / bw) * TEX_W,
+      y: ((clientY - ps.minSy) / bh) * TEX_H
+    };
+  }
+
   function paperScreenBounds(view) {
     if (!view.mesh || !view.renderer || !view.camera) return null;
     var box = new THREE.Box3().setFromObject(view.mesh);
@@ -1300,9 +1320,25 @@
     };
   }
 
+  ReceiptPaperView.prototype.hitAtClient = function (clientX, clientY) {
+    if (!this.renderer || !this.mesh) return null;
+    if (this.mode === 'edit' || this.mode === 'calendar') {
+      var ptEdit = clientPointToTexture(this, clientX, clientY);
+      if (ptEdit) return this.resolveRegionHit(ptEdit);
+      return null;
+    }
+    var nav = this.navHitAtClient(clientX, clientY);
+    if (nav) return nav;
+    var pt = clientPointToTexture(this, clientX, clientY);
+    if (pt) return hitNavRegion(this.hitRegions, pt.x, pt.y);
+    return null;
+  };
+
   ReceiptPaperView.prototype.resolveTap = function (clientX, clientY, uv) {
+    var hit = this.hitAtClient(clientX, clientY);
+    if (hit) return hit;
     if (uv) {
-      var hit = this.resolveRegionHit(uvToCanvas(uv));
+      hit = this.resolveRegionHit(uvToCanvas(uv));
       if (hit) return hit;
     }
     return this.navHitAtClient(clientX, clientY);
@@ -1327,12 +1363,11 @@
     if (e.button !== 0) return;
     this.setMouse(e);
     var hit = this.pick();
-    var navOnly = null;
-    if (hit && hit.uv) {
-      navOnly = hitNavRegion(this.hitRegions, uvToCanvas(hit.uv).x, uvToCanvas(hit.uv).y);
+    var regionHit = this.hitAtClient(e.clientX, e.clientY);
+    if (!regionHit && hit && hit.uv) {
+      regionHit = this.resolveRegionHit(uvToCanvas(hit.uv));
     }
-    if (!navOnly) navOnly = this.navHitAtClient(e.clientX, e.clientY);
-    if (!hit && !navOnly) return;
+    if (!hit && !regionHit) return;
     if (e.cancelable) e.preventDefault();
     try {
       this.renderer.domElement.setPointerCapture(e.pointerId);
@@ -1347,8 +1382,11 @@
     this.pointer.y = e.clientY;
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = hit ? hit.point.clone() : null;
-    this.pointer.regionHit = navOnly || (hit && hit.uv ? this.resolveRegionHit(uvToCanvas(hit.uv)) : null);
-    if (this.pointer.regionHit && (isNavHit(this.pointer.regionHit) || this.mode !== 'receipt')) {
+    this.pointer.regionHit = regionHit;
+    if (
+      this.pointer.regionHit &&
+      (isNavHit(this.pointer.regionHit) || this.mode === 'edit' || this.mode === 'calendar')
+    ) {
       this.pointer.interactive = true;
     }
   };
@@ -1406,13 +1444,18 @@
     var elapsed = Date.now() - this.pointer.downTime;
     var isTap = !this.pointer.dragging && dist < DRAG_THRESHOLD * 1.35 && elapsed < TAP_MAX_MS + 120;
     var hit = null;
-    if (this.pointer.regionHit && isNavHit(this.pointer.regionHit)) {
-      hit = this.pointer.regionHit;
-    } else if (isTap) {
-      hit = this.resolveTap(e.clientX, e.clientY, this.pointer.uv);
-    }
-    if (!hit && isTap) {
-      hit = this.resolveTap(this.pointer.downClientX, this.pointer.downClientY, this.pointer.uv);
+    if (isTap) {
+      if (this.pointer.regionHit) {
+        hit = this.pointer.regionHit;
+      } else {
+        hit = this.hitAtClient(e.clientX, e.clientY);
+      }
+      if (!hit) {
+        hit = this.resolveTap(e.clientX, e.clientY, this.pointer.uv);
+      }
+      if (!hit) {
+        hit = this.hitAtClient(this.pointer.downClientX, this.pointer.downClientY);
+      }
     }
     if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
