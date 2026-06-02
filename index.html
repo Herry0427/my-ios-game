@@ -1591,6 +1591,105 @@
       margin-left: 4px; width: 32px; height: 32px; border-radius: 999px; border: none; cursor: pointer;
       background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 1rem; line-height: 1;
     }
+    /* —— 记账簿 receipt-* —— */
+    .receipt-screen.screen {
+      padding: 0;
+      overflow: hidden;
+      background: #e5e5e5;
+      flex-direction: column;
+    }
+    .receipt-canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      width: 100%;
+    }
+    .receipt-nav-bar {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 32px calc(14px + var(--safe-bottom));
+      background: #e5e5e5;
+    }
+    .receipt-nav-btn {
+      border: none;
+      background: transparent;
+      color: #444;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 8px 4px;
+      cursor: pointer;
+    }
+    .receipt-nav-btn:active { opacity: 0.55; }
+    .receipt-swipe-hint {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(52px + var(--safe-bottom));
+      text-align: center;
+      font-size: 0.62rem;
+      color: #888;
+      pointer-events: none;
+      z-index: 5;
+      margin: 0;
+    }
+    .receipt-edit-footer {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      padding: 12px 20px calc(14px + var(--safe-bottom));
+      background: #e5e5e5;
+    }
+    .receipt-save-btn {
+      border: none;
+      background: transparent;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 8px 24px;
+      cursor: pointer;
+    }
+    .receipt-save-btn:active { color: #c33; }
+    #receipt-edit-bar {
+      position: fixed;
+      bottom: calc(58px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 30;
+      width: min(92vw, 400px);
+    }
+    #receipt-edit-bar.show { display: flex; }
+    #receipt-edit-label { font-size: 13px; color: #333; white-space: nowrap; }
+    #receipt-edit-input {
+      flex: 1;
+      font-size: 16px;
+      padding: 6px 8px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      outline: none;
+    }
+    #receipt-edit-inline-save,
+    #receipt-edit-inline-cancel {
+      font-size: 12px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #receipt-edit-inline-save { background: #4e6ef2; color: #fff; }
+    #receipt-edit-inline-cancel { background: #eee; color: #333; }
   </style>
 </head>
 <body>
@@ -1655,7 +1754,7 @@
     <div class="grid-menu lobby-tile-grid" style="margin-top:10px">
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
-      <button type="button" class="tile-btn coming" disabled>足球赛程 <span class="tile-badge">预留</span></button>
+      <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
     <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
@@ -1889,6 +1988,32 @@
     </div>
   </section>
 
+  <section id="receipt-home-screen" class="screen receipt-screen" aria-label="今日消费">
+    <div class="receipt-canvas-wrap" id="receipt-home-canvas"></div>
+    <p class="receipt-swipe-hint">左缘右滑返回 ARCADE HUB</p>
+    <div class="receipt-nav-bar">
+      <button type="button" class="receipt-nav-btn" id="receipt-btn-calendar">日历</button>
+      <button type="button" class="receipt-nav-btn" id="receipt-btn-ledger">记账</button>
+    </div>
+  </section>
+
+  <section id="receipt-calendar-screen" class="screen receipt-screen" aria-label="日历">
+    <div class="receipt-canvas-wrap" id="receipt-calendar-canvas"></div>
+  </section>
+
+  <section id="receipt-edit-screen" class="screen receipt-screen" aria-label="小票编辑">
+    <div class="receipt-canvas-wrap" id="receipt-edit-canvas"></div>
+    <div id="receipt-edit-bar">
+      <span id="receipt-edit-label">名称</span>
+      <input id="receipt-edit-input" type="text" autocomplete="off" spellcheck="false" />
+      <button type="button" id="receipt-edit-inline-save">确定</button>
+      <button type="button" id="receipt-edit-inline-cancel">取消</button>
+    </div>
+    <div class="receipt-edit-footer">
+      <button type="button" class="receipt-save-btn" id="receipt-btn-save">保存</button>
+    </div>
+  </section>
+
   <div id="recipe-lmp-modal" class="modal-root" aria-modal="true" role="dialog">
     <div class="recipe-modal-card">
       <h3>填写孕期信息</h3>
@@ -1974,6 +2099,8 @@
     <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-dim)">即将推出</div>
   </section>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="receipt.js"></script>
   <script>
 (function () {
   'use strict';
@@ -2980,7 +3107,10 @@
     snake_leaderboard: 'leaderboard-screen',
     recipe_home: 'recipe-home-screen',
     recipe_library: 'recipe-library-screen',
-    recipe_detail: 'recipe-detail-screen'
+    recipe_detail: 'recipe-detail-screen',
+    receipt_home: 'receipt-home-screen',
+    receipt_calendar: 'receipt-calendar-screen',
+    receipt_edit: 'receipt-edit-screen'
   };
 
   function activateScreen(screenId) {
@@ -3013,6 +3143,8 @@
       case 'recipe_library':
         return 'recipe_home';
       case 'recipe_home':
+        return 'lobby';
+      case 'receipt_home':
         return 'lobby';
       case 'snake_game':
         return 'snake_home';
@@ -3131,6 +3263,11 @@
     }
     if (view === 'recipe_detail') renderRecipeDetailView();
     if (view === 'memo_screen') loadMemos();
+    var receiptViews = { receipt_home: 1, receipt_calendar: 1, receipt_edit: 1 };
+    if (!receiptViews[view] && window.ReceiptModule) ReceiptModule.onLeaveAll();
+    if (view === 'receipt_home' && window.ReceiptModule) ReceiptModule.onEnterHome();
+    if (view === 'receipt_calendar' && window.ReceiptModule) ReceiptModule.onEnterCalendar();
+    if (view === 'receipt_edit' && window.ReceiptModule) ReceiptModule.onEnterEdit();
     if (view !== 'recipe_detail') releaseRecipeWakeLock();
   }
 
@@ -5509,6 +5646,9 @@
       toggleMemoById(mid, row.status);
     });
   }
+  document.getElementById('btn-enter-receipt').onclick = function () {
+    goToView('receipt_home');
+  };
   document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };
   document.getElementById('btn-snake-game').onclick = function () { goToView('snake_game'); };
   document.getElementById('btn-snake-warehouse').onclick = function () { goToView('snake_warehouse'); };
