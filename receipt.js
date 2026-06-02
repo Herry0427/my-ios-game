@@ -8,9 +8,9 @@
   var TEX_H = 1024;
   var DRAG_THRESHOLD = 24;
   var TAP_MAX_MS = 360;
-  var HIT_PAD = 24;
+  var HIT_PAD = 8;
   var STORAGE_PREFIX = 'receipt_day_';
-  var PAPER_DISPLAY_SCALE = 0.9;
+  var PAPER_DISPLAY_SCALE = 0.99;
   var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
   var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
   var CAMERA_Y = -0.35;
@@ -18,10 +18,10 @@
   var RECEIPT_BROWSER_REF_H = 740;
   var RECEIPT_FIT_MARGIN_V = 0.11;
   var RECEIPT_FIT_MARGIN_H = 0.06;
-  var PAPER_BTN_Y = TEX_H - 112;
-  var PAPER_BTN_H = 80;
-  var PAPER_NAV_PAD = 28;
-  var PAPER_NAV_GAP = 20;
+  var PAPER_BTN_Y = TEX_H - 58;
+  var PAPER_BTN_H = 44;
+  var PAPER_NAV_PAD = 48;
+  var PAPER_NAV_GAP = 96;
 
   var EMPTY_TEMPLATE = {
     autoTotal: true,
@@ -266,7 +266,7 @@
       var b = buttons[i];
       regions.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h });
       ctx.fillStyle = '#333';
-      ctx.font = 'bold 22px monospace';
+      ctx.font = 'bold 18px monospace';
       ctx.textAlign = b.center ? 'center' : 'left';
       var tx = b.center ? b.x + b.w / 2 : b.x + 8;
       ctx.fillText(b.label, tx, b.y + Math.round(b.h * 0.62));
@@ -700,7 +700,7 @@
   }
 
   function textureNavFallback(mode, pt) {
-    if (!pt || pt.y < TEX_H * 0.8) return null;
+    if (!pt || pt.y < TEX_H - 72) return null;
     if (mode === 'receipt') {
       return pt.x < TEX_W * 0.5 ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
     }
@@ -926,7 +926,7 @@
       maxSx: maxSx,
       minSy: minSy,
       maxSy: maxSy,
-      bandTop: minSy + (maxSy - minSy) * 0.74
+      bandTop: minSy + (maxSy - minSy) * 0.88
     };
   }
 
@@ -934,8 +934,8 @@
     if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
     var ps = paperScreenBounds(this);
     if (!ps) return null;
-    if (clientY < ps.bandTop - 20 || clientY > ps.maxSy + 28) return null;
-    if (clientX < ps.minSx - 24 || clientX > ps.maxSx + 24) return null;
+    if (clientY < ps.bandTop - 8 || clientY > ps.maxSy + 8) return null;
+    if (clientX < ps.minSx - 8 || clientX > ps.maxSx + 8) return null;
     if (this.mode === 'edit') return { id: 'nav_save' };
     var midX = (ps.minSx + ps.maxSx) / 2;
     return clientX < midX ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
