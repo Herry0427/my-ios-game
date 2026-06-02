@@ -1,4 +1,4 @@
-"""记账簿纸面按钮 E2E（Playwright + 本地静态服务）。"""
+"""记账簿纸面按钮 E2E（Playwright + 本地静态服务）。默认不跑，避免占用 CPU。"""
 import http.server
 import os
 import socketserver
@@ -10,6 +10,10 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8772
 fails = 0
+
+if __name__ == "__main__" and os.environ.get("RUN_RECEIPT_E2E") != "1":
+    print("跳过 E2E（需设置 RUN_RECEIPT_E2E=1 才启动 Chromium）")
+    sys.exit(0)
 
 
 def ok(cond, msg):

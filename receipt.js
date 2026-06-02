@@ -50,6 +50,8 @@
 
   var scenes = { home: null, calendar: null, edit: null };
   var bound = false;
+  var cloudSyncTimer = null;
+  var editRefreshTimer = null;
   var lastGoodReceiptSize = { w: 0, h: 0 };
   var deviceGravityTarget = { x: 0, y: -9.8, z: 0 };
   var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
@@ -276,10 +278,38 @@
     var dk = String(row.day_key || '').slice(0, 10);
     var cfg = row.config;
     if (!dk || !cfg || !receiptConfigHasData(cfg)) return;
+    if (scenes.edit && scenes.edit.running && dateKey(state.selectedDate) === dk) return;
     localStorage.setItem(
       STORAGE_PREFIX + dk,
       JSON.stringify(receiptConfigToPayload(normalizeReceiptConfig(cfg)))
     );
+  }
+
+  function onReceiptCloudSyncDone() {
+    scanDatesWithData();
+    if (scenes.calendar && scenes.calendar.running) scenes.calendar.refresh();
+    if (scenes.home && scenes.home.running && !(scenes.edit && scenes.edit.running)) {
+      scenes.home.refresh();
+    }
+  }
+
+  function scheduleReceiptCloudSync(delayMs) {
+    if (delayMs == null) delayMs = 5000;
+    if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(function () {
+      cloudSyncTimer = null;
+      syncReceiptFromCloud().then(function () {
+        onReceiptCloudSyncDone();
+      });
+    }, delayMs);
+  }
+
+  function scheduleEditTextureRefresh() {
+    if (editRefreshTimer) clearTimeout(editRefreshTimer);
+    editRefreshTimer = setTimeout(function () {
+      editRefreshTimer = null;
+      if (scenes.edit && scenes.edit.running && state.editSelection) scenes.edit.refresh();
+    }, 120);
   }
 
   function upsertReceiptDayCloud(c, owner, dayKey, cfg) {
@@ -346,7 +376,6 @@
           cloudKeys[String(rows[i].day_key).slice(0, 10)] = true;
         }
         return pushLocalReceiptDaysToCloud(c, owner, cloudKeys).then(function () {
-          scanDatesWithData();
           return true;
         });
       })
@@ -403,6 +432,7 @@
     );
     state.datesWithData[key] = true;
     queueReceiptCloudSave(key);
+    scheduleReceiptCloudSync(8000);
   }
 
   function seedTodayIfNeeded() {
@@ -1093,6 +1123,19 @@
     return hit && (hit.id === 'nav_calendar' || hit.id === 'nav_ledger' || hit.id === 'nav_save');
   }
 
+  function isUiRegionHit(hit) {
+    if (!hit || !hit.id) return false;
+    if (isNavHit(hit)) return true;
+    return (
+      hit.id === 'field' ||
+      hit.id === 'add' ||
+      hit.id === 'del' ||
+      hit.id === 'day' ||
+      hit.id === 'prev' ||
+      hit.id === 'next'
+    );
+  }
+
   function hitNavRegion(regions, cx, cy) {
     var i;
     var r;
@@ -1218,14 +1261,9 @@
     wall.position.z = -1.2;
     wall.receiveShadow = true;
     this.scene.add(wall);
-    var segX = this.mode === 'receipt' ? 14 : 10;
-    var segY = this.mode === 'receipt' ? 28 : 22;
+    var segX = 14;
+    var segY = 28;
     this.physics = new PhysicsPaper(PAPER_W, PAPER_H, segX, segY);
-    this.flatPositions = [];
-    var fp;
-    for (fp = 0; fp < this.physics.particles.length; fp++) {
-      this.flatPositions.push(this.physics.particles[fp].pos.clone());
-    }
     this.geometry = new THREE.PlaneGeometry(PAPER_W, PAPER_H, segX, segY);
     this.material = new THREE.MeshStandardMaterial({
       map: null,
@@ -1472,9 +1510,7 @@
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = localHit ? localHit.clone() : hit && hit.point ? hit.point.clone() : null;
     this.pointer.regionHit = regionHit;
-    if (this.mode === 'edit' || this.mode === 'calendar') {
-      this.pointer.interactive = true;
-    } else if (regionHit && isNavHit(regionHit)) {
+    if (regionHit && isUiRegionHit(regionHit)) {
       this.pointer.interactive = true;
     } else {
       this.pointer.interactive = false;
@@ -1744,7 +1780,7 @@
       input.addEventListener('input', function () {
         if (!state.editSelection) return;
         state.editBuffer = input.value;
-        if (scenes.edit) scenes.edit.refresh();
+        scheduleEditTextureRefresh();
       });
       input.addEventListener('keydown', function (e) {
         if (!state.editSelection) return;
@@ -1794,20 +1830,14 @@
       if (paperMode !== 'receipt') s.refresh();
       scheduleReceiptResize(s);
     }
-    syncReceiptFromCloud().then(function () {
-      scanDatesWithData();
-      if (!s || !s.running) return;
-      if (paperMode === 'edit') return;
-      state.currentCfg = loadDayConfig(state.selectedDate);
-      s.refresh();
-      scheduleReceiptResize(s);
-    });
+    if (paperMode === 'receipt') scheduleReceiptCloudSync(6000);
   }
 
   global.ReceiptModule = {
     bindOnce: bindOnce,
     ensureState: ensureState,
     syncReceiptFromCloud: syncReceiptFromCloud,
+    scheduleReceiptCloudSync: scheduleReceiptCloudSync,
     onEnterHome: function () {
       enterReceiptView('home', 'receipt-home-canvas', 'receipt');
     },
