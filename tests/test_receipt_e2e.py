@@ -254,6 +254,8 @@ def run_flow(page, label):
             label + " · 点增加一行可响应",
         )
 
+    test_inline_edit_bar(page, label)
+
     tap_paper_nav(page, "edit", "save")
     page.wait_for_timeout(500)
     ok(
@@ -261,6 +263,60 @@ def run_flow(page, label):
             "document.getElementById('receipt-home-screen').classList.contains('active')"
         ),
         label + " · 点保存 → 回首页",
+    )
+
+
+def click_inline_button(page, selector):
+    page.locator(selector).click(force=True, no_wait_after=True, timeout=8000)
+    page.wait_for_timeout(350)
+
+
+def test_inline_edit_bar(page, label):
+    page.evaluate("() => ReceiptModule._test.seedEditTestRow()")
+    page.evaluate("() => ReceiptModule._test.startInlineEdit('name', 0)")
+    page.wait_for_selector("#receipt-edit-bar.show", timeout=8000)
+    page.fill("#receipt-edit-input", "地铁E2E")
+    click_inline_button(page, "#receipt-edit-inline-save")
+    ok(
+        page.evaluate(
+            """
+            () => {
+              const name = ReceiptModule._test.getItemField(0, 'name');
+              return name === '地铁E2E' && !ReceiptModule._test.editBarIsShown();
+            }
+            """
+        ),
+        label + " · 编辑条点确定写入并收起",
+    )
+
+    page.evaluate("() => ReceiptModule._test.startInlineEdit('name', 0)")
+    page.fill("#receipt-edit-input", "应丢弃")
+    click_inline_button(page, "#receipt-edit-inline-cancel")
+    ok(
+        page.evaluate(
+            """
+            () => {
+              const name = ReceiptModule._test.getItemField(0, 'name');
+              return name === '地铁E2E' && !ReceiptModule._test.editBarIsShown();
+            }
+            """
+        ),
+        label + " · 编辑条点取消不写入",
+    )
+
+    page.evaluate("() => ReceiptModule._test.startInlineEdit('price', 0)")
+    page.fill("#receipt-edit-input", "¥88.00")
+    click_inline_button(page, "#receipt-edit-inline-save")
+    ok(
+        page.evaluate(
+            """
+            () => {
+              const price = ReceiptModule._test.getItemField(0, 'price');
+              return price === '¥88.00' && !ReceiptModule._test.editBarIsShown();
+            }
+            """
+        ),
+        label + " · 编辑条点确定写入单价",
     )
 
 

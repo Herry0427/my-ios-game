@@ -1834,7 +1834,10 @@
     state.editBuffer = '';
     var bar = document.getElementById('receipt-edit-bar');
     var input = document.getElementById('receipt-edit-input');
-    if (bar) bar.classList.remove('show');
+    if (bar) {
+      bar.classList.remove('show');
+      bar.setAttribute('aria-hidden', 'true');
+    }
     if (input) input.value = '';
   }
 
@@ -1867,7 +1870,10 @@
         input.select();
       }, 0);
     }
-    if (bar) bar.classList.add('show');
+    if (bar) {
+      bar.classList.add('show');
+      bar.setAttribute('aria-hidden', 'false');
+    }
     if (scenes.edit) scenes.edit.refresh();
   }
 
@@ -1903,34 +1909,67 @@
     if (scenes.edit) scenes.edit.refresh();
   }
 
-  function confirmInlineEdit(e) {
+  var lastInlineActionAt = 0;
+
+  function runInlineAction(handler, e) {
+    var now = Date.now();
+    if (now - lastInlineActionAt < 280) return;
+    lastInlineActionAt = now;
     markEditChromeTap();
     if (e) {
       safePreventDefault(e);
       if (e.stopPropagation) e.stopPropagation();
     }
-    commitInlineEdit(false);
+    handler();
+  }
+
+  function confirmInlineEdit(e) {
+    runInlineAction(function () {
+      commitInlineEdit(false);
+    }, e);
   }
 
   function cancelInlineEdit(e) {
-    markEditChromeTap();
-    if (e) {
-      safePreventDefault(e);
-      if (e.stopPropagation) e.stopPropagation();
-    }
-    revertInlineEdit();
+    runInlineAction(function () {
+      revertInlineEdit();
+    }, e);
+  }
+
+  function bindInlineEditBarChrome() {
+    var bar = document.getElementById('receipt-edit-bar');
+    if (!bar || bar._receiptBarChromeBound) return;
+    bar._receiptBarChromeBound = true;
+    bar.addEventListener(
+      'pointerdown',
+      function (e) {
+        markEditChromeTap();
+        if (e.stopPropagation) e.stopPropagation();
+      },
+      true
+    );
+  }
+
+  function bindInlineEditButton(btn, handler) {
+    if (!btn || btn._receiptInlineBound) return;
+    btn._receiptInlineBound = true;
+    btn.addEventListener(
+      'pointerup',
+      function (e) {
+        if (e.button !== 0) return;
+        handler(e);
+      },
+      true
+    );
+    btn.addEventListener('click', handler, true);
   }
 
   function wireInlineEditButtons() {
     var inlineSave = document.getElementById('receipt-edit-inline-save');
     var inlineCancel = document.getElementById('receipt-edit-inline-cancel');
-    if (!inlineSave || inlineSave._receiptInlineBound) return;
-    inlineSave._receiptInlineBound = true;
-    inlineCancel._receiptInlineBound = true;
-    inlineSave.addEventListener('click', confirmInlineEdit, true);
-    inlineSave.addEventListener('touchend', confirmInlineEdit, { capture: true, passive: false });
-    inlineCancel.addEventListener('click', cancelInlineEdit, true);
-    inlineCancel.addEventListener('touchend', cancelInlineEdit, { capture: true, passive: false });
+    if (!inlineSave || !inlineCancel) return;
+    bindInlineEditBarChrome();
+    bindInlineEditButton(inlineSave, confirmInlineEdit);
+    bindInlineEditButton(inlineCancel, cancelInlineEdit);
   }
 
   function bindOnce() {
@@ -2096,6 +2135,19 @@
       editSelectionField: function () {
         return state.editSelection ? state.editSelection.field : null;
       },
+      startInlineEdit: function (field, index) {
+        beginEdit(field, index);
+        return !!state.editSelection;
+      },
+      getItemField: function (index, field) {
+        var item = state.currentCfg.items[index];
+        if (!item) return null;
+        return item[field];
+      },
+      editBarIsShown: function () {
+        var bar = document.getElementById('receipt-edit-bar');
+        return !!(bar && bar.classList.contains('show'));
+      },
       probeEditHitAt: function (clientX, clientY) {
         var s = scenes.edit;
         var h;
@@ -2178,4 +2230,11 @@
       }
     }
   };
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', wireInlineEditButtons);
+    } else {
+      wireInlineEditButtons();
+    }
+  }
 })(typeof window !== 'undefined' ? window : global);

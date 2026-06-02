@@ -59,6 +59,9 @@ ok(receiptCode.indexOf('revertInlineEdit') >= 0, '取消还原字段');
 ok(receiptCode.indexOf('finishOnly === true') >= 0, '确定不把事件当 finishOnly');
 ok(receiptCode.indexOf('isClientOnEditChrome') >= 0, '底部编辑条不与纸保存抢点');
 ok(html.indexOf('receipt-edit-save-btn') < 0, '无额外 DOM 保存按钮');
+ok(html.indexOf('编辑条须在 body 下') >= 0, '编辑条在 body 避免 canvas 挡触摸');
+ok(receiptCode.indexOf('bindInlineEditBarChrome') >= 0, '编辑条阻止事件穿透 canvas');
+ok(receiptCode.indexOf('startInlineEdit') >= 0, 'E2E 可测内联确定');
 ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 (function () {
