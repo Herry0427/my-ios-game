@@ -7,7 +7,6 @@
   var TEX_W = 512;
   var TEX_H = 1024;
   var DRAG_THRESHOLD = 24;
-  var EDIT_ACTION_TAP_SLOP = 52;
   var TAP_MAX_MS = 360;
   var HIT_PAD = 4;
   var NAV_LABEL_PAD_X = 6;
@@ -749,7 +748,7 @@
       text = highlight ? state.editBuffer + '|' : item.price;
       ctx.fillText(text, TEX_W - 86, rowY + 26);
       ctx.textAlign = 'left';
-      regions.push({ id: 'del', index: i, x: 448, y: rowY + 6, w: 40, h: 36 });
+      regions.push({ id: 'del', index: i, x: 438, y: rowY, w: 54, h: 44 });
       ctx.fillStyle = '#c44';
       ctx.font = 'bold 22px monospace';
       ctx.textAlign = 'center';
@@ -1451,14 +1450,30 @@
 
   ReceiptPaperView.prototype.resolveHitAtClient = function (clientX, clientY) {
     if (!this.renderer || !this.mesh) return null;
+    var pickHit = null;
+    var linearHit = null;
     this.setMouse({ clientX: clientX, clientY: clientY, button: 0 });
     var picked = this.pick();
     if (picked && picked.uv) {
-      return this.resolveRegionHit(uvToCanvas(picked.uv));
+      pickHit = this.resolveRegionHit(uvToCanvas(picked.uv));
     }
     var pt = clientPointToTexture(this, clientX, clientY);
-    if (!pt) return null;
-    return this.resolveRegionHit(pt);
+    if (pt) linearHit = this.resolveRegionHit(pt);
+    if (this.mode === 'edit' || this.mode === 'calendar') {
+      if (
+        linearHit &&
+        (linearHit.id === 'nav_save' ||
+          linearHit.id === 'add' ||
+          linearHit.id === 'prev' ||
+          linearHit.id === 'next')
+      ) {
+        return linearHit;
+      }
+      if (pickHit) return pickHit;
+      return linearHit;
+    }
+    if (pickHit) return pickHit;
+    return linearHit;
   };
 
   ReceiptPaperView.prototype.hitAtClient = function (clientX, clientY) {
@@ -1509,9 +1524,17 @@
     }
     var onPaper = isClientOnPaper(this, e.clientX, e.clientY);
     if (!regionHit && !onPaper && !hit) return;
-    safePreventDefault(e);
+    this.pointer.actionHit = null;
+    if (this.mode === 'edit' && regionHit && isEditActionHit(regionHit)) {
+      this.pointer.actionHit = regionHit;
+    } else if (this.mode === 'calendar' && regionHit && isCalendarActionHit(regionHit)) {
+      this.pointer.actionHit = regionHit;
+    }
+    if (!this.pointer.actionHit) safePreventDefault(e);
     try {
-      this.renderer.domElement.setPointerCapture(e.pointerId);
+      if (!this.pointer.actionHit) {
+        this.renderer.domElement.setPointerCapture(e.pointerId);
+      }
     } catch (err) {}
     var localHit = this.localHitFromClient(e.clientX, e.clientY);
     this.pointer.down = true;
@@ -1524,12 +1547,6 @@
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = localHit ? localHit.clone() : hit && hit.point ? hit.point.clone() : null;
     this.pointer.regionHit = regionHit;
-    this.pointer.actionHit = null;
-    if (this.mode === 'edit' && regionHit && isEditActionHit(regionHit)) {
-      this.pointer.actionHit = regionHit;
-    } else if (this.mode === 'calendar' && regionHit && isCalendarActionHit(regionHit)) {
-      this.pointer.actionHit = regionHit;
-    }
     if (regionHit && isUiRegionHit(regionHit)) {
       this.pointer.interactive = true;
     } else {
@@ -1539,7 +1556,7 @@
 
   ReceiptPaperView.prototype.onPointerMove = function (e) {
     if (!this.pointer.down) return;
-    if (this.pointer.interactive) return;
+    if (this.pointer.actionHit || this.pointer.interactive) return;
     safePreventDefault(e);
     var dx = e.clientX - this.pointer.x;
     var dy = e.clientY - this.pointer.y;
@@ -1598,9 +1615,9 @@
     var elapsed = Date.now() - this.pointer.downTime;
     var isTap = !this.pointer.dragging && dist < DRAG_THRESHOLD * 1.35 && elapsed < TAP_MAX_MS + 120;
     var hit = null;
-    var actionSlop =
-      this.mode === 'edit' || this.mode === 'calendar' ? EDIT_ACTION_TAP_SLOP : DRAG_THRESHOLD * 1.35;
-    if (isTap) {
+    if (this.pointer.actionHit) {
+      hit = this.pointer.actionHit;
+    } else if (isTap) {
       if (this.mode === 'edit' || this.mode === 'calendar') {
         hit = this.resolveHitAtClient(e.clientX, e.clientY) || this.pointer.regionHit;
       } else if (this.pointer.regionHit && isNavHit(this.pointer.regionHit)) {
@@ -1611,12 +1628,6 @@
       if (!hit) {
         hit = this.resolveHitAtClient(this.pointer.downClientX, this.pointer.downClientY);
       }
-    } else if (
-      this.pointer.actionHit &&
-      dist < actionSlop &&
-      elapsed < TAP_MAX_MS + 280
-    ) {
-      hit = this.pointer.actionHit;
     }
     if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
@@ -1842,6 +1853,12 @@
       inlineCancel.onclick = function () {
         clearEditSelection();
         if (scenes.edit) scenes.edit.refresh();
+      };
+    }
+    var domSave = document.getElementById('receipt-edit-save-btn');
+    if (domSave) {
+      domSave.onclick = function () {
+        saveAndGoHome();
       };
     }
   }
