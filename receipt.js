@@ -154,14 +154,19 @@
     } catch (e) {
       return false;
     }
+    return sumItems(cfg.items) > 0;
+  }
+
+  function pruneEmptyReceiptDays() {
     var i;
-    for (i = 0; i < cfg.items.length; i++) {
-      var item = cfg.items[i];
-      var name = String(item.name || '').trim();
-      if (name && name !== '****') return true;
-      if (parsePrice(item.price) > 0) return true;
+    var key;
+    var raw;
+    for (i = localStorage.length - 1; i >= 0; i--) {
+      key = localStorage.key(i);
+      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
+      raw = localStorage.getItem(key);
+      if (!raw || !receiptConfigHasData(raw)) localStorage.removeItem(key);
     }
-    return false;
   }
 
   function scanDatesWithData() {
@@ -221,6 +226,11 @@
   function saveCurrentDay() {
     var key = dateKey(state.selectedDate);
     if (!state.currentCfg.terminal) state.currentCfg.terminal = randomTerminalForDate(state.selectedDate);
+    if (!receiptConfigHasData(state.currentCfg)) {
+      localStorage.removeItem(STORAGE_PREFIX + key);
+      delete state.datesWithData[key];
+      return;
+    }
     localStorage.setItem(
       STORAGE_PREFIX + key,
       JSON.stringify({
@@ -230,7 +240,7 @@
         footer: state.currentCfg.footer
       })
     );
-    state.datesWithData[key] = receiptConfigHasData(state.currentCfg);
+    state.datesWithData[key] = true;
   }
 
   function seedTodayIfNeeded() {
@@ -1508,6 +1518,7 @@
 
   function ensureState() {
     seedTodayIfNeeded();
+    pruneEmptyReceiptDays();
     scanDatesWithData();
     state.calYear = state.selectedDate.getFullYear();
     state.calMonth = state.selectedDate.getMonth();
