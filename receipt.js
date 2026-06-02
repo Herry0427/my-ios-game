@@ -12,7 +12,7 @@
   var NAV_LABEL_PAD_X = 6;
   var NAV_LABEL_PAD_Y = 4;
   var STORAGE_PREFIX = 'receipt_day_';
-  var PAPER_DISPLAY_SCALE = 1.318;
+  var PAPER_DISPLAY_SCALE = 1.582;
   var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
   var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
   var CAMERA_Y = -0.35;
