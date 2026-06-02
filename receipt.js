@@ -12,6 +12,8 @@
   var PAPER_H = 7.68;
   var CAMERA_Z = 10.5;
   var CAMERA_Y = -0.35;
+  var PAPER_BTN_Y = TEX_H - 58;
+  var PAPER_BTN_H = 44;
 
   var EMPTY_TEMPLATE = {
     autoTotal: true,
@@ -225,11 +227,27 @@
     ctx.setLineDash([]);
   }
 
+  function drawPaperNavButtons(ctx, buttons) {
+    var regions = [];
+    var i;
+    for (i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      regions.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h });
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = b.center ? 'center' : 'left';
+      var tx = b.center ? b.x + b.w / 2 : b.x + 4;
+      ctx.fillText(b.label, tx, b.y + 30);
+    }
+    return regions;
+  }
+
   function createReceiptTexture(cfg, displayDate) {
     var canvas = document.createElement('canvas');
     canvas.width = TEX_W;
     canvas.height = TEX_H;
     var ctx = canvas.getContext('2d');
+    var regions = [];
     drawPaperFrame(ctx);
     ctx.fillStyle = '#111';
     ctx.font = 'bold 28px monospace';
@@ -291,9 +309,16 @@
     ctx.font = 'italic 16px monospace';
     ctx.textAlign = 'center';
     cfg.footer.forEach(function (line, index) {
-      ctx.fillText(line, TEX_W / 2, y + index * 25);
+      var fy = y + index * 25;
+      if (fy < PAPER_BTN_Y - 12) ctx.fillText(line, TEX_W / 2, fy);
     });
-    return new THREE.CanvasTexture(canvas);
+    regions = regions.concat(
+      drawPaperNavButtons(ctx, [
+        { id: 'nav_calendar', label: '日历', x: 48, y: PAPER_BTN_Y, w: 160, h: PAPER_BTN_H },
+        { id: 'nav_ledger', label: '记账', x: TEX_W - 208, y: PAPER_BTN_Y, w: 160, h: PAPER_BTN_H }
+      ])
+    );
+    return { texture: new THREE.CanvasTexture(canvas), regions: regions };
   }
 
   function buildCalendarTexture() {
@@ -465,6 +490,19 @@
     ctx.fillStyle = '#c33';
     ctx.font = 'bold 18px monospace';
     ctx.fillText('合计 ' + cfg.total, 30, y + 28);
+    regions = regions.concat(
+      drawPaperNavButtons(ctx, [
+        {
+          id: 'nav_save',
+          label: '保存',
+          x: TEX_W / 2 - 80,
+          y: PAPER_BTN_Y,
+          w: 160,
+          h: PAPER_BTN_H,
+          center: true
+        }
+      ])
+    );
     return { texture: new THREE.CanvasTexture(canvas), regions: regions };
   }
 
@@ -565,6 +603,19 @@
       if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) return r;
     }
     return null;
+  }
+
+  function saveAndGoHome() {
+    if (state.editSelection) commitInlineEdit();
+    state.currentCfg = normalizeReceiptConfig(state.currentCfg);
+    saveCurrentDay();
+    clearEditSelection();
+    if (global.goToView) global.goToView('receipt_home');
+  }
+
+  function handleReceiptNavHit(hit) {
+    if (hit.id === 'nav_calendar' && global.goToView) global.goToView('receipt_calendar');
+    if (hit.id === 'nav_ledger' && global.goToView) global.goToView('receipt_edit');
   }
 
   function dayFromCalendarPoint(pt) {
@@ -681,7 +732,8 @@
   ReceiptPaperView.prototype.refresh = function () {
     if (this.mode === 'receipt') {
       state.currentCfg = normalizeReceiptConfig(state.currentCfg);
-      this.setTexture(createReceiptTexture(state.currentCfg, state.selectedDate));
+      var rec = createReceiptTexture(state.currentCfg, state.selectedDate);
+      this.setTexture(rec.texture, rec.regions);
     } else if (this.mode === 'calendar') {
       var cal = buildCalendarTexture();
       this.setTexture(cal.texture, cal.regions);
@@ -735,13 +787,11 @@
     this.pointer.y = e.clientY;
     this.pointer.uv = hit.uv;
     this.pointer.hitPoint = hit.point.clone();
-    if (this.mode !== 'receipt') {
-      var pt = uvToCanvas(hit.uv);
-      if (this.mode === 'calendar') {
-        if (resolveCalendarHit(pt, this.hitRegions)) this.pointer.interactive = true;
-      } else if (hitRegion(this.hitRegions, pt.x, pt.y)) {
-        this.pointer.interactive = true;
-      }
+    var pt = uvToCanvas(hit.uv);
+    if (this.mode === 'calendar') {
+      if (resolveCalendarHit(pt, this.hitRegions)) this.pointer.interactive = true;
+    } else if (hitRegion(this.hitRegions, pt.x, pt.y)) {
+      this.pointer.interactive = true;
     }
   };
 
@@ -800,6 +850,9 @@
         } else if (this.mode === 'edit') {
           var edHit = hitRegion(this.hitRegions, pt.x, pt.y);
           if (edHit) this.handleEditorHit(edHit);
+        } else if (this.mode === 'receipt') {
+          var navHit = hitRegion(this.hitRegions, pt.x, pt.y);
+          if (navHit) handleReceiptNavHit(navHit);
         }
       }
     }
@@ -828,7 +881,9 @@
   };
 
   ReceiptPaperView.prototype.handleEditorHit = function (hit) {
-    if (hit.id === 'add') {
+    if (hit.id === 'nav_save') {
+      saveAndGoHome();
+    } else if (hit.id === 'add') {
       state.currentCfg.items.push({
         qty: 1,
         name: '****',
@@ -983,28 +1038,6 @@
   function bindOnce() {
     if (bound) return;
     bound = true;
-    var btnCal = document.getElementById('receipt-btn-calendar');
-    var btnEdit = document.getElementById('receipt-btn-ledger');
-    var btnSave = document.getElementById('receipt-btn-save');
-    if (btnCal) {
-      btnCal.onclick = function () {
-        if (global.goToView) global.goToView('receipt_calendar');
-      };
-    }
-    if (btnEdit) {
-      btnEdit.onclick = function () {
-        if (global.goToView) global.goToView('receipt_edit');
-      };
-    }
-    if (btnSave) {
-      btnSave.onclick = function () {
-        if (state.editSelection) commitInlineEdit();
-        state.currentCfg = normalizeReceiptConfig(state.currentCfg);
-        saveCurrentDay();
-        clearEditSelection();
-        if (global.goToView) global.goToView('receipt_home');
-      };
-    }
     var input = document.getElementById('receipt-edit-input');
     if (input) {
       input.addEventListener('input', function () {

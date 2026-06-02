@@ -4,7 +4,8 @@ var path = require('path');
 var vm = require('vm');
 
 var receiptPath = path.join(__dirname, '..', 'receipt.js');
-var code = fs.readFileSync(receiptPath, 'utf8');
+var receiptCode = fs.readFileSync(receiptPath, 'utf8');
+var code = receiptCode;
 var sandbox = { window: {}, global: {}, console: console };
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox);
@@ -28,7 +29,10 @@ ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
 ok(html.indexOf('receipt_home') >= 0, '路由');
-ok(html.indexOf('receipt-btn-ledger') >= 0, '记账按钮');
+ok(receiptCode.indexOf('nav_calendar') >= 0, '纸上日历按钮');
+ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');
+ok(receiptCode.indexOf('nav_save') >= 0, '纸上保存按钮');
+ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');

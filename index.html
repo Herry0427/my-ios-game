@@ -1604,57 +1604,6 @@
       position: relative;
       width: 100%;
     }
-    .receipt-nav-bar {
-      flex-shrink: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 32px calc(14px + var(--safe-bottom));
-      background: #e5e5e5;
-    }
-    .receipt-nav-btn {
-      border: none;
-      background: transparent;
-      color: #444;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      padding: 8px 4px;
-      cursor: pointer;
-    }
-    .receipt-nav-btn:active { opacity: 0.55; }
-    .receipt-swipe-hint {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: calc(52px + var(--safe-bottom));
-      text-align: center;
-      font-size: 0.62rem;
-      color: #888;
-      pointer-events: none;
-      z-index: 5;
-      margin: 0;
-    }
-    .receipt-edit-footer {
-      flex-shrink: 0;
-      display: flex;
-      justify-content: center;
-      padding: 12px 20px calc(14px + var(--safe-bottom));
-      background: #e5e5e5;
-    }
-    .receipt-save-btn {
-      border: none;
-      background: transparent;
-      color: #333;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 1.08rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      padding: 8px 24px;
-      cursor: pointer;
-    }
-    .receipt-save-btn:active { color: #c33; }
     #receipt-edit-bar {
       position: fixed;
       bottom: calc(58px + var(--safe-bottom));
@@ -1990,11 +1939,6 @@
 
   <section id="receipt-home-screen" class="screen receipt-screen" aria-label="今日消费">
     <div class="receipt-canvas-wrap" id="receipt-home-canvas"></div>
-    <p class="receipt-swipe-hint">左缘右滑返回 ARCADE HUB</p>
-    <div class="receipt-nav-bar">
-      <button type="button" class="receipt-nav-btn" id="receipt-btn-calendar">日历</button>
-      <button type="button" class="receipt-nav-btn" id="receipt-btn-ledger">记账</button>
-    </div>
   </section>
 
   <section id="receipt-calendar-screen" class="screen receipt-screen" aria-label="日历">
@@ -2008,9 +1952,6 @@
       <input id="receipt-edit-input" type="text" autocomplete="off" spellcheck="false" />
       <button type="button" id="receipt-edit-inline-save">确定</button>
       <button type="button" id="receipt-edit-inline-cancel">取消</button>
-    </div>
-    <div class="receipt-edit-footer">
-      <button type="button" class="receipt-save-btn" id="receipt-btn-save">保存</button>
     </div>
   </section>
 
