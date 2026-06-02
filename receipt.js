@@ -12,9 +12,11 @@
   var NAV_LABEL_PAD_X = 6;
   var NAV_LABEL_PAD_Y = 4;
   var STORAGE_PREFIX = 'receipt_day_';
+  var PAPER_BASE_W = 3.84;
+  var PAPER_BASE_H = 7.68;
   var PAPER_DISPLAY_SCALE = 1.582;
-  var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
-  var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
+  var PAPER_W = PAPER_BASE_W * PAPER_DISPLAY_SCALE;
+  var PAPER_H = PAPER_BASE_H * PAPER_DISPLAY_SCALE;
   var CAMERA_Y = -0.35;
   var CAMERA_FOV = 40;
   var RECEIPT_BROWSER_REF_H = 740;
@@ -870,8 +872,8 @@
   function computeReceiptCameraZ(w, h) {
     var vFovRad = CAMERA_FOV * Math.PI / 180;
     var aspect = w / Math.max(h, 1);
-    var fitH = PAPER_H + 0.14;
-    var fitW = PAPER_W + 0.08;
+    var fitH = PAPER_BASE_H + 0.14;
+    var fitW = PAPER_BASE_W + 0.08;
     var halfTan = Math.tan(vFovRad / 2);
     var zH = fitH / (2 * halfTan * (1 - 2 * RECEIPT_FIT_MARGIN_V));
     var zW = fitW / (2 * halfTan * aspect * (1 - 2 * RECEIPT_FIT_MARGIN_H));

@@ -41,6 +41,8 @@ ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
 ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
 ok(receiptCode.indexOf('pruneEmptyReceiptDays') >= 0, '启动清理空小票键');
+ok(receiptCode.indexOf('PAPER_BASE_W') >= 0, '纸面基准宽');
+ok(/fitH\s*=\s*PAPER_BASE_H/.test(receiptCode), '相机按基准纸面取景');
 ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
