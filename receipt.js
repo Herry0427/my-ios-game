@@ -7,6 +7,7 @@
   var TEX_W = 512;
   var TEX_H = 1024;
   var DRAG_THRESHOLD = 24;
+  var EDIT_ACTION_TAP_SLOP = 52;
   var TAP_MAX_MS = 360;
   var HIT_PAD = 4;
   var NAV_LABEL_PAD_X = 6;
@@ -1136,6 +1137,16 @@
     return hit.id === 'prev' || hit.id === 'next';
   }
 
+  function isEditActionHit(hit) {
+    if (!hit || !hit.id) return false;
+    return hit.id === 'add' || hit.id === 'del' || hit.id === 'field' || isNavHit(hit);
+  }
+
+  function isCalendarActionHit(hit) {
+    if (!hit || !hit.id) return false;
+    return hit.id === 'day' || hit.id === 'prev' || hit.id === 'next';
+  }
+
   function hitNavRegion(regions, cx, cy) {
     var i;
     var r;
@@ -1212,6 +1223,7 @@
       hitPoint: null,
       interactive: false,
       regionHit: null,
+      actionHit: null,
       downTime: 0,
       downClientX: 0,
       downClientY: 0
@@ -1336,9 +1348,10 @@
 
   ReceiptPaperView.prototype.resolveRegionHit = function (pt) {
     if (this.mode === 'calendar') return resolveCalendarHit(pt, this.hitRegions);
+    var pad = this.mode === 'edit' ? 10 : HIT_PAD;
     var nav = hitNavRegion(this.hitRegions, pt.x, pt.y);
     if (nav) return nav;
-    return hitRegionPadded(this.hitRegions, pt.x, pt.y, HIT_PAD);
+    return hitRegionPadded(this.hitRegions, pt.x, pt.y, pad);
   };
 
   ReceiptPaperView.prototype.navHitAtClient = function (clientX, clientY) {
@@ -1483,6 +1496,7 @@
     this.pointer.dragging = false;
     this.pointer.interactive = false;
     this.pointer.regionHit = null;
+    this.pointer.actionHit = null;
   };
 
   ReceiptPaperView.prototype.onPointerDown = function (e) {
@@ -1510,6 +1524,12 @@
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = localHit ? localHit.clone() : hit && hit.point ? hit.point.clone() : null;
     this.pointer.regionHit = regionHit;
+    this.pointer.actionHit = null;
+    if (this.mode === 'edit' && regionHit && isEditActionHit(regionHit)) {
+      this.pointer.actionHit = regionHit;
+    } else if (this.mode === 'calendar' && regionHit && isCalendarActionHit(regionHit)) {
+      this.pointer.actionHit = regionHit;
+    }
     if (regionHit && isUiRegionHit(regionHit)) {
       this.pointer.interactive = true;
     } else {
@@ -1578,6 +1598,8 @@
     var elapsed = Date.now() - this.pointer.downTime;
     var isTap = !this.pointer.dragging && dist < DRAG_THRESHOLD * 1.35 && elapsed < TAP_MAX_MS + 120;
     var hit = null;
+    var actionSlop =
+      this.mode === 'edit' || this.mode === 'calendar' ? EDIT_ACTION_TAP_SLOP : DRAG_THRESHOLD * 1.35;
     if (isTap) {
       if (this.mode === 'edit' || this.mode === 'calendar') {
         hit = this.resolveHitAtClient(e.clientX, e.clientY) || this.pointer.regionHit;
@@ -1589,6 +1611,12 @@
       if (!hit) {
         hit = this.resolveHitAtClient(this.pointer.downClientX, this.pointer.downClientY);
       }
+    } else if (
+      this.pointer.actionHit &&
+      dist < actionSlop &&
+      elapsed < TAP_MAX_MS + 280
+    ) {
+      hit = this.pointer.actionHit;
     }
     if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
