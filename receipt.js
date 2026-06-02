@@ -52,6 +52,8 @@
   var bound = false;
   var cloudSyncTimer = null;
   var editRefreshTimer = null;
+  var saveDayTimer = null;
+  var lastEditChromeTapAt = 0;
   var lastGoodReceiptSize = { w: 0, h: 0 };
   var deviceGravityTarget = { x: 0, y: -9.8, z: 0 };
   var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
@@ -422,6 +424,15 @@
       } catch (e) {}
     }
     return freshDayConfig(d);
+  }
+
+  function scheduleSaveCurrentDay(delayMs) {
+    if (delayMs == null) delayMs = 350;
+    if (saveDayTimer) clearTimeout(saveDayTimer);
+    saveDayTimer = setTimeout(function () {
+      saveDayTimer = null;
+      saveCurrentDay();
+    }, delayMs);
   }
 
   function saveCurrentDay() {
@@ -1161,17 +1172,45 @@
     return null;
   }
 
+  function markEditChromeTap() {
+    lastEditChromeTapAt = Date.now();
+  }
+
+  function isClientOnEditChrome(clientX, clientY) {
+    var bar = document.getElementById('receipt-edit-bar');
+    if (!bar || !bar.classList.contains('show')) return false;
+    var r = bar.getBoundingClientRect();
+    if (
+      clientX >= r.left - 6 &&
+      clientX <= r.right + 6 &&
+      clientY >= r.top - 6 &&
+      clientY <= r.bottom + 6
+    ) {
+      return true;
+    }
+    var el = document.elementFromPoint(clientX, clientY);
+    return !!(el && bar.contains(el));
+  }
+
+  function isTextureNavSaveBand(pt) {
+    return pt && pt.y >= TEX_H - 92;
+  }
+
   function editSaveHitAtClient(view, clientX, clientY) {
     if (!view || view.mode !== 'edit') return null;
-    var hit = view.resolveHitAtClient(clientX, clientY);
-    if (hit && hit.id === 'nav_save') return hit;
-    hit = view.navHitAtClient(clientX, clientY);
-    if (hit && hit.id === 'nav_save') return hit;
+    if (Date.now() - lastEditChromeTapAt < 650) return null;
+    if (isClientOnEditChrome(clientX, clientY)) return null;
     var pt = clientPointToTexture(view, clientX, clientY);
-    if (pt) {
+    var hit = view.navHitAtClient(clientX, clientY);
+    if (hit && hit.id === 'nav_save') {
+      if (!pt || isTextureNavSaveBand(pt)) return hit;
+    }
+    if (pt && isTextureNavSaveBand(pt)) {
       hit = hitNavRegion(view.hitRegions, pt.x, pt.y);
       if (hit && hit.id === 'nav_save') return hit;
     }
+    hit = view.resolveHitAtClient(clientX, clientY);
+    if (hit && hit.id === 'nav_save' && pt && isTextureNavSaveBand(pt)) return hit;
     return null;
   }
 
@@ -1190,6 +1229,10 @@
     var now = Date.now();
     if (now - lastSaveNavAt < 450) return;
     lastSaveNavAt = now;
+    if (saveDayTimer) {
+      clearTimeout(saveDayTimer);
+      saveDayTimer = null;
+    }
     if (state.editSelection) commitInlineEdit(true);
     state.currentCfg = normalizeReceiptConfig(state.currentCfg);
     saveCurrentDay();
@@ -1539,6 +1582,7 @@
 
   ReceiptPaperView.prototype.onPointerDown = function (e) {
     if (e.button !== 0) return;
+    if (this.mode === 'edit' && isClientOnEditChrome(e.clientX, e.clientY)) return;
     if (this.mode === 'edit' && editSaveHitAtClient(this, e.clientX, e.clientY)) {
       safePreventDefault(e);
       saveAndGoHome();
@@ -1693,9 +1737,8 @@
         price: state.currentCfg.currency === '¥' ? '¥0.00' : '$0.00'
       });
       state.currentCfg = normalizeReceiptConfig(state.currentCfg);
-      saveCurrentDay();
+      scheduleSaveCurrentDay();
       this.refresh();
-      beginEdit('name', state.currentCfg.items.length - 1);
     } else if (hit.id === 'del') {
       if (state.currentCfg.items.length > 1) {
         state.currentCfg.items.splice(hit.index, 1);
@@ -1811,7 +1854,7 @@
   function beginEdit(field, index) {
     var item = state.currentCfg.items[index];
     if (!item) return;
-    state.editSelection = { field: field, index: index };
+    state.editSelection = { field: field, index: index, original: item[field] };
     state.editBuffer = defaultEditValue(field, item[field]);
     var bar = document.getElementById('receipt-edit-bar');
     var label = document.getElementById('receipt-edit-label');
@@ -1829,9 +1872,11 @@
   }
 
   function commitInlineEdit(finishOnly) {
+    finishOnly = finishOnly === true;
     if (!state.editSelection) return;
     var sel = state.editSelection;
     var item = state.currentCfg.items[sel.index];
+    if (!item) return;
     var input = document.getElementById('receipt-edit-input');
     var val = input ? input.value : state.editBuffer;
     state.editBuffer = val;
@@ -1845,17 +1890,54 @@
     }
     state.currentCfg = normalizeReceiptConfig(state.currentCfg);
     saveCurrentDay();
-    var savedField = sel.field;
-    var savedIndex = sel.index;
     clearEditSelection();
     if (scenes.edit) scenes.edit.refresh();
-    if (!finishOnly && savedField === 'name') beginEdit('price', savedIndex);
+  }
+
+  function revertInlineEdit() {
+    if (!state.editSelection) return;
+    var sel = state.editSelection;
+    var item = state.currentCfg.items[sel.index];
+    if (item && sel.original !== undefined) item[sel.field] = sel.original;
+    clearEditSelection();
+    if (scenes.edit) scenes.edit.refresh();
+  }
+
+  function confirmInlineEdit(e) {
+    markEditChromeTap();
+    if (e) {
+      safePreventDefault(e);
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    commitInlineEdit(false);
+  }
+
+  function cancelInlineEdit(e) {
+    markEditChromeTap();
+    if (e) {
+      safePreventDefault(e);
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    revertInlineEdit();
+  }
+
+  function wireInlineEditButtons() {
+    var inlineSave = document.getElementById('receipt-edit-inline-save');
+    var inlineCancel = document.getElementById('receipt-edit-inline-cancel');
+    if (!inlineSave || inlineSave._receiptInlineBound) return;
+    inlineSave._receiptInlineBound = true;
+    inlineCancel._receiptInlineBound = true;
+    inlineSave.addEventListener('click', confirmInlineEdit, true);
+    inlineSave.addEventListener('touchend', confirmInlineEdit, { capture: true, passive: false });
+    inlineCancel.addEventListener('click', cancelInlineEdit, true);
+    inlineCancel.addEventListener('touchend', cancelInlineEdit, { capture: true, passive: false });
   }
 
   function bindOnce() {
     if (bound) return;
     bound = true;
     ensureGyroPromptUI();
+    wireInlineEditButtons();
     var input = document.getElementById('receipt-edit-input');
     if (input) {
       input.addEventListener('input', function () {
@@ -1867,22 +1949,12 @@
         if (!state.editSelection) return;
         if (e.key === 'Enter') {
           e.preventDefault();
-          commitInlineEdit();
+          commitInlineEdit(false);
         } else if (e.key === 'Escape') {
           e.preventDefault();
-          clearEditSelection();
-          if (scenes.edit) scenes.edit.refresh();
+          revertInlineEdit();
         }
       });
-    }
-    var inlineSave = document.getElementById('receipt-edit-inline-save');
-    if (inlineSave) inlineSave.onclick = commitInlineEdit;
-    var inlineCancel = document.getElementById('receipt-edit-inline-cancel');
-    if (inlineCancel) {
-      inlineCancel.onclick = function () {
-        clearEditSelection();
-        if (scenes.edit) scenes.edit.refresh();
-      };
     }
   }
 
@@ -1927,6 +1999,7 @@
       enterReceiptView('calendar', 'receipt-calendar-canvas', 'calendar');
     },
     onEnterEdit: function () {
+      wireInlineEditButtons();
       enterReceiptView('edit', 'receipt-edit-canvas', 'edit');
     },
     onLeaveAll: function () {

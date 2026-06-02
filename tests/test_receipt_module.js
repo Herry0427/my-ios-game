@@ -54,6 +54,10 @@ ok(receiptCode.indexOf('disposeReceiptScene') >= 0, '旧版低网格场景可重
 ok(receiptCode.indexOf('isEditActionHit') >= 0, '编辑按钮与拖拽分流');
 ok(receiptCode.indexOf('saveAndReturnHome') >= 0, '对外保存并返回');
 ok(receiptCode.indexOf('editSaveHitAtClient') >= 0, '编辑页纸上保存多点命中');
+ok(receiptCode.indexOf('wireInlineEditButtons') >= 0, '编辑条确定取消绑定');
+ok(receiptCode.indexOf('revertInlineEdit') >= 0, '取消还原字段');
+ok(receiptCode.indexOf('finishOnly === true') >= 0, '确定不把事件当 finishOnly');
+ok(receiptCode.indexOf('isClientOnEditChrome') >= 0, '底部编辑条不与纸保存抢点');
 ok(html.indexOf('receipt-edit-save-btn') < 0, '无额外 DOM 保存按钮');
 ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
