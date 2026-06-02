@@ -8,7 +8,9 @@
   var TEX_H = 1024;
   var DRAG_THRESHOLD = 24;
   var TAP_MAX_MS = 360;
-  var HIT_PAD = 8;
+  var HIT_PAD = 4;
+  var NAV_LABEL_PAD_X = 6;
+  var NAV_LABEL_PAD_Y = 4;
   var STORAGE_PREFIX = 'receipt_day_';
   var PAPER_DISPLAY_SCALE = 0.99;
   var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
@@ -262,14 +264,29 @@
   function drawPaperNavButtons(ctx, buttons) {
     var regions = [];
     var i;
+    var b;
+    var tx;
+    var ty;
+    var tw;
+    var hitX;
+    var hitY;
+    var hitW;
+    var hitH;
+    var fontSize = 18;
+    ctx.font = 'bold ' + fontSize + 'px monospace';
     for (i = 0; i < buttons.length; i++) {
-      var b = buttons[i];
-      regions.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h });
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 18px monospace';
+      b = buttons[i];
       ctx.textAlign = b.center ? 'center' : 'left';
-      var tx = b.center ? b.x + b.w / 2 : b.x + 8;
-      ctx.fillText(b.label, tx, b.y + Math.round(b.h * 0.62));
+      tx = b.center ? b.x + b.w / 2 : b.x + 8;
+      ty = b.y + Math.round(b.h * 0.62);
+      tw = ctx.measureText(b.label).width;
+      hitW = tw + NAV_LABEL_PAD_X * 2;
+      hitH = fontSize + NAV_LABEL_PAD_Y * 2;
+      hitX = b.center ? tx - tw / 2 - NAV_LABEL_PAD_X : tx - NAV_LABEL_PAD_X;
+      hitY = ty - fontSize - NAV_LABEL_PAD_Y + 2;
+      regions.push({ id: b.id, x: hitX, y: hitY, w: hitW, h: hitH });
+      ctx.fillStyle = '#333';
+      ctx.fillText(b.label, tx, ty);
     }
     return regions;
   }
@@ -699,13 +716,26 @@
     return hit && (hit.id === 'nav_calendar' || hit.id === 'nav_ledger' || hit.id === 'nav_save');
   }
 
-  function textureNavFallback(mode, pt) {
-    if (!pt || pt.y < TEX_H - 72) return null;
-    if (mode === 'receipt') {
-      return pt.x < TEX_W * 0.5 ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
+  function hitNavRegion(regions, cx, cy) {
+    var i;
+    var r;
+    for (i = regions.length - 1; i >= 0; i--) {
+      r = regions[i];
+      if (!isNavHit(r)) continue;
+      if (cx >= r.x - HIT_PAD && cx <= r.x + r.w + HIT_PAD && cy >= r.y - HIT_PAD && cy <= r.y + r.h + HIT_PAD) {
+        return r;
+      }
     }
-    if (mode === 'edit') return { id: 'nav_save' };
     return null;
+  }
+
+  function textureToClientApprox(view, texX, texY) {
+    var ps = paperScreenBounds(view);
+    if (!ps) return null;
+    return {
+      x: ps.minSx + (texX / TEX_W) * (ps.maxSx - ps.minSx),
+      y: ps.minSy + (texY / TEX_H) * (ps.maxSy - ps.minSy)
+    };
   }
 
   function saveAndGoHome() {
@@ -884,9 +914,22 @@
 
   ReceiptPaperView.prototype.resolveRegionHit = function (pt) {
     if (this.mode === 'calendar') return resolveCalendarHit(pt, this.hitRegions);
-    var hit = hitRegionPadded(this.hitRegions, pt.x, pt.y, HIT_PAD);
-    if (hit) return hit;
-    return textureNavFallback(this.mode, pt);
+    var nav = hitNavRegion(this.hitRegions, pt.x, pt.y);
+    if (nav) return nav;
+    return hitRegionPadded(this.hitRegions, pt.x, pt.y, HIT_PAD);
+  };
+
+  ReceiptPaperView.prototype.navHitAtClient = function (clientX, clientY) {
+    if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
+    if (!this.renderer || !this.mesh) return null;
+    var rect = this.renderer.domElement.getBoundingClientRect();
+    var mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var my = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+    var picked = this.pick();
+    if (!picked || !picked.uv) return null;
+    var pt = uvToCanvas(picked.uv);
+    return hitNavRegion(this.hitRegions, pt.x, pt.y);
   };
 
   function paperScreenBounds(view) {
@@ -930,23 +973,12 @@
     };
   }
 
-  ReceiptPaperView.prototype.clientNavFallback = function (clientX, clientY) {
-    if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
-    var ps = paperScreenBounds(this);
-    if (!ps) return null;
-    if (clientY < ps.bandTop - 8 || clientY > ps.maxSy + 8) return null;
-    if (clientX < ps.minSx - 8 || clientX > ps.maxSx + 8) return null;
-    if (this.mode === 'edit') return { id: 'nav_save' };
-    var midX = (ps.minSx + ps.maxSx) / 2;
-    return clientX < midX ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
-  };
-
   ReceiptPaperView.prototype.resolveTap = function (clientX, clientY, uv) {
-    var ptHit = uv ? this.resolveRegionHit(uvToCanvas(uv)) : null;
-    var cliHit = this.clientNavFallback(clientX, clientY);
-    if (cliHit) return cliHit;
-    if (ptHit) return ptHit;
-    return null;
+    if (uv) {
+      var hit = this.resolveRegionHit(uvToCanvas(uv));
+      if (hit) return hit;
+    }
+    return this.navHitAtClient(clientX, clientY);
   };
 
   ReceiptPaperView.prototype.dispatchRegionHit = function (hit) {
@@ -968,7 +1000,11 @@
     if (e.button !== 0) return;
     this.setMouse(e);
     var hit = this.pick();
-    var navOnly = this.clientNavFallback(e.clientX, e.clientY);
+    var navOnly = null;
+    if (hit && hit.uv) {
+      navOnly = hitNavRegion(this.hitRegions, uvToCanvas(hit.uv).x, uvToCanvas(hit.uv).y);
+    }
+    if (!navOnly) navOnly = this.navHitAtClient(e.clientX, e.clientY);
     if (!hit && !navOnly) return;
     if (e.cancelable) e.preventDefault();
     try {
@@ -984,8 +1020,10 @@
     this.pointer.y = e.clientY;
     this.pointer.uv = hit ? hit.uv : null;
     this.pointer.hitPoint = hit ? hit.point.clone() : null;
-    this.pointer.regionHit = navOnly || (hit ? this.resolveTap(e.clientX, e.clientY, hit.uv) : null);
-    if (this.pointer.regionHit) this.pointer.interactive = true;
+    this.pointer.regionHit = navOnly || (hit && hit.uv ? this.resolveRegionHit(uvToCanvas(hit.uv)) : null);
+    if (this.pointer.regionHit && (isNavHit(this.pointer.regionHit) || this.mode !== 'receipt')) {
+      this.pointer.interactive = true;
+    }
   };
 
   ReceiptPaperView.prototype.onPointerMove = function (e) {
@@ -1045,11 +1083,9 @@
       hit = this.pointer.regionHit;
     } else if (isTap) {
       hit = this.resolveTap(e.clientX, e.clientY, this.pointer.uv);
-      if (!hit) hit = this.clientNavFallback(e.clientX, e.clientY);
     }
     if (!hit && isTap) {
       hit = this.resolveTap(this.pointer.downClientX, this.pointer.downClientY, this.pointer.uv);
-      if (!hit) hit = this.clientNavFallback(this.pointer.downClientX, this.pointer.downClientY);
     }
     if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
@@ -1323,24 +1359,26 @@
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;
         if (!s || !s.mesh) return { error: 'no_home_scene' };
-        var ps = paperScreenBounds(s);
         return {
           clientX: clientX,
           clientY: clientY,
-          paperScreen: ps,
-          fallback: s.clientNavFallback(clientX, clientY)
+          paperScreen: paperScreenBounds(s),
+          navHit: s.navHitAtClient(clientX, clientY)
         };
       },
       paperNavClientPoint: function (modeKey, side) {
         var s = scenes[modeKey];
-        if (!s || !s.mesh) return null;
-        var ps = paperScreenBounds(s);
-        if (!ps) return null;
-        var ratio = side === 'calendar' ? 0.25 : side === 'ledger' ? 0.75 : 0.5;
-        return {
-          x: ps.minSx + (ps.maxSx - ps.minSx) * ratio,
-          y: ps.maxSy - 10
-        };
+        var id = side === 'calendar' ? 'nav_calendar' : side === 'ledger' ? 'nav_ledger' : 'nav_save';
+        var i;
+        var r;
+        if (!s || !s.mesh || !s.hitRegions) return null;
+        for (i = 0; i < s.hitRegions.length; i++) {
+          r = s.hitRegions[i];
+          if (r.id === id) {
+            return textureToClientApprox(s, r.x + r.w / 2, r.y + r.h / 2);
+          }
+        }
+        return null;
       }
     }
   };
