@@ -55,6 +55,121 @@ def wait_receipt_home(page):
     page.wait_for_timeout(1000)
 
 
+def tap_canvas_pointer(page, canvas_selector, pt):
+    page.evaluate(
+        """
+        (args) => {
+          const el = document.querySelector(args.sel);
+          if (!el) return;
+          const base = {
+            bubbles: true,
+            cancelable: true,
+            clientX: args.x,
+            clientY: args.y,
+            pointerId: 1,
+            pointerType: 'touch',
+            isPrimary: true,
+            button: 0,
+          };
+          el.dispatchEvent(new PointerEvent('pointerdown', Object.assign({}, base, { buttons: 1 })));
+          el.dispatchEvent(
+            new PointerEvent(
+              'pointermove',
+              Object.assign({}, base, {
+                clientX: args.x + 1,
+                clientY: args.y + 1,
+                buttons: 1,
+              })
+            )
+          );
+          el.dispatchEvent(
+            new PointerEvent('pointerup', Object.assign({}, base, { buttons: 0 }))
+          );
+        }
+        """,
+        {"sel": canvas_selector, "x": pt["x"], "y": pt["y"]},
+    )
+
+
+def drag_canvas_pointer(page, canvas_selector, start, end, steps=8):
+    page.evaluate(
+        """
+        (args) => {
+          const el = document.querySelector(args.sel);
+          if (!el) return;
+          const base = {
+            bubbles: true,
+            cancelable: true,
+            pointerId: 1,
+            pointerType: 'touch',
+            isPrimary: true,
+            button: 0,
+          };
+          el.dispatchEvent(
+            new PointerEvent(
+              'pointerdown',
+              Object.assign({}, base, {
+                clientX: args.x0,
+                clientY: args.y0,
+                buttons: 1,
+              })
+            )
+          );
+        }
+        """,
+        {"sel": canvas_selector, "x0": start["x"], "y0": start["y"]},
+    )
+    for i in range(1, steps + 1):
+        t = i / steps
+        x = start["x"] + (end["x"] - start["x"]) * t
+        y = start["y"] + (end["y"] - start["y"]) * t
+        page.evaluate(
+            """
+            (args) => {
+              const el = document.querySelector(args.sel);
+              if (!el) return;
+              el.dispatchEvent(
+                new PointerEvent('pointermove', {
+                  bubbles: true,
+                  cancelable: true,
+                  clientX: args.x,
+                  clientY: args.y,
+                  pointerId: 1,
+                  pointerType: 'touch',
+                  isPrimary: true,
+                  button: 0,
+                  buttons: 1,
+                })
+              );
+            }
+            """,
+            {"sel": canvas_selector, "x": x, "y": y},
+        )
+        page.wait_for_timeout(40)
+    page.evaluate(
+        """
+        (args) => {
+          const el = document.querySelector(args.sel);
+          if (!el) return;
+          el.dispatchEvent(
+            new PointerEvent('pointerup', {
+              bubbles: true,
+              cancelable: true,
+              clientX: args.x,
+              clientY: args.y,
+              pointerId: 1,
+              pointerType: 'touch',
+              isPrimary: true,
+              button: 0,
+              buttons: 0,
+            })
+          );
+        }
+        """,
+        {"sel": canvas_selector, "x": end["x"], "y": end["y"]},
+    )
+
+
 def tap_paper_nav(page, mode_key, side):
     pt = page.evaluate(
         "(args) => ReceiptModule._test.paperNavClientPoint(args.mode, args.side)",
@@ -62,12 +177,34 @@ def tap_paper_nav(page, mode_key, side):
     )
     if not pt:
         raise RuntimeError("paperNavClientPoint missing: " + mode_key + " " + side)
-    page.mouse.click(pt["x"], pt["y"])
+    sel = {
+        "home": "#receipt-home-canvas canvas",
+        "calendar": "#receipt-calendar-canvas canvas",
+        "edit": "#receipt-edit-canvas canvas",
+    }.get(mode_key, "#receipt-home-canvas canvas")
+    tap_canvas_pointer(page, sel, pt)
 
 
 def run_flow(page, label):
     wait_receipt_home(page)
     ok(page.evaluate("typeof window.goToView === 'function'"), label + " · goToView 存在")
+
+    center = page.evaluate("() => ReceiptModule._test.paperCenterClientPoint('home')")
+    ok(center is not None, label + " · 首页纸面中心可定位")
+    if center:
+        y0 = page.evaluate("() => ReceiptModule._test.sceneParticleY('home')")
+        drag_canvas_pointer(
+            page,
+            "#receipt-home-canvas canvas",
+            center,
+            {"x": center["x"] + 60, "y": center["y"] + 85},
+        )
+        page.wait_for_timeout(500)
+        y1 = page.evaluate("() => ReceiptModule._test.sceneParticleY('home')")
+        ok(
+            y0 is not None and y1 is not None and abs(y1 - y0) > 0.002,
+            label + " · 首页纸面可拖拽下垂",
+        )
 
     tap_paper_nav(page, "home", "calendar")
     page.wait_for_timeout(500)
@@ -91,8 +228,28 @@ def run_flow(page, label):
         label + " · 点记账 → 编辑页",
     )
 
-    page.wait_for_selector("#receipt-edit-canvas canvas", timeout=15000)
-    page.wait_for_timeout(400)
+    page.wait_for_selector("#receipt-edit-canvas canvas", state="attached", timeout=20000)
+    page.wait_for_timeout(700)
+
+    count_before = page.evaluate("() => ReceiptModule._test.editItemCount()")
+    add_pt = page.evaluate("() => ReceiptModule._test.paperRegionClientPoint('edit', 'add')")
+    ok(add_pt is not None, label + " · 编辑页增加一行区域可定位")
+    if add_pt:
+        ok(
+            page.evaluate(
+                f"() => ReceiptModule._test.probeEditHitAt({add_pt['x']}, {add_pt['y']})?.id === 'add'"
+            ),
+            label + " · 增加一行落点射线命中",
+        )
+        tap_canvas_pointer(page, "#receipt-edit-canvas canvas", add_pt)
+        page.wait_for_timeout(500)
+        ok(
+            page.evaluate(
+                f"() => ReceiptModule._test.editItemCount() > {count_before}"
+            ),
+            label + " · 点增加一行可响应",
+        )
+
     tap_paper_nav(page, "edit", "save")
     page.wait_for_timeout(500)
     ok(

@@ -114,18 +114,28 @@
 
   function isPlaceholderItem(item) {
     var name = String(item.name || '').trim();
-    return (!name || name === '****') && parsePrice(item.price) <= 0;
+    return (
+      (!name || name === '****') &&
+      parsePrice(item.price) <= 0 &&
+      name !== '未命名'
+    );
   }
 
   function pruneEmptyItems(items) {
     var kept = [];
+    var trailing = null;
     var i;
     if (!items || !items.length) {
       return [{ qty: 1, name: '****', price: '¥0.00' }];
     }
     for (i = 0; i < items.length; i++) {
-      if (!isPlaceholderItem(items[i])) kept.push(items[i]);
+      if (isPlaceholderItem(items[i])) {
+        trailing = items[i];
+      } else {
+        kept.push(items[i]);
+      }
     }
+    if (trailing) kept.push(trailing);
     if (!kept.length) return [{ qty: 1, name: '****', price: '¥0.00' }];
     return kept;
   }
@@ -739,6 +749,10 @@
     return { texture: new THREE.CanvasTexture(canvas), regions: regions };
   }
 
+  function safePreventDefault(e) {
+    if (e && e.cancelable && typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
   function PhysicsPaper(width, height, segmentsX, segmentsY) {
     this.width = width;
     this.height = height;
@@ -1187,7 +1201,7 @@
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
-    this.renderer.domElement.style.touchAction = 'manipulation';
+    this.renderer.domElement.style.touchAction = 'none';
     bindReceiptGyroTouch(this.renderer.domElement);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     var dirLight = new THREE.DirectionalLight(0xfffdfa, 0.85);
@@ -1369,7 +1383,28 @@
     );
   }
 
+  ReceiptPaperView.prototype.localHitFromClient = function (clientX, clientY) {
+    var picked = this.pick();
+    if (picked && picked.point) return this.mesh.worldToLocal(picked.point.clone());
+    var rect = this.renderer.domElement.getBoundingClientRect();
+    var mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var my = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+    var plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    var world = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(plane, world)) {
+      return this.mesh.worldToLocal(world);
+    }
+    return null;
+  };
+
   ReceiptPaperView.prototype.resolveHitAtClient = function (clientX, clientY) {
+    if (!this.renderer || !this.mesh) return null;
+    this.setMouse({ clientX: clientX, clientY: clientY, button: 0 });
+    var picked = this.pick();
+    if (picked && picked.uv) {
+      return this.resolveRegionHit(uvToCanvas(picked.uv));
+    }
     var pt = clientPointToTexture(this, clientX, clientY);
     if (!pt) return null;
     return this.resolveRegionHit(pt);
@@ -1421,11 +1456,12 @@
       regionHit = this.resolveRegionHit(uvToCanvas(hit.uv));
     }
     var onPaper = isClientOnPaper(this, e.clientX, e.clientY);
-    if (!regionHit && !onPaper) return;
-    if (e.cancelable) e.preventDefault();
+    if (!regionHit && !onPaper && !hit) return;
+    safePreventDefault(e);
     try {
       this.renderer.domElement.setPointerCapture(e.pointerId);
     } catch (err) {}
+    var localHit = this.localHitFromClient(e.clientX, e.clientY);
     this.pointer.down = true;
     this.pointer.dragging = false;
     this.pointer.downTime = Date.now();
@@ -1434,7 +1470,7 @@
     this.pointer.x = e.clientX;
     this.pointer.y = e.clientY;
     this.pointer.uv = hit ? hit.uv : null;
-    this.pointer.hitPoint = hit ? hit.point.clone() : null;
+    this.pointer.hitPoint = localHit ? localHit.clone() : hit && hit.point ? hit.point.clone() : null;
     this.pointer.regionHit = regionHit;
     if (this.mode === 'edit' || this.mode === 'calendar') {
       this.pointer.interactive = true;
@@ -1447,13 +1483,16 @@
 
   ReceiptPaperView.prototype.onPointerMove = function (e) {
     if (!this.pointer.down) return;
-    if (this.pointer.interactive || this.mode === 'edit' || this.mode === 'calendar') return;
-    if (e.cancelable) e.preventDefault();
+    if (this.pointer.interactive) return;
+    safePreventDefault(e);
     var dx = e.clientX - this.pointer.x;
     var dy = e.clientY - this.pointer.y;
-    var dragThreshold = this.mode === 'receipt' ? 40 : DRAG_THRESHOLD;
-    if (!this.pointer.dragging && dx * dx + dy * dy > dragThreshold * dragThreshold) {
+    if (!this.pointer.dragging && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
       this.pointer.dragging = true;
+      if (!this.pointer.hitPoint) {
+        var lh = this.localHitFromClient(e.clientX, e.clientY);
+        if (lh) this.pointer.hitPoint = lh.clone();
+      }
       if (!this.pointer.hitPoint) {
         this.pointer.dragging = false;
         return;
@@ -1490,8 +1529,8 @@
   };
 
   ReceiptPaperView.prototype.onPointerUp = function (e) {
-    if (e.button !== 0) return;
-    if (e.cancelable) e.preventDefault();
+    if (e.button != null && e.button !== 0) return;
+    safePreventDefault(e);
     try {
       this.renderer.domElement.releasePointerCapture(e.pointerId);
     } catch (err) {}
@@ -1504,16 +1543,15 @@
     var isTap = !this.pointer.dragging && dist < DRAG_THRESHOLD * 1.35 && elapsed < TAP_MAX_MS + 120;
     var hit = null;
     if (isTap) {
-      if (this.pointer.regionHit) {
+      if (this.mode === 'edit' || this.mode === 'calendar') {
+        hit = this.resolveHitAtClient(e.clientX, e.clientY) || this.pointer.regionHit;
+      } else if (this.pointer.regionHit && isNavHit(this.pointer.regionHit)) {
         hit = this.pointer.regionHit;
       } else {
-        hit = this.hitAtClient(e.clientX, e.clientY);
-      }
-      if (!hit) {
         hit = this.resolveTap(e.clientX, e.clientY, this.pointer.uv);
       }
       if (!hit) {
-        hit = this.hitAtClient(this.pointer.downClientX, this.pointer.downClientY);
+        hit = this.resolveHitAtClient(this.pointer.downClientX, this.pointer.downClientY);
       }
     }
     if (hit) this.dispatchRegionHit(hit);
@@ -1547,7 +1585,7 @@
     } else if (hit.id === 'add') {
       state.currentCfg.items.push({
         qty: 1,
-        name: '****',
+        name: '未命名',
         price: state.currentCfg.currency === '¥' ? '¥0.00' : '$0.00'
       });
       state.currentCfg = normalizeReceiptConfig(state.currentCfg);
@@ -1586,20 +1624,9 @@
         dragIdx = self.grabIndex;
         dragPos = self.dragTargetPos;
       }
-      if (self.mode === 'edit' || self.mode === 'calendar') {
-        for (j = 0; j < self.physics.particles.length; j++) {
-          posAttr.setXYZ(
-            j,
-            self.flatPositions[j].x,
-            self.flatPositions[j].y,
-            self.flatPositions[j].z
-          );
-        }
-      } else {
-        self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
-        for (j = 0; j < self.physics.particles.length; j++) {
-          posAttr.setXYZ(j, self.physics.particles[j].pos.x, self.physics.particles[j].pos.y, self.physics.particles[j].pos.z);
-        }
+      self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
+      for (j = 0; j < self.physics.particles.length; j++) {
+        posAttr.setXYZ(j, self.physics.particles[j].pos.x, self.physics.particles[j].pos.y, self.physics.particles[j].pos.z);
       }
       posAttr.needsUpdate = true;
       self.geometry.computeVertexNormals();
@@ -1768,12 +1795,12 @@
       scheduleReceiptResize(s);
     }
     syncReceiptFromCloud().then(function () {
-      state.currentCfg = loadDayConfig(state.selectedDate);
       scanDatesWithData();
-      if (s && s.running) {
-        s.refresh();
-        scheduleReceiptResize(s);
-      }
+      if (!s || !s.running) return;
+      if (paperMode === 'edit') return;
+      state.currentCfg = loadDayConfig(state.selectedDate);
+      s.refresh();
+      scheduleReceiptResize(s);
     });
   }
 
@@ -1825,6 +1852,144 @@
           }
         }
         return null;
+      },
+      paperRegionClientPoint: function (modeKey, regionId, index) {
+        var s = scenes[modeKey];
+        var i;
+        var r;
+        var ps;
+        var sx;
+        var sy;
+        var picked;
+        var hit;
+        if (!s || !s.mesh || !s.hitRegions) return null;
+        for (i = 0; i < s.hitRegions.length; i++) {
+          r = s.hitRegions[i];
+          if (r.id !== regionId) continue;
+          if (index != null && r.index !== index) continue;
+          ps = paperScreenBounds(s);
+          if (ps) {
+            for (sy = ps.minSy; sy <= ps.maxSy; sy += 5) {
+              for (sx = ps.minSx; sx <= ps.maxSx; sx += 5) {
+                s.setMouse({ clientX: sx, clientY: sy, button: 0 });
+                picked = s.pick();
+                if (!picked || !picked.uv) continue;
+                hit = s.resolveRegionHit(uvToCanvas(picked.uv));
+                if (hit && hit.id === regionId && (index == null || hit.index === index)) {
+                  return { x: sx, y: sy };
+                }
+              }
+            }
+          }
+          return textureToClientApprox(s, r.x + r.w / 2, r.y + r.h / 2);
+        }
+        return null;
+      },
+      paperCenterClientPoint: function (modeKey) {
+        var s = scenes[modeKey];
+        if (!s || !s.mesh) return null;
+        return textureToClientApprox(s, TEX_W / 2, TEX_H * 0.42);
+      },
+      sceneParticleY: function (modeKey, idx) {
+        var s = scenes[modeKey];
+        var p;
+        var nx;
+        var mid;
+        if (!s || !s.physics) return null;
+        if (idx == null) {
+          nx = s.physics.nx;
+          mid = Math.floor(s.physics.ny / 2) * (nx + 1) + Math.floor(nx / 2);
+          p = s.physics.particles[mid];
+        } else {
+          p = s.physics.particles[idx];
+        }
+        return p ? p.pos.y : null;
+      },
+      editItemCount: function () {
+        return state.currentCfg.items.length;
+      },
+      editSelectionField: function () {
+        return state.editSelection ? state.editSelection.field : null;
+      },
+      probeEditHitAt: function (clientX, clientY) {
+        var s = scenes.edit;
+        var h;
+        if (!s) return null;
+        h = s.resolveHitAtClient(clientX, clientY);
+        return h ? { id: h.id, field: h.field, index: h.index } : null;
+      },
+      triggerEditorHit: function (regionId) {
+        var s = scenes.edit;
+        var i;
+        var r;
+        var before;
+        if (!s || !s.hitRegions) return false;
+        before = state.currentCfg.items.length;
+        for (i = 0; i < s.hitRegions.length; i++) {
+          r = s.hitRegions[i];
+          if (r.id === regionId) {
+            s.handleEditorHit(r);
+            return state.currentCfg.items.length > before;
+          }
+        }
+        return false;
+      },
+      reloadEditDay: function () {
+        state.currentCfg = loadDayConfig(state.selectedDate);
+        if (scenes.edit) scenes.edit.refresh();
+        return state.currentCfg.items.length;
+      },
+      seedEditTestRow: function () {
+        state.currentCfg = normalizeReceiptConfig({
+          items: [{ qty: 1, name: 'E2E行', price: '¥12.00' }]
+        });
+        saveCurrentDay();
+        if (scenes.edit) scenes.edit.refresh();
+        return state.currentCfg.items.length;
+      },
+      editRegionIds: function () {
+        var s = scenes.edit;
+        var out = [];
+        var i;
+        if (!s || !s.hitRegions) return out;
+        for (i = 0; i < s.hitRegions.length; i++) out.push(s.hitRegions[i].id);
+        return out;
+      },
+      debugAddPush: function () {
+        var before = state.currentCfg.items.length;
+        state.currentCfg.items.push({
+          qty: 1,
+          name: '****',
+          price: '¥0.00'
+        });
+        var mid = state.currentCfg.items.length;
+        state.currentCfg = normalizeReceiptConfig(state.currentCfg);
+        return { before: before, mid: mid, after: state.currentCfg.items.length };
+      },
+      dispatchEditPointerTap: function (clientX, clientY) {
+        var s = scenes.edit;
+        var before;
+        var down;
+        var up;
+        if (!s) return false;
+        before = state.currentCfg.items.length;
+        down = {
+          clientX: clientX,
+          clientY: clientY,
+          button: 0,
+          pointerId: 1,
+          cancelable: true
+        };
+        s.onPointerDown.call(s, down);
+        up = {
+          clientX: clientX,
+          clientY: clientY,
+          button: 0,
+          pointerId: 1,
+          cancelable: true
+        };
+        s.onPointerUp.call(s, up);
+        return state.currentCfg.items.length > before;
       }
     }
   };

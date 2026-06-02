@@ -22,6 +22,11 @@ function ok(cond, msg) {
 
 ok(t.sumItems([{ qty: '5m', name: 'x', price: '¥150.00' }]) === 150, '5m 行价');
 ok(t.normalizeReceiptConfig({ items: [{ qty: 2, name: 'a', price: '¥10.00' }] }).total === '¥20.00', '合计');
+(function () {
+  var cfg = t.normalizeReceiptConfig({ items: [{ qty: 1, name: '地铁', price: '¥12.00' }] });
+  cfg.items.push({ qty: 1, name: '****', price: '¥0.00' });
+  ok(t.normalizeReceiptConfig(cfg).items.length === 2, '增加空行后保留一行待编辑占位');
+})();
 ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '****', price: '¥0.00' }] }), '空小票无蓝点');
 ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥0.00' }] }), '零金额无蓝点');
 ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有金额才有蓝点');
@@ -36,8 +41,8 @@ ok(html.indexOf('forceRefreshAppCache') >= 0, '强制刷新逻辑');
 ok(html.indexOf('receipt_home') >= 0, '路由');
 ok(receiptCode.indexOf('nav_calendar') >= 0, '纸上日历按钮');
 ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');
-ok(receiptCode.indexOf('hitAtClient') >= 0, '编辑页屏幕坐标点选');
-ok(receiptCode.indexOf('flatPositions') >= 0, '编辑日历纸面保持平整');
+ok(receiptCode.indexOf('resolveHitAtClient') >= 0, '编辑页屏幕坐标点选');
+ok(receiptCode.indexOf('localHitFromClient') >= 0, '纸面平面落点供拖拽');
 ok(receiptCode.indexOf('开源节流') >= 0, '底部文案开源节流');
 ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
