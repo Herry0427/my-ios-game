@@ -43,7 +43,9 @@
     currentCfg: null,
     editSelection: null,
     editBuffer: '',
-    datesWithData: {}
+    datesWithData: {},
+    cloudSyncing: false,
+    cloudSyncPromise: null
   };
 
   var scenes = { home: null, calendar: null, edit: null };
@@ -212,6 +214,128 @@
     return { total: Math.round(total * 100) / 100, currency: currency || '¥', count: count };
   }
 
+  function getCloudClient() {
+    return global.getSb ? global.getSb() : null;
+  }
+
+  function getReceiptOwnerKey() {
+    return global.getReceiptOwnerKey ? global.getReceiptOwnerKey() : '';
+  }
+
+  function receiptConfigToPayload(cfg) {
+    return {
+      title: cfg.title,
+      terminal: cfg.terminal,
+      items: cfg.items,
+      footer: cfg.footer
+    };
+  }
+
+  function applyCloudRowToLocal(row) {
+    var dk = String(row.day_key || '').slice(0, 10);
+    var cfg = row.config;
+    if (!dk || !cfg || !receiptConfigHasData(cfg)) return;
+    localStorage.setItem(
+      STORAGE_PREFIX + dk,
+      JSON.stringify(receiptConfigToPayload(normalizeReceiptConfig(cfg)))
+    );
+  }
+
+  function upsertReceiptDayCloud(c, owner, dayKey, cfg) {
+    return c.from('receipt_days').upsert(
+      {
+        user_id: owner,
+        day_key: dayKey,
+        config: receiptConfigToPayload(cfg)
+      },
+      { onConflict: 'user_id,day_key' }
+    );
+  }
+
+  function deleteReceiptDayCloud(c, owner, dayKey) {
+    return c.from('receipt_days').delete().eq('user_id', owner).eq('day_key', dayKey);
+  }
+
+  function pushLocalReceiptDaysToCloud(c, owner, cloudKeys) {
+    var tasks = [];
+    var i;
+    var key;
+    var dk;
+    var raw;
+    var cfg;
+    for (i = 0; i < localStorage.length; i++) {
+      key = localStorage.key(i);
+      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
+      dk = key.slice(STORAGE_PREFIX.length);
+      if (cloudKeys[dk]) continue;
+      raw = localStorage.getItem(key);
+      if (!raw || !receiptConfigHasData(raw)) continue;
+      try {
+        cfg = normalizeReceiptConfig(JSON.parse(raw));
+        tasks.push(upsertReceiptDayCloud(c, owner, dk, cfg));
+      } catch (e) {}
+    }
+    if (!tasks.length) return Promise.resolve();
+    return Promise.all(
+      tasks.map(function (p) {
+        return p.catch(function () {
+          return null;
+        });
+      })
+    );
+  }
+
+  function syncReceiptFromCloud() {
+    var c = getCloudClient();
+    var owner = getReceiptOwnerKey();
+    if (!c || !owner) return Promise.resolve(false);
+    if (state.cloudSyncing) return state.cloudSyncPromise || Promise.resolve(false);
+    state.cloudSyncing = true;
+    state.cloudSyncPromise = c
+      .from('receipt_days')
+      .select('day_key,config,updated_at')
+      .eq('user_id', owner)
+      .then(function (r) {
+        if (r.error) throw r.error;
+        var rows = Array.isArray(r.data) ? r.data : [];
+        var cloudKeys = {};
+        var i;
+        for (i = 0; i < rows.length; i++) {
+          applyCloudRowToLocal(rows[i]);
+          cloudKeys[String(rows[i].day_key).slice(0, 10)] = true;
+        }
+        return pushLocalReceiptDaysToCloud(c, owner, cloudKeys).then(function () {
+          scanDatesWithData();
+          return true;
+        });
+      })
+      .catch(function (e) {
+        console.warn('[receipt cloud sync]', e);
+        return false;
+      })
+      .then(function (ok) {
+        state.cloudSyncing = false;
+        state.cloudSyncPromise = null;
+        return ok;
+      });
+    return state.cloudSyncPromise;
+  }
+
+  function queueReceiptCloudSave(dayKey) {
+    var c = getCloudClient();
+    var owner = getReceiptOwnerKey();
+    if (!c || !owner) return;
+    if (!receiptConfigHasData(state.currentCfg)) {
+      deleteReceiptDayCloud(c, owner, dayKey).catch(function (e) {
+        console.warn('[receipt cloud delete]', e);
+      });
+      return;
+    }
+    upsertReceiptDayCloud(c, owner, dayKey, state.currentCfg).catch(function (e) {
+      console.warn('[receipt cloud upsert]', e);
+    });
+  }
+
   function loadDayConfig(d) {
     var key = dateKey(d);
     var raw = localStorage.getItem(STORAGE_PREFIX + key);
@@ -229,18 +353,15 @@
     if (!receiptConfigHasData(state.currentCfg)) {
       localStorage.removeItem(STORAGE_PREFIX + key);
       delete state.datesWithData[key];
+      queueReceiptCloudSave(key);
       return;
     }
     localStorage.setItem(
       STORAGE_PREFIX + key,
-      JSON.stringify({
-        title: state.currentCfg.title,
-        terminal: state.currentCfg.terminal,
-        items: state.currentCfg.items,
-        footer: state.currentCfg.footer
-      })
+      JSON.stringify(receiptConfigToPayload(state.currentCfg))
     );
     state.datesWithData[key] = true;
+    queueReceiptCloudSave(key);
   }
 
   function seedTodayIfNeeded() {
@@ -1517,43 +1638,38 @@
     state.currentCfg = loadDayConfig(state.selectedDate);
   }
 
+  function enterReceiptView(modeKey, canvasId, paperMode) {
+    bindOnce();
+    seedTodayIfNeeded();
+    pruneEmptyReceiptDays();
+    state.calYear = state.selectedDate.getFullYear();
+    state.calMonth = state.selectedDate.getMonth();
+    syncReceiptFromCloud().then(function () {
+      state.currentCfg = loadDayConfig(state.selectedDate);
+      scanDatesWithData();
+      stopAllScenes();
+      onReceiptScreenEnter();
+      var s = getScene(modeKey, canvasId, paperMode);
+      if (s) {
+        s.start();
+        if (paperMode !== 'receipt' && s.running) s.refresh();
+        scheduleReceiptResize(s);
+      }
+    });
+  }
+
   global.ReceiptModule = {
     bindOnce: bindOnce,
     ensureState: ensureState,
+    syncReceiptFromCloud: syncReceiptFromCloud,
     onEnterHome: function () {
-      bindOnce();
-      ensureState();
-      stopAllScenes();
-      onReceiptScreenEnter();
-      var s = getScene('home', 'receipt-home-canvas', 'receipt');
-      if (s) {
-        s.start();
-        scheduleReceiptResize(s);
-      }
+      enterReceiptView('home', 'receipt-home-canvas', 'receipt');
     },
     onEnterCalendar: function () {
-      bindOnce();
-      ensureState();
-      stopAllScenes();
-      onReceiptScreenEnter();
-      scanDatesWithData();
-      var s = getScene('calendar', 'receipt-calendar-canvas', 'calendar');
-      if (s) {
-        s.start();
-        if (s.running) s.refresh();
-        scheduleReceiptResize(s);
-      }
+      enterReceiptView('calendar', 'receipt-calendar-canvas', 'calendar');
     },
     onEnterEdit: function () {
-      bindOnce();
-      ensureState();
-      stopAllScenes();
-      onReceiptScreenEnter();
-      var s = getScene('edit', 'receipt-edit-canvas', 'edit');
-      if (s) {
-        s.start();
-        scheduleReceiptResize(s);
-      }
+      enterReceiptView('edit', 'receipt-edit-canvas', 'edit');
     },
     onLeaveAll: function () {
       stopAllScenes();

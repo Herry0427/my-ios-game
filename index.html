@@ -2422,6 +2422,31 @@
     sbClient = supabase.createClient(SB_URL, k);
     return sbClient;
   }
+  window.getSb = getSb;
+
+  var SB_KEEPALIVE_STORAGE = 'myArcadeHub_sb_keepalive_ts';
+  var SB_KEEPALIVE_MIN_GAP_MS = 20 * 60 * 60 * 1000;
+
+  async function supabaseKeepalive(force) {
+    var c = getSb();
+    if (!c) return;
+    try {
+      var last = parseInt(localStorage.getItem(SB_KEEPALIVE_STORAGE) || '0', 10);
+      if (!force && Date.now() - last < SB_KEEPALIVE_MIN_GAP_MS) return;
+      var r = await c.from('profiles').select('id').limit(1);
+      if (!r.error) localStorage.setItem(SB_KEEPALIVE_STORAGE, String(Date.now()));
+    } catch (e) {
+      console.warn('[sb keepalive]', e);
+    }
+  }
+
+  function scheduleSupabaseKeepalive() {
+    supabaseKeepalive(false);
+    if (scheduleSupabaseKeepalive._iv) return;
+    scheduleSupabaseKeepalive._iv = setInterval(function () {
+      supabaseKeepalive(true);
+    }, SB_KEEPALIVE_MIN_GAP_MS);
+  }
 
   var cloudHigh = 0;
   var unlockedSkins = ['default'];
@@ -2980,10 +3005,11 @@
     return sessionProfilePk || '';
   }
 
-  /** 备忘 / 食谱个人配置的 user_id，恒等于当前登录昵称 */
+  /** 备忘 / 食谱 / 记账簿的 user_id，恒等于当前登录昵称 */
   function getMemoOwnerKey() {
     return getNickname();
   }
+  window.getReceiptOwnerKey = getMemoOwnerKey;
 
   function syncHiLabels() {
     var n = getNickname() ? getNickname() : '——';
@@ -3067,6 +3093,7 @@
 
     await fetchProfile();
     await fetchPregnancyUserConfig();
+    scheduleSupabaseKeepalive();
     syncHiLabels();
     if (inp) inp.value = getNickname();
     if (modal) modal.classList.remove('visible');
@@ -3239,6 +3266,9 @@
     }
     if (view === 'recipe_detail') renderRecipeDetailView();
     if (view === 'memo_screen') loadMemos();
+    if (view === 'receipt_home' || view === 'receipt_calendar' || view === 'receipt_edit') {
+      supabaseKeepalive(false);
+    }
     var receiptViews = { receipt_home: 1, receipt_calendar: 1, receipt_edit: 1 };
     if (!receiptViews[view] && window.ReceiptModule) ReceiptModule.onLeaveAll();
     if (view === 'receipt_home' && window.ReceiptModule) ReceiptModule.onEnterHome();
@@ -5722,6 +5752,7 @@
     document.getElementById('nickname-modal').classList.remove('visible');
     await fetchProfile();
     await fetchPregnancyUserConfig();
+    scheduleSupabaseKeepalive();
     syncHiLabels();
     cloudBanner();
   };

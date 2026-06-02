@@ -41,7 +41,8 @@ ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
 ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
 ok(receiptCode.indexOf('pruneEmptyReceiptDays') >= 0, '启动清理空小票键');
-ok(receiptCode.indexOf('RECEIPT_TARGET_FILL_W') >= 0, '纸面目标宽度占比');
+ok(receiptCode.indexOf('syncReceiptFromCloud') >= 0, '记账云端同步');
+ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 (function () {
   var z = t.computeReceiptCameraZ(390, 700);

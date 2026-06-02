@@ -411,10 +411,74 @@ def main() -> int:
                 )
         except Exception as ex015:
             print(f"WARN memo 015 附加测试: {ex015}")
+
+        # --- migrations/016：receipt_days 记账簿 ---
+        receipt_url = f"{base}/rest/v1/receipt_days"
+        receipt_headers = {**headers_base, "Prefer": "return=representation"}
+        receipt_cfg = {
+            "title": "*** e2e ***",
+            "terminal": "NO.001",
+            "items": [{"qty": 1, "name": "测试", "price": "¥12.00"}],
+            "footer": ["谢谢惠顾！"],
+        }
+        code_rd, rdbody = http_json(
+            "POST",
+            receipt_url,
+            receipt_headers,
+            [
+                {
+                    "user_id": test_id,
+                    "day_key": "2026-06-02",
+                    "config": receipt_cfg,
+                }
+            ],
+        )
+        if code_rd in (200, 201) and isinstance(rdbody, list) and rdbody:
+            rid = rdbody[0].get("id")
+            sel_rd = (
+                f"{receipt_url}?user_id=eq.{quote(test_id, safe='')}"
+                "&day_key=eq.2026-06-02&select=config"
+            )
+            _, rows_rd = http_json("GET", sel_rd, headers_base, None)
+            ok_cfg = (
+                isinstance(rows_rd, list)
+                and rows_rd
+                and isinstance(rows_rd[0].get("config"), dict)
+                and rows_rd[0]["config"].get("title") == "*** e2e ***"
+            )
+            wife_uid = "e2e_wife_" + uuid.uuid4().hex[:8]
+            sel_leak = (
+                f"{receipt_url}?user_id=eq.{quote(wife_uid, safe='')}"
+                "&day_key=eq.2026-06-02&select=config"
+            )
+            _, rows_leak = http_json("GET", sel_leak, headers_base, None)
+            leaked = isinstance(rows_leak, list) and len(rows_leak) > 0
+            try:
+                http_json(
+                    "DELETE",
+                    f"{receipt_url}?id=eq.{quote(str(rid), safe='')}&user_id=eq.{quote(test_id, safe='')}",
+                    headers_base,
+                )
+            except Exception:
+                pass
+            if not ok_cfg or leaked:
+                print(
+                    f"FAIL: receipt_days 读写/隔离失败 ok_cfg={ok_cfg} leaked={leaked}",
+                    file=sys.stderr,
+                )
+                _delete_receipt_days_for_user(base, anon, test_id)
+                _delete_row(base, anon, test_id)
+                return 1
+            print("OK: receipt_days 写入/读取/昵称隔离（016）")
+        elif code_rd == 404 or (isinstance(rdbody, dict) and "relation" in str(rdbody).lower()):
+            print("SKIP receipt_days：未建表，请执行 migrations/016_receipt_days.sql")
+        else:
+            print(f"SKIP receipt_days：POST {code_rd} {rdbody}")
     except Exception as ex:
         print(f"SKIP 007: {ex}")
 
     _delete_memos_for_user(base, anon, test_id)
+    _delete_receipt_days_for_user(base, anon, test_id)
     _delete_pregnancy_row(base, anon, test_id)
 
     if not _delete_row(base, anon, test_id):
@@ -445,6 +509,27 @@ def _delete_memos_for_user(base: str, anon: str, user_id: str) -> None:
         uid_q = quote(user_id, safe="")
         req = Request(
             f"{base}/rest/v1/pregnancy_memos?user_id=eq.{uid_q}",
+            method="DELETE",
+            headers=headers,
+        )
+        with urlopen(req, timeout=60):
+            pass
+    except Exception:
+        pass
+
+
+def _delete_receipt_days_for_user(base: str, anon: str, user_id: str) -> None:
+    """清除该 user_id 下全部记账小票（E2E 收尾）。"""
+    headers = {
+        "apikey": anon,
+        "Authorization": f"Bearer {anon}",
+        "Accept": "application/json",
+        "User-Agent": "ios_game-e2e-test/2.0",
+    }
+    try:
+        uid_q = quote(user_id, safe="")
+        req = Request(
+            f"{base}/rest/v1/receipt_days?user_id=eq.{uid_q}",
             method="DELETE",
             headers=headers,
         )
