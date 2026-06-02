@@ -6,14 +6,16 @@
 
   var TEX_W = 512;
   var TEX_H = 1024;
-  var DRAG_THRESHOLD = 10;
+  var DRAG_THRESHOLD = 24;
+  var TAP_MAX_MS = 360;
+  var HIT_PAD = 24;
   var STORAGE_PREFIX = 'receipt_day_';
   var PAPER_W = 3.84;
   var PAPER_H = 7.68;
   var CAMERA_Z = 10.5;
   var CAMERA_Y = -0.35;
-  var PAPER_BTN_Y = TEX_H - 96;
-  var PAPER_BTN_H = 72;
+  var PAPER_BTN_Y = TEX_H - 112;
+  var PAPER_BTN_H = 80;
   var PAPER_NAV_PAD = 28;
   var PAPER_NAV_GAP = 20;
 
@@ -623,11 +625,32 @@
   }
 
   function hitRegion(regions, cx, cy) {
+    return hitRegionPadded(regions, cx, cy, 0);
+  }
+
+  function hitRegionPadded(regions, cx, cy, pad) {
     var i;
+    var r;
+    pad = pad || 0;
     for (i = regions.length - 1; i >= 0; i--) {
-      var r = regions[i];
-      if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) return r;
+      r = regions[i];
+      if (cx >= r.x - pad && cx <= r.x + r.w + pad && cy >= r.y - pad && cy <= r.y + r.h + pad) {
+        return r;
+      }
     }
+    return null;
+  }
+
+  function isNavHit(hit) {
+    return hit && (hit.id === 'nav_calendar' || hit.id === 'nav_ledger' || hit.id === 'nav_save');
+  }
+
+  function textureNavFallback(mode, pt) {
+    if (!pt || pt.y < TEX_H * 0.8) return null;
+    if (mode === 'receipt') {
+      return pt.x < TEX_W * 0.5 ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
+    }
+    if (mode === 'edit') return { id: 'nav_save' };
     return null;
   }
 
@@ -676,7 +699,19 @@
     this.rafId = null;
     this.hitRegions = [];
     this.grabIndex = -1;
-    this.pointer = { down: false, x: 0, y: 0, dragging: false, uv: null, hitPoint: null, interactive: false, regionHit: null };
+    this.pointer = {
+      down: false,
+      x: 0,
+      y: 0,
+      dragging: false,
+      uv: null,
+      hitPoint: null,
+      interactive: false,
+      regionHit: null,
+      downTime: 0,
+      downClientX: 0,
+      downClientY: 0
+    };
     this.dragTargetPos = new THREE.Vector3();
     this.dragPlane = new THREE.Plane();
     this.cameraDir = new THREE.Vector3();
@@ -740,10 +775,10 @@
     this.hanger.position.set(0, PAPER_H / 2, 0.02);
     this.scene.add(this.hanger);
     this.clock = new THREE.Clock();
-    this.renderer.domElement.addEventListener('pointerdown', this._onPointerDown);
-    this.renderer.domElement.addEventListener('pointermove', this._onPointerMove);
-    this.renderer.domElement.addEventListener('pointerup', this._onPointerUp);
-    this.renderer.domElement.addEventListener('pointercancel', this._onPointerCancel);
+    this.renderer.domElement.addEventListener('pointerdown', this._onPointerDown, { passive: false });
+    this.renderer.domElement.addEventListener('pointermove', this._onPointerMove, { passive: false });
+    this.renderer.domElement.addEventListener('pointerup', this._onPointerUp, { passive: false });
+    this.renderer.domElement.addEventListener('pointercancel', this._onPointerCancel, { passive: false });
     window.addEventListener('resize', this._onResize);
   };
 
@@ -793,7 +828,58 @@
 
   ReceiptPaperView.prototype.resolveRegionHit = function (pt) {
     if (this.mode === 'calendar') return resolveCalendarHit(pt, this.hitRegions);
-    return hitRegion(this.hitRegions, pt.x, pt.y);
+    var hit = hitRegionPadded(this.hitRegions, pt.x, pt.y, HIT_PAD);
+    if (hit) return hit;
+    return textureNavFallback(this.mode, pt);
+  };
+
+  ReceiptPaperView.prototype.clientNavFallback = function (clientX, clientY) {
+    if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
+    if (!this.mesh || !this.renderer || !this.camera) return null;
+    var box = new THREE.Box3().setFromObject(this.mesh);
+    if (box.isEmpty()) return null;
+    var rect = this.renderer.domElement.getBoundingClientRect();
+    var corners = [
+      new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z)
+    ];
+    var minSx = Infinity;
+    var maxSx = -Infinity;
+    var minSy = Infinity;
+    var maxSy = -Infinity;
+    var v;
+    var sx;
+    var sy;
+    var i;
+    for (i = 0; i < corners.length; i++) {
+      v = corners[i].clone().applyMatrix4(this.mesh.matrixWorld).project(this.camera);
+      sx = (v.x * 0.5 + 0.5) * rect.width + rect.left;
+      sy = (-v.y * 0.5 + 0.5) * rect.height + rect.top;
+      if (sx < minSx) minSx = sx;
+      if (sx > maxSx) maxSx = sx;
+      if (sy < minSy) minSy = sy;
+      if (sy > maxSy) maxSy = sy;
+    }
+    var bandTop = minSy + (maxSy - minSy) * 0.74;
+    if (clientY < bandTop - 20 || clientY > maxSy + 28) return null;
+    if (clientX < minSx - 24 || clientX > maxSx + 24) return null;
+    if (this.mode === 'edit') return { id: 'nav_save' };
+    var midX = (minSx + maxSx) / 2;
+    return clientX < midX ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
+  };
+
+  ReceiptPaperView.prototype.resolveTap = function (clientX, clientY, uv) {
+    var ptHit = uv ? this.resolveRegionHit(uvToCanvas(uv)) : null;
+    var cliHit = this.clientNavFallback(clientX, clientY);
+    if (cliHit) return cliHit;
+    if (ptHit) return ptHit;
+    return null;
   };
 
   ReceiptPaperView.prototype.dispatchRegionHit = function (hit) {
@@ -816,24 +902,28 @@
     this.setMouse(e);
     var hit = this.pick();
     if (!hit) return;
+    if (e.cancelable) e.preventDefault();
     try {
       this.renderer.domElement.setPointerCapture(e.pointerId);
     } catch (err) {}
     this.pointer.down = true;
     this.pointer.dragging = false;
     this.pointer.interactive = false;
+    this.pointer.downTime = Date.now();
+    this.pointer.downClientX = e.clientX;
+    this.pointer.downClientY = e.clientY;
     this.pointer.x = e.clientX;
     this.pointer.y = e.clientY;
     this.pointer.uv = hit.uv;
     this.pointer.hitPoint = hit.point.clone();
-    var pt = uvToCanvas(hit.uv);
-    this.pointer.regionHit = this.resolveRegionHit(pt);
+    this.pointer.regionHit = this.resolveTap(e.clientX, e.clientY, hit.uv);
     if (this.pointer.regionHit) this.pointer.interactive = true;
   };
 
   ReceiptPaperView.prototype.onPointerMove = function (e) {
     if (!this.pointer.down) return;
     if (this.pointer.interactive) return;
+    if (e.cancelable) e.preventDefault();
     var dx = e.clientX - this.pointer.x;
     var dy = e.clientY - this.pointer.y;
     if (!this.pointer.dragging && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
@@ -871,23 +961,30 @@
 
   ReceiptPaperView.prototype.onPointerUp = function (e) {
     if (e.button !== 0) return;
+    if (e.cancelable) e.preventDefault();
     try {
       this.renderer.domElement.releasePointerCapture(e.pointerId);
     } catch (err) {}
-    if (this.pointer.down && this.pointer.regionHit) {
-      this.dispatchRegionHit(this.pointer.regionHit);
+    if (!this.pointer.down) {
       this.resetPointer();
       return;
     }
-    if (this.pointer.down && !this.pointer.dragging && this.pointer.uv) {
+    var dist = Math.hypot(e.clientX - this.pointer.downClientX, e.clientY - this.pointer.downClientY);
+    var elapsed = Date.now() - this.pointer.downTime;
+    var isTap = !this.pointer.dragging && dist < DRAG_THRESHOLD * 1.35 && elapsed < TAP_MAX_MS + 120;
+    var hit = null;
+    if (this.pointer.regionHit && isNavHit(this.pointer.regionHit)) {
+      hit = this.pointer.regionHit;
+    } else if (isTap) {
       this.setMouse(e);
-      var hit = this.pick();
-      var uv = hit ? hit.uv : this.pointer.uv;
-      if (uv) {
-        var pt = uvToCanvas(uv);
-        this.dispatchRegionHit(this.resolveRegionHit(pt));
-      }
+      var picked = this.pick();
+      var uv = picked ? picked.uv : this.pointer.uv;
+      hit = this.resolveTap(e.clientX, e.clientY, uv);
     }
+    if (!hit && isTap && this.pointer.uv) {
+      hit = this.resolveTap(this.pointer.downClientX, this.pointer.downClientY, this.pointer.uv);
+    }
+    if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
   };
 
