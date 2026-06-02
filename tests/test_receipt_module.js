@@ -22,6 +22,8 @@ function ok(cond, msg) {
 
 ok(t.sumItems([{ qty: '5m', name: 'x', price: '¥150.00' }]) === 150, '5m 行价');
 ok(t.normalizeReceiptConfig({ items: [{ qty: 2, name: 'a', price: '¥10.00' }] }).total === '¥20.00', '合计');
+ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '****', price: '¥0.00' }] }), '空小票无蓝点');
+ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有消费才有蓝点');
 var k1 = t.randomTerminalForDate(new Date(2026, 5, 1));
 var k2 = t.randomTerminalForDate(new Date(2026, 5, 1));
 ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
@@ -36,6 +38,8 @@ ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');
 ok(receiptCode.indexOf('nav_save') >= 0, '纸上保存按钮');
 ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
+ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
+ok(receiptCode.indexOf('receiptConfigHasData') >= 0, '蓝点按有效消费');
 ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');

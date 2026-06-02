@@ -48,6 +48,7 @@
 
   var scenes = { home: null, calendar: null, edit: null };
   var bound = false;
+  var lastGoodReceiptSize = { w: 0, h: 0 };
   var deviceGravityTarget = { x: 0, y: -9.8, z: 0 };
   var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
   var deviceGravityReady = false;
@@ -146,15 +147,35 @@
     return normalizeReceiptConfig(raw);
   }
 
+  function receiptConfigHasData(raw) {
+    var cfg;
+    try {
+      cfg = normalizeReceiptConfig(typeof raw === 'string' ? JSON.parse(raw) : raw);
+    } catch (e) {
+      return false;
+    }
+    var i;
+    for (i = 0; i < cfg.items.length; i++) {
+      var item = cfg.items[i];
+      var name = String(item.name || '').trim();
+      if (name && name !== '****') return true;
+      if (parsePrice(item.price) > 0) return true;
+    }
+    return false;
+  }
+
   function scanDatesWithData() {
     var map = {};
     var i;
     var key;
+    var dk;
+    var raw;
     for (i = 0; i < localStorage.length; i++) {
       key = localStorage.key(i);
-      if (key && key.indexOf(STORAGE_PREFIX) === 0) {
-        map[key.slice(STORAGE_PREFIX.length)] = true;
-      }
+      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
+      dk = key.slice(STORAGE_PREFIX.length);
+      raw = localStorage.getItem(key);
+      if (raw && receiptConfigHasData(raw)) map[dk] = true;
     }
     state.datesWithData = map;
   }
@@ -176,6 +197,7 @@
       if (parseInt(parts[0], 10) !== year || parseInt(parts[1], 10) !== month + 1) continue;
       try {
         var raw = JSON.parse(localStorage.getItem(key));
+        if (!receiptConfigHasData(raw)) continue;
         var cfg = normalizeReceiptConfig(raw);
         total += sumItems(cfg.items);
         if (!currency) currency = cfg.currency;
@@ -208,24 +230,11 @@
         footer: state.currentCfg.footer
       })
     );
-    state.datesWithData[key] = true;
+    state.datesWithData[key] = receiptConfigHasData(state.currentCfg);
   }
 
   function seedTodayIfNeeded() {
-    var today = new Date();
-    var key = dateKey(today);
-    if (localStorage.getItem(STORAGE_PREFIX + key)) return;
-    var seed = freshDayConfig(today);
-    localStorage.setItem(
-      STORAGE_PREFIX + key,
-      JSON.stringify({
-        title: seed.title,
-        terminal: seed.terminal,
-        items: seed.items,
-        footer: seed.footer
-      })
-    );
-    state.datesWithData[key] = true;
+    /* 今日默认小票仅在内存中由 loadDayConfig 生成，不预写空数据到 localStorage。 */
   }
 
   function drawPaperFrame(ctx) {
@@ -802,12 +811,50 @@
   }
 
   function receiptContainerSize(container) {
-    var w = container.clientWidth || window.innerWidth;
-    var h = container.clientHeight || window.innerHeight;
-    if (window.visualViewport && h > window.visualViewport.height + 2) {
+    var w = container.clientWidth;
+    var h = container.clientHeight;
+    if (w > 80 && h > 80) {
+      lastGoodReceiptSize.w = w;
+      lastGoodReceiptSize.h = h;
+      return { w: w, h: h };
+    }
+    if (lastGoodReceiptSize.w > 80 && lastGoodReceiptSize.h > 80) {
+      return { w: lastGoodReceiptSize.w, h: lastGoodReceiptSize.h };
+    }
+    if (window.visualViewport) {
+      w = window.visualViewport.width;
       h = window.visualViewport.height;
+    } else {
+      w = w || window.innerWidth;
+      h = h || window.innerHeight;
     }
     return { w: w, h: h };
+  }
+
+  function bindReceiptContainerResize(view) {
+    if (!view.container || view._resizeObs) return;
+    if (typeof ResizeObserver === 'undefined') return;
+    view._resizeObs = new ResizeObserver(function () {
+      if (view.renderer) view.onResize();
+    });
+    view._resizeObs.observe(view.container);
+  }
+
+  function scheduleReceiptResize(view) {
+    if (!view) return;
+    view.onResize();
+    requestAnimationFrame(function () {
+      view.onResize();
+      requestAnimationFrame(function () {
+        view.onResize();
+      });
+    });
+    setTimeout(function () {
+      view.onResize();
+    }, 120);
+    setTimeout(function () {
+      view.onResize();
+    }, 320);
   }
 
   function computeReceiptCameraZ(w, h) {
@@ -1022,6 +1069,7 @@
     this.renderer.domElement.addEventListener('pointerup', this._onPointerUp, { passive: false });
     this.renderer.domElement.addEventListener('pointercancel', this._onPointerCancel, { passive: false });
     window.addEventListener('resize', this._onResize);
+    bindReceiptContainerResize(this);
   };
 
   ReceiptPaperView.prototype.setTexture = function (texture, regions) {
@@ -1297,6 +1345,7 @@
   ReceiptPaperView.prototype.start = function () {
     this.ensureScene();
     this.refresh();
+    scheduleReceiptResize(this);
     if (this.running) return;
     this.running = true;
     var self = this;
@@ -1476,9 +1525,7 @@
       var s = getScene('home', 'receipt-home-canvas', 'receipt');
       if (s) {
         s.start();
-        setTimeout(function () {
-          s.onResize();
-        }, 50);
+        scheduleReceiptResize(s);
       }
     },
     onEnterCalendar: function () {
@@ -1486,12 +1533,12 @@
       ensureState();
       stopAllScenes();
       onReceiptScreenEnter();
+      scanDatesWithData();
       var s = getScene('calendar', 'receipt-calendar-canvas', 'calendar');
       if (s) {
         s.start();
-        setTimeout(function () {
-          s.onResize();
-        }, 50);
+        if (s.running) s.refresh();
+        scheduleReceiptResize(s);
       }
     },
     onEnterEdit: function () {
@@ -1502,9 +1549,7 @@
       var s = getScene('edit', 'receipt-edit-canvas', 'edit');
       if (s) {
         s.start();
-        setTimeout(function () {
-          s.onResize();
-        }, 50);
+        scheduleReceiptResize(s);
       }
     },
     onLeaveAll: function () {
@@ -1517,6 +1562,7 @@
       sumItems: sumItems,
       randomTerminalForDate: randomTerminalForDate,
       dateKey: dateKey,
+      receiptConfigHasData: receiptConfigHasData,
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;
         if (!s || !s.mesh) return { error: 'no_home_scene' };
