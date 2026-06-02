@@ -50,7 +50,8 @@ ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
 ok(receiptCode.indexOf('pruneEmptyReceiptDays') >= 0, '启动清理空小票键');
 ok(receiptCode.indexOf('syncReceiptFromCloud') >= 0, '记账云端同步');
 ok(receiptCode.indexOf('scheduleReceiptCloudSync') >= 0, '云端同步延后后台');
-ok(receiptCode.indexOf('scheduleEditTextureRefresh') >= 0, '编辑输入防抖刷新');
+ok(receiptCode.indexOf('disposeReceiptScene') >= 0, '旧版低网格场景可重建');
+ok(!/function isUiRegionHit[\s\S]{0,200}field/.test(receiptCode), '字段点击不拦截拖拽');
 ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 (function () {
@@ -63,4 +64,5 @@ ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 })();
 ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
-console.log(fails ? '\n共
+console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
+process.exit(fails ? 1 : 0);

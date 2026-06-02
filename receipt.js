@@ -287,8 +287,15 @@
 
   function onReceiptCloudSyncDone() {
     scanDatesWithData();
-    if (scenes.calendar && scenes.calendar.running) scenes.calendar.refresh();
-    if (scenes.home && scenes.home.running && !(scenes.edit && scenes.edit.running)) {
+    if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
+      scenes.calendar.refresh();
+    }
+    if (
+      scenes.home &&
+      scenes.home.running &&
+      !(scenes.edit && scenes.edit.running) &&
+      !scenes.home.pointer.down
+    ) {
       scenes.home.refresh();
     }
   }
@@ -1126,14 +1133,7 @@
   function isUiRegionHit(hit) {
     if (!hit || !hit.id) return false;
     if (isNavHit(hit)) return true;
-    return (
-      hit.id === 'field' ||
-      hit.id === 'add' ||
-      hit.id === 'del' ||
-      hit.id === 'day' ||
-      hit.id === 'prev' ||
-      hit.id === 'next'
-    );
+    return hit.id === 'prev' || hit.id === 'next';
   }
 
   function hitNavRegion(regions, cx, cy) {
@@ -1680,7 +1680,20 @@
     this.resetPointer();
   };
 
+  function disposeReceiptScene(key) {
+    var s = scenes[key];
+    if (!s) return;
+    s.stop();
+    if (s.renderer && s.renderer.domElement && s.renderer.domElement.parentNode) {
+      s.renderer.domElement.parentNode.removeChild(s.renderer.domElement);
+    }
+    scenes[key] = null;
+  }
+
   function getScene(key, containerId, mode) {
+    if (scenes[key] && scenes[key].physics && scenes[key].physics.nx !== 14) {
+      disposeReceiptScene(key);
+    }
     if (!scenes[key]) {
       var el = document.getElementById(containerId);
       if (!el) return null;
