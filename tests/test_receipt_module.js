@@ -28,6 +28,8 @@ ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
+ok(html.indexOf('btn-force-refresh') >= 0, '大厅强制刷新');
+ok(html.indexOf('forceRefreshAppCache') >= 0, '强制刷新逻辑');
 ok(html.indexOf('receipt_home') >= 0, '路由');
 ok(receiptCode.indexOf('nav_calendar') >= 0, '纸上日历按钮');
 ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');

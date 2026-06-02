@@ -68,6 +68,21 @@
       border-radius: 8px; cursor: pointer; max-width: 520px;
     }
     .btn-logout-switch:active { transform: scale(0.98); color: rgba(200, 215, 235, 0.85); }
+    .btn-force-refresh {
+      display: block;
+      margin: 12px auto 0;
+      padding: 10px 14px;
+      font-size: 0.68rem;
+      color: rgba(0, 255, 204, 0.82);
+      background: rgba(0, 255, 204, 0.06);
+      border: 1px solid rgba(0, 255, 204, 0.32);
+      border-radius: 10px;
+      cursor: pointer;
+      max-width: 520px;
+      width: calc(100% - 32px);
+    }
+    .btn-force-refresh:active { transform: scale(0.98); }
+    .btn-force-refresh:disabled { opacity: 0.55; cursor: wait; }
     .grid-menu { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 520px; margin: 0 auto; width: 100%; }
     @media (min-width: 420px) { .grid-menu { grid-template-columns: repeat(3, 1fr); } }
     .tile-btn {
@@ -1726,6 +1741,7 @@
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
     <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
+    <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
   </section>
 
   <section id="memo-screen" class="screen" aria-label="备孕备忘清单">
@@ -5556,6 +5572,34 @@
   document.getElementById('btn-logout-switch').onclick = function () {
     clearArcadeSession();
     location.reload();
+  };
+  async function forceRefreshAppCache() {
+    var btn = document.getElementById('btn-force-refresh');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '正在清缓存并拉新…';
+    }
+    try {
+      if (window.caches && caches.keys) {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function (k) {
+          return caches.delete(k);
+        }));
+      }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) {
+          return r.unregister();
+        }));
+      }
+    } catch (e) {}
+    var url = new URL(window.location.href);
+    url.searchParams.set('_fresh', String(Date.now()));
+    url.hash = '';
+    window.location.replace(url.toString());
+  }
+  document.getElementById('btn-force-refresh').onclick = function () {
+    forceRefreshAppCache();
   };
   var memoAdd = document.getElementById('memo-add-btn');
   var memoAddLastTouch = 0;
