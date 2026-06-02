@@ -13,8 +13,11 @@
   var PAPER_DISPLAY_SCALE = 0.9;
   var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
   var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
-  var CAMERA_Z = 10.5;
   var CAMERA_Y = -0.35;
+  var CAMERA_FOV = 40;
+  var RECEIPT_BROWSER_REF_H = 740;
+  var RECEIPT_FIT_MARGIN_V = 0.11;
+  var RECEIPT_FIT_MARGIN_H = 0.06;
   var PAPER_BTN_Y = TEX_H - 112;
   var PAPER_BTN_H = 80;
   var PAPER_NAV_PAD = 28;
@@ -621,6 +624,56 @@
     }
   };
 
+  function isReceiptStandalone() {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+    return !!(window.navigator && window.navigator.standalone);
+  }
+
+  function receiptContainerSize(container) {
+    var w = container.clientWidth || window.innerWidth;
+    var h = container.clientHeight || window.innerHeight;
+    if (window.visualViewport && h > window.visualViewport.height + 2) {
+      h = window.visualViewport.height;
+    }
+    return { w: w, h: h };
+  }
+
+  function computeReceiptCameraZ(w, h) {
+    var vFovRad = CAMERA_FOV * Math.PI / 180;
+    var aspect = w / Math.max(h, 1);
+    var fitH = PAPER_H + 0.14;
+    var fitW = PAPER_W + 0.08;
+    var halfTan = Math.tan(vFovRad / 2);
+    var zH = fitH / (2 * halfTan * (1 - 2 * RECEIPT_FIT_MARGIN_V));
+    var zW = fitW / (2 * halfTan * aspect * (1 - 2 * RECEIPT_FIT_MARGIN_H));
+    var z = Math.max(zH, zW, 8);
+    if (h > RECEIPT_BROWSER_REF_H) {
+      z *= h / RECEIPT_BROWSER_REF_H;
+    } else if (isReceiptStandalone() && h > RECEIPT_BROWSER_REF_H * 0.94) {
+      z *= 1.12;
+    }
+    return z;
+  }
+
+  function fitReceiptCamera(camera, w, h) {
+    camera.fov = CAMERA_FOV;
+    camera.aspect = w / Math.max(h, 1);
+    camera.position.set(0, CAMERA_Y, computeReceiptCameraZ(w, h));
+    camera.updateProjectionMatrix();
+  }
+
+  var receiptViewportBound = false;
+  function bindReceiptViewport() {
+    if (receiptViewportBound || !window.visualViewport) return;
+    receiptViewportBound = true;
+    window.visualViewport.addEventListener('resize', function () {
+      var key;
+      for (key in scenes) {
+        if (scenes[key] && scenes[key].running) scenes[key].onResize();
+      }
+    });
+  }
+
   function uvToCanvas(uv) {
     return { x: uv.x * TEX_W, y: (1 - uv.y) * TEX_H };
   }
@@ -727,13 +780,15 @@
 
   ReceiptPaperView.prototype.ensureScene = function () {
     if (this.renderer) return;
-    var w = this.container.clientWidth || window.innerWidth;
-    var h = this.container.clientHeight || window.innerHeight;
+    bindReceiptViewport();
+    var size = receiptContainerSize(this.container);
+    var w = size.w;
+    var h = size.h;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xe5e5e5);
     this.scene.fog = new THREE.FogExp2(0xe5e5e5, 0.06);
-    this.camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-    this.camera.position.set(0, CAMERA_Y, CAMERA_Z);
+    this.camera = new THREE.PerspectiveCamera(CAMERA_FOV, w / Math.max(h, 1), 0.1, 100);
+    fitReceiptCamera(this.camera, w, h);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -808,10 +863,10 @@
 
   ReceiptPaperView.prototype.onResize = function () {
     if (!this.renderer) return;
-    var w = this.container.clientWidth || window.innerWidth;
-    var h = this.container.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    var size = receiptContainerSize(this.container);
+    var w = size.w;
+    var h = size.h;
+    fitReceiptCamera(this.camera, w, h);
     this.renderer.setSize(w, h);
   };
 

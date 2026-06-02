@@ -1593,10 +1593,11 @@
     }
     /* —— 记账簿 receipt-* —— */
     .receipt-screen.screen {
-      padding: 0;
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       overflow: hidden;
       background: #e5e5e5;
       flex-direction: column;
+      box-sizing: border-box;
     }
     .receipt-canvas-wrap {
       flex: 1;
