@@ -52,6 +52,8 @@
   var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
   var deviceGravityReady = false;
   var deviceGravityBound = false;
+  var deviceGravityPermission = '';
+  var gyroPromptBound = false;
 
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
@@ -650,20 +652,31 @@
     return !!(window.navigator && window.navigator.standalone);
   }
 
+  function degToRad(d) {
+    return d * Math.PI / 180;
+  }
+
+  function assignGravity(x, y) {
+    deviceGravityTarget.x = x;
+    deviceGravityTarget.y = y;
+    deviceGravityTarget.z = 0;
+    deviceGravityReady = true;
+  }
+
   function setDeviceGravityFromOrientation(beta, gamma) {
     if (beta == null || gamma == null) return;
-    var b = THREE.MathUtils.degToRad(beta);
-    var g = THREE.MathUtils.degToRad(gamma);
+    var b = degToRad(beta);
+    var g = degToRad(gamma);
     var gx = Math.sin(g);
     var gy = -Math.sin(b) * Math.cos(g);
     var len = Math.sqrt(gx * gx + gy * gy);
     if (len < 0.05) return;
-    deviceGravityTarget.set((gx / len) * 9.8, (gy / len) * 9.8, 0);
-    deviceGravityReady = true;
+    assignGravity((gx / len) * 9.8, (gy / len) * 9.8);
   }
 
   function onReceiptDeviceOrientation(e) {
     setDeviceGravityFromOrientation(e.beta, e.gamma);
+    updateGyroPromptVisible();
   }
 
   function onReceiptDeviceMotion(e) {
@@ -673,8 +686,8 @@
     var y = -ag.y;
     var len = Math.sqrt(x * x + y * y);
     if (len < 1.5) return;
-    deviceGravityTarget.set((x / len) * 9.8, (y / len) * 9.8, 0);
-    deviceGravityReady = true;
+    assignGravity((x / len) * 9.8, (y / len) * 9.8);
+    updateGyroPromptVisible();
   }
 
   function startDeviceGravityListeners() {
@@ -682,22 +695,102 @@
     deviceGravityBound = true;
     window.addEventListener('deviceorientation', onReceiptDeviceOrientation, true);
     window.addEventListener('devicemotion', onReceiptDeviceMotion, true);
+    updateGyroPromptVisible();
   }
 
-  function tryEnableDeviceGravity(fromGesture) {
+  function iosNeedsGyroPrompt() {
+    if (deviceGravityBound) return false;
+    return typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function';
+  }
+
+  function ensureGyroPromptUI() {
+    if (gyroPromptBound) return;
+    gyroPromptBound = true;
+    var btn = document.getElementById('receipt-gyro-prompt');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'receipt-gyro-prompt';
+      btn.type = 'button';
+      btn.textContent = '点我启用重力下垂';
+      document.body.appendChild(btn);
+    }
+    btn.addEventListener('click', function () {
+      requestGyroPermission(true);
+    });
+  }
+
+  function updateGyroPromptVisible() {
+    var btn = document.getElementById('receipt-gyro-prompt');
+    if (!btn) return;
+    var onReceipt = document.querySelector('.receipt-screen.active');
+    var show = !!(onReceipt && iosNeedsGyroPrompt() && !deviceGravityReady);
+    btn.style.display = show ? 'block' : 'none';
+  }
+
+  function requestGyroPermission(fromGesture) {
     if (deviceGravityBound) return;
-    if (typeof window === 'undefined') return;
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      if (!fromGesture) return;
-      DeviceOrientationEvent.requestPermission()
-        .then(function (state) {
-          if (state === 'granted') startDeviceGravityListeners();
-        })
-        .catch(function () {});
+    if (!fromGesture) return;
+    ensureGyroPromptUI();
+
+    function finishGranted() {
+      deviceGravityPermission = 'granted';
+      startDeviceGravityListeners();
+      updateGyroPromptVisible();
+    }
+
+    function finishDenied() {
+      deviceGravityPermission = 'denied';
+      updateGyroPromptVisible();
+    }
+
+    if (!iosNeedsGyroPrompt()) {
+      finishGranted();
+      return;
+    }
+
+    var orientReq = DeviceOrientationEvent.requestPermission();
+    orientReq
+      .then(function (state) {
+        if (state !== 'granted') {
+          finishDenied();
+          return null;
+        }
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+          return DeviceMotionEvent.requestPermission();
+        }
+        return 'granted';
+      })
+      .then(function (state) {
+        if (state === 'granted') finishGranted();
+        else if (state != null) finishDenied();
+      })
+      .catch(function () {
+        finishDenied();
+      });
+  }
+
+  function onReceiptScreenEnter() {
+    ensureGyroPromptUI();
+    if (iosNeedsGyroPrompt()) {
+      updateGyroPromptVisible();
       return;
     }
     startDeviceGravityListeners();
+    updateGyroPromptVisible();
+  }
+
+  function bindReceiptGyroTouch(el) {
+    if (!el || el._receiptGyroTouch) return;
+    el._receiptGyroTouch = true;
+    el.addEventListener(
+      'touchend',
+      function () {
+        if (iosNeedsGyroPrompt()) requestGyroPermission(true);
+      },
+      { passive: true }
+    );
   }
 
   function sampleDeviceGravity(dt) {
@@ -887,6 +980,7 @@
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.touchAction = 'none';
+    bindReceiptGyroTouch(this.renderer.domElement);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     var dirLight = new THREE.DirectionalLight(0xfffdfa, 0.85);
     dirLight.position.set(5, 5, 8);
@@ -1060,7 +1154,6 @@
 
   ReceiptPaperView.prototype.onPointerDown = function (e) {
     if (e.button !== 0) return;
-    tryEnableDeviceGravity(true);
     this.setMouse(e);
     var hit = this.pick();
     var navOnly = null;
@@ -1333,6 +1426,7 @@
   function bindOnce() {
     if (bound) return;
     bound = true;
+    ensureGyroPromptUI();
     var input = document.getElementById('receipt-edit-input');
     if (input) {
       input.addEventListener('input', function () {
@@ -1378,7 +1472,7 @@
       bindOnce();
       ensureState();
       stopAllScenes();
-      tryEnableDeviceGravity(false);
+      onReceiptScreenEnter();
       var s = getScene('home', 'receipt-home-canvas', 'receipt');
       if (s) {
         s.start();
@@ -1391,6 +1485,7 @@
       bindOnce();
       ensureState();
       stopAllScenes();
+      onReceiptScreenEnter();
       var s = getScene('calendar', 'receipt-calendar-canvas', 'calendar');
       if (s) {
         s.start();
@@ -1403,6 +1498,7 @@
       bindOnce();
       ensureState();
       stopAllScenes();
+      onReceiptScreenEnter();
       var s = getScene('edit', 'receipt-edit-canvas', 'edit');
       if (s) {
         s.start();
@@ -1414,6 +1510,7 @@
     onLeaveAll: function () {
       stopAllScenes();
       clearEditSelection();
+      updateGyroPromptVisible();
     },
     _test: {
       normalizeReceiptConfig: normalizeReceiptConfig,

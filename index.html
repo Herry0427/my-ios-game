@@ -1640,6 +1640,24 @@
     }
     #receipt-edit-inline-save { background: #4e6ef2; color: #fff; }
     #receipt-edit-inline-cancel { background: #eee; color: #333; }
+    #receipt-gyro-prompt {
+      position: fixed;
+      top: calc(var(--safe-top) + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10040;
+      display: none;
+      padding: 9px 16px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(28, 28, 32, 0.88);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+      cursor: pointer;
+    }
+    #receipt-gyro-prompt:active { transform: translateX(-50%) scale(0.97); }
   </style>
 </head>
 <body>
