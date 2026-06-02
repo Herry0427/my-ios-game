@@ -20,8 +20,8 @@
   var PAPER_H = PAPER_BASE_H;
   var CAMERA_Y = -0.35;
   var CAMERA_FOV = 40;
-  var PAPER_BTN_Y = TEX_H - 58;
-  var PAPER_BTN_H = 44;
+  var PAPER_BTN_Y = TEX_H - 72;
+  var PAPER_BTN_H = 64;
   var PAPER_NAV_PAD = 48;
   var PAPER_NAV_GAP = 96;
 
@@ -1149,12 +1149,28 @@
   function hitNavRegion(regions, cx, cy) {
     var i;
     var r;
+    var pad;
     for (i = regions.length - 1; i >= 0; i--) {
       r = regions[i];
       if (!isNavHit(r)) continue;
-      if (cx >= r.x - HIT_PAD && cx <= r.x + r.w + HIT_PAD && cy >= r.y - HIT_PAD && cy <= r.y + r.h + HIT_PAD) {
+      pad = r.id === 'nav_save' ? 28 : HIT_PAD;
+      if (cx >= r.x - pad && cx <= r.x + r.w + pad && cy >= r.y - pad && cy <= r.y + r.h + pad) {
         return r;
       }
+    }
+    return null;
+  }
+
+  function editSaveHitAtClient(view, clientX, clientY) {
+    if (!view || view.mode !== 'edit') return null;
+    var hit = view.resolveHitAtClient(clientX, clientY);
+    if (hit && hit.id === 'nav_save') return hit;
+    hit = view.navHitAtClient(clientX, clientY);
+    if (hit && hit.id === 'nav_save') return hit;
+    var pt = clientPointToTexture(view, clientX, clientY);
+    if (pt) {
+      hit = hitNavRegion(view.hitRegions, pt.x, pt.y);
+      if (hit && hit.id === 'nav_save') return hit;
     }
     return null;
   }
@@ -1304,19 +1320,8 @@
     this.renderer.domElement.addEventListener('pointermove', this._onPointerMove, { passive: false });
     this.renderer.domElement.addEventListener('pointerup', this._onPointerUp, { passive: false });
     this.renderer.domElement.addEventListener('pointercancel', this._onPointerCancel, { passive: false });
-    this._onCanvasClick = this.onCanvasClick.bind(this);
-    this.renderer.domElement.addEventListener('click', this._onCanvasClick);
     window.addEventListener('resize', this._onResize);
     bindReceiptContainerResize(this);
-  };
-
-  ReceiptPaperView.prototype.onCanvasClick = function (e) {
-    if (this.mode !== 'edit') return;
-    var hit = this.resolveHitAtClient(e.clientX, e.clientY);
-    if (hit && hit.id === 'nav_save') {
-      safePreventDefault(e);
-      saveAndGoHome();
-    }
   };
 
   ReceiptPaperView.prototype.setTexture = function (texture, regions) {
@@ -1534,6 +1539,12 @@
 
   ReceiptPaperView.prototype.onPointerDown = function (e) {
     if (e.button !== 0) return;
+    if (this.mode === 'edit' && editSaveHitAtClient(this, e.clientX, e.clientY)) {
+      safePreventDefault(e);
+      saveAndGoHome();
+      this.resetPointer();
+      return;
+    }
     this.setMouse(e);
     var hit = this.pick();
     var regionHit = this.resolveHitAtClient(e.clientX, e.clientY);
@@ -1873,31 +1884,6 @@
         if (scenes.edit) scenes.edit.refresh();
       };
     }
-    bindReceiptEditSaveButton();
-  }
-
-  function bindReceiptEditSaveButton() {
-    var domSave = document.getElementById('receipt-edit-save-btn');
-    if (!domSave || domSave._receiptSaveBound) return;
-    domSave._receiptSaveBound = true;
-    domSave.addEventListener(
-      'click',
-      function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        saveAndGoHome();
-      },
-      true
-    );
-    domSave.addEventListener(
-      'touchend',
-      function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        saveAndGoHome();
-      },
-      { capture: true, passive: false }
-    );
   }
 
   function ensureState() {
@@ -1930,7 +1916,6 @@
 
   global.ReceiptModule = {
     bindOnce: bindOnce,
-    bindReceiptEditSaveButton: bindReceiptEditSaveButton,
     saveAndReturnHome: saveAndGoHome,
     ensureState: ensureState,
     syncReceiptFromCloud: syncReceiptFromCloud,
