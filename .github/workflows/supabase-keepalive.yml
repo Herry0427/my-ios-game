@@ -1,0 +1,34 @@
+# 每 3 天 ping 一次 Supabase，避免免费项目 7 天无访问被暂停。
+# 须在 GitHub 仓库 Settings → Secrets 配置：
+#   SUPABASE_URL、SUPABASE_ANON_KEY
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: '0 8 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping PostgREST
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "SKIP: 未配置 SUPABASE_URL 或 SUPABASE_ANON_KEY（见仓库 Secrets）"
+            exit 0
+          fi
+          base="${SUPABASE_URL%/}"
+          curl -sfS \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json" \
+            "${base}/rest/v1/profiles?select=id&limit=1"
+          echo ""
+          echo "OK: Supabase keepalive $(date -u +%Y-%m-%dT%H:%M:%SZ)"
