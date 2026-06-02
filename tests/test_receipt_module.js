@@ -34,6 +34,7 @@ ok(receiptCode.indexOf('nav_ledger') >= 0, '纸上记账按钮');
 ok(receiptCode.indexOf('nav_save') >= 0, '纸上保存按钮');
 ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
+ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
 process.exit(fails ? 1 : 0);

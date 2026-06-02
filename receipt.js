@@ -833,12 +833,11 @@
     return textureNavFallback(this.mode, pt);
   };
 
-  ReceiptPaperView.prototype.clientNavFallback = function (clientX, clientY) {
-    if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
-    if (!this.mesh || !this.renderer || !this.camera) return null;
-    var box = new THREE.Box3().setFromObject(this.mesh);
+  function paperScreenBounds(view) {
+    if (!view.mesh || !view.renderer || !view.camera) return null;
+    var box = new THREE.Box3().setFromObject(view.mesh);
     if (box.isEmpty()) return null;
-    var rect = this.renderer.domElement.getBoundingClientRect();
+    var rect = view.renderer.domElement.getBoundingClientRect();
     var corners = [
       new THREE.Vector3(box.min.x, box.min.y, box.min.z),
       new THREE.Vector3(box.max.x, box.min.y, box.min.z),
@@ -858,7 +857,7 @@
     var sy;
     var i;
     for (i = 0; i < corners.length; i++) {
-      v = corners[i].clone().applyMatrix4(this.mesh.matrixWorld).project(this.camera);
+      v = corners[i].clone().applyMatrix4(view.mesh.matrixWorld).project(view.camera);
       sx = (v.x * 0.5 + 0.5) * rect.width + rect.left;
       sy = (-v.y * 0.5 + 0.5) * rect.height + rect.top;
       if (sx < minSx) minSx = sx;
@@ -866,11 +865,23 @@
       if (sy < minSy) minSy = sy;
       if (sy > maxSy) maxSy = sy;
     }
-    var bandTop = minSy + (maxSy - minSy) * 0.74;
-    if (clientY < bandTop - 20 || clientY > maxSy + 28) return null;
-    if (clientX < minSx - 24 || clientX > maxSx + 24) return null;
+    return {
+      minSx: minSx,
+      maxSx: maxSx,
+      minSy: minSy,
+      maxSy: maxSy,
+      bandTop: minSy + (maxSy - minSy) * 0.74
+    };
+  }
+
+  ReceiptPaperView.prototype.clientNavFallback = function (clientX, clientY) {
+    if (this.mode !== 'receipt' && this.mode !== 'edit') return null;
+    var ps = paperScreenBounds(this);
+    if (!ps) return null;
+    if (clientY < ps.bandTop - 20 || clientY > ps.maxSy + 28) return null;
+    if (clientX < ps.minSx - 24 || clientX > ps.maxSx + 24) return null;
     if (this.mode === 'edit') return { id: 'nav_save' };
-    var midX = (minSx + maxSx) / 2;
+    var midX = (ps.minSx + ps.maxSx) / 2;
     return clientX < midX ? { id: 'nav_calendar' } : { id: 'nav_ledger' };
   };
 
@@ -901,7 +912,8 @@
     if (e.button !== 0) return;
     this.setMouse(e);
     var hit = this.pick();
-    if (!hit) return;
+    var navOnly = this.clientNavFallback(e.clientX, e.clientY);
+    if (!hit && !navOnly) return;
     if (e.cancelable) e.preventDefault();
     try {
       this.renderer.domElement.setPointerCapture(e.pointerId);
@@ -914,9 +926,9 @@
     this.pointer.downClientY = e.clientY;
     this.pointer.x = e.clientX;
     this.pointer.y = e.clientY;
-    this.pointer.uv = hit.uv;
-    this.pointer.hitPoint = hit.point.clone();
-    this.pointer.regionHit = this.resolveTap(e.clientX, e.clientY, hit.uv);
+    this.pointer.uv = hit ? hit.uv : null;
+    this.pointer.hitPoint = hit ? hit.point.clone() : null;
+    this.pointer.regionHit = navOnly || (hit ? this.resolveTap(e.clientX, e.clientY, hit.uv) : null);
     if (this.pointer.regionHit) this.pointer.interactive = true;
   };
 
@@ -976,13 +988,12 @@
     if (this.pointer.regionHit && isNavHit(this.pointer.regionHit)) {
       hit = this.pointer.regionHit;
     } else if (isTap) {
-      this.setMouse(e);
-      var picked = this.pick();
-      var uv = picked ? picked.uv : this.pointer.uv;
-      hit = this.resolveTap(e.clientX, e.clientY, uv);
+      hit = this.resolveTap(e.clientX, e.clientY, this.pointer.uv);
+      if (!hit) hit = this.clientNavFallback(e.clientX, e.clientY);
     }
-    if (!hit && isTap && this.pointer.uv) {
+    if (!hit && isTap) {
       hit = this.resolveTap(this.pointer.downClientX, this.pointer.downClientY, this.pointer.uv);
+      if (!hit) hit = this.clientNavFallback(this.pointer.downClientX, this.pointer.downClientY);
     }
     if (hit) this.dispatchRegionHit(hit);
     this.resetPointer();
@@ -1252,7 +1263,29 @@
       normalizeReceiptConfig: normalizeReceiptConfig,
       sumItems: sumItems,
       randomTerminalForDate: randomTerminalForDate,
-      dateKey: dateKey
+      dateKey: dateKey,
+      debugNavAt: function (clientX, clientY) {
+        var s = scenes.home;
+        if (!s || !s.mesh) return { error: 'no_home_scene' };
+        var ps = paperScreenBounds(s);
+        return {
+          clientX: clientX,
+          clientY: clientY,
+          paperScreen: ps,
+          fallback: s.clientNavFallback(clientX, clientY)
+        };
+      },
+      paperNavClientPoint: function (modeKey, side) {
+        var s = scenes[modeKey];
+        if (!s || !s.mesh) return null;
+        var ps = paperScreenBounds(s);
+        if (!ps) return null;
+        var ratio = side === 'calendar' ? 0.25 : side === 'ledger' ? 0.75 : 0.5;
+        return {
+          x: ps.minSx + (ps.maxSx - ps.minSx) * ratio,
+          y: ps.maxSy - 10
+        };
+      }
     }
   };
 })(typeof window !== 'undefined' ? window : global);
