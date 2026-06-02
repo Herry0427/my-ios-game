@@ -12,7 +12,7 @@
   var NAV_LABEL_PAD_X = 6;
   var NAV_LABEL_PAD_Y = 4;
   var STORAGE_PREFIX = 'receipt_day_';
-  var PAPER_DISPLAY_SCALE = 0.99;
+  var PAPER_DISPLAY_SCALE = 1.089;
   var PAPER_W = 3.84 * PAPER_DISPLAY_SCALE;
   var PAPER_H = 7.68 * PAPER_DISPLAY_SCALE;
   var CAMERA_Y = -0.35;
@@ -48,6 +48,10 @@
 
   var scenes = { home: null, calendar: null, edit: null };
   var bound = false;
+  var deviceGravityTarget = { x: 0, y: -9.8, z: 0 };
+  var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
+  var deviceGravityReady = false;
+  var deviceGravityBound = false;
 
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
@@ -605,9 +609,9 @@
     });
   };
 
-  PhysicsPaper.prototype.update = function (dt, dragIndex, dragPos) {
+  PhysicsPaper.prototype.update = function (dt, dragIndex, dragPos, gravity) {
     var damping = 0.985;
-    var gravity = new THREE.Vector3(0, -9.8, 0);
+    var g = gravity || deviceGravitySmooth;
     var wind = new THREE.Vector3(0, 0, Math.sin(Date.now() * 0.002) * 0.3);
     var i;
     var k;
@@ -616,7 +620,7 @@
       p = this.particles[i];
       if (p.fixed) continue;
       var temp = p.pos.clone();
-      p.acc.copy(gravity).add(wind);
+      p.acc.set(g.x, g.y, 0).add(wind);
       p.pos.addScaledVector(p.pos.clone().sub(p.oldPos), damping);
       p.pos.addScaledVector(p.acc, dt * dt);
       p.oldPos.copy(temp);
@@ -644,6 +648,64 @@
   function isReceiptStandalone() {
     if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
     return !!(window.navigator && window.navigator.standalone);
+  }
+
+  function setDeviceGravityFromOrientation(beta, gamma) {
+    if (beta == null || gamma == null) return;
+    var b = THREE.MathUtils.degToRad(beta);
+    var g = THREE.MathUtils.degToRad(gamma);
+    var gx = Math.sin(g);
+    var gy = -Math.sin(b) * Math.cos(g);
+    var len = Math.sqrt(gx * gx + gy * gy);
+    if (len < 0.05) return;
+    deviceGravityTarget.set((gx / len) * 9.8, (gy / len) * 9.8, 0);
+    deviceGravityReady = true;
+  }
+
+  function onReceiptDeviceOrientation(e) {
+    setDeviceGravityFromOrientation(e.beta, e.gamma);
+  }
+
+  function onReceiptDeviceMotion(e) {
+    var ag = e.accelerationIncludingGravity;
+    if (!ag || ag.x == null || ag.y == null) return;
+    var x = -ag.x;
+    var y = -ag.y;
+    var len = Math.sqrt(x * x + y * y);
+    if (len < 1.5) return;
+    deviceGravityTarget.set((x / len) * 9.8, (y / len) * 9.8, 0);
+    deviceGravityReady = true;
+  }
+
+  function startDeviceGravityListeners() {
+    if (deviceGravityBound) return;
+    deviceGravityBound = true;
+    window.addEventListener('deviceorientation', onReceiptDeviceOrientation, true);
+    window.addEventListener('devicemotion', onReceiptDeviceMotion, true);
+  }
+
+  function tryEnableDeviceGravity(fromGesture) {
+    if (deviceGravityBound) return;
+    if (typeof window === 'undefined') return;
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      if (!fromGesture) return;
+      DeviceOrientationEvent.requestPermission()
+        .then(function (state) {
+          if (state === 'granted') startDeviceGravityListeners();
+        })
+        .catch(function () {});
+      return;
+    }
+    startDeviceGravityListeners();
+  }
+
+  function sampleDeviceGravity(dt) {
+    if (!deviceGravityReady) return deviceGravitySmooth;
+    var t = Math.min(1, dt * 8);
+    deviceGravitySmooth.x += (deviceGravityTarget.x - deviceGravitySmooth.x) * t;
+    deviceGravitySmooth.y += (deviceGravityTarget.y - deviceGravitySmooth.y) * t;
+    return deviceGravitySmooth;
   }
 
   function receiptContainerSize(container) {
@@ -998,6 +1060,7 @@
 
   ReceiptPaperView.prototype.onPointerDown = function (e) {
     if (e.button !== 0) return;
+    tryEnableDeviceGravity(true);
     this.setMouse(e);
     var hit = this.pick();
     var navOnly = null;
@@ -1154,7 +1217,7 @@
         dragIdx = self.grabIndex;
         dragPos = self.dragTargetPos;
       }
-      self.physics.update(dt, dragIdx, dragPos);
+      self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
       var posAttr = self.geometry.attributes.position;
       var j;
       for (j = 0; j < self.physics.particles.length; j++) {
@@ -1315,6 +1378,7 @@
       bindOnce();
       ensureState();
       stopAllScenes();
+      tryEnableDeviceGravity(false);
       var s = getScene('home', 'receipt-home-canvas', 'receipt');
       if (s) {
         s.start();
