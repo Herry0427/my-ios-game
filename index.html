@@ -1632,9 +1632,12 @@
       transform: translateX(-50%);
       bottom: calc(12px + var(--safe-bottom));
       z-index: 10051;
-      display: flex;
+      display: none;
       pointer-events: auto;
       touch-action: manipulation;
+    }
+    #receipt-edit-screen.active .receipt-edit-actions {
+      display: flex;
     }
     #receipt-edit-save-btn {
       font-size: 15px;
@@ -3316,6 +3319,19 @@
     if (view !== 'recipe_detail') releaseRecipeWakeLock();
   }
   window.goToView = goToView;
+
+  (function bindReceiptEditSaveUi() {
+    function wire() {
+      if (window.ReceiptModule && ReceiptModule.bindReceiptEditSaveButton) {
+        ReceiptModule.bindReceiptEditSaveButton();
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', wire);
+    } else {
+      wire();
+    }
+  })();
 
   var memoRowsCache = [];
   var memoViewportHandlersBound = false;

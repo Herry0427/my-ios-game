@@ -1168,12 +1168,19 @@
     };
   }
 
+  var lastSaveNavAt = 0;
+
   function saveAndGoHome() {
-    if (state.editSelection) commitInlineEdit();
+    var now = Date.now();
+    if (now - lastSaveNavAt < 450) return;
+    lastSaveNavAt = now;
+    if (state.editSelection) commitInlineEdit(true);
     state.currentCfg = normalizeReceiptConfig(state.currentCfg);
     saveCurrentDay();
     clearEditSelection();
-    if (global.goToView) global.goToView('receipt_home');
+    if (scenes.edit) scenes.edit.stop();
+    var go = global.goToView || (typeof window !== 'undefined' ? window.goToView : null);
+    if (go) go('receipt_home');
   }
 
   function handleReceiptNavHit(hit) {
@@ -1297,8 +1304,19 @@
     this.renderer.domElement.addEventListener('pointermove', this._onPointerMove, { passive: false });
     this.renderer.domElement.addEventListener('pointerup', this._onPointerUp, { passive: false });
     this.renderer.domElement.addEventListener('pointercancel', this._onPointerCancel, { passive: false });
+    this._onCanvasClick = this.onCanvasClick.bind(this);
+    this.renderer.domElement.addEventListener('click', this._onCanvasClick);
     window.addEventListener('resize', this._onResize);
     bindReceiptContainerResize(this);
+  };
+
+  ReceiptPaperView.prototype.onCanvasClick = function (e) {
+    if (this.mode !== 'edit') return;
+    var hit = this.resolveHitAtClient(e.clientX, e.clientY);
+    if (hit && hit.id === 'nav_save') {
+      safePreventDefault(e);
+      saveAndGoHome();
+    }
   };
 
   ReceiptPaperView.prototype.setTexture = function (texture, regions) {
@@ -1799,7 +1817,7 @@
     if (scenes.edit) scenes.edit.refresh();
   }
 
-  function commitInlineEdit() {
+  function commitInlineEdit(finishOnly) {
     if (!state.editSelection) return;
     var sel = state.editSelection;
     var item = state.currentCfg.items[sel.index];
@@ -1820,7 +1838,7 @@
     var savedIndex = sel.index;
     clearEditSelection();
     if (scenes.edit) scenes.edit.refresh();
-    if (savedField === 'name') beginEdit('price', savedIndex);
+    if (!finishOnly && savedField === 'name') beginEdit('price', savedIndex);
   }
 
   function bindOnce() {
@@ -1855,12 +1873,31 @@
         if (scenes.edit) scenes.edit.refresh();
       };
     }
+    bindReceiptEditSaveButton();
+  }
+
+  function bindReceiptEditSaveButton() {
     var domSave = document.getElementById('receipt-edit-save-btn');
-    if (domSave) {
-      domSave.onclick = function () {
+    if (!domSave || domSave._receiptSaveBound) return;
+    domSave._receiptSaveBound = true;
+    domSave.addEventListener(
+      'click',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         saveAndGoHome();
-      };
-    }
+      },
+      true
+    );
+    domSave.addEventListener(
+      'touchend',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        saveAndGoHome();
+      },
+      { capture: true, passive: false }
+    );
   }
 
   function ensureState() {
@@ -1893,6 +1930,8 @@
 
   global.ReceiptModule = {
     bindOnce: bindOnce,
+    bindReceiptEditSaveButton: bindReceiptEditSaveButton,
+    saveAndReturnHome: saveAndGoHome,
     ensureState: ensureState,
     syncReceiptFromCloud: syncReceiptFromCloud,
     scheduleReceiptCloudSync: scheduleReceiptCloudSync,

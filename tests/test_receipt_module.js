@@ -52,7 +52,9 @@ ok(receiptCode.indexOf('syncReceiptFromCloud') >= 0, '记账云端同步');
 ok(receiptCode.indexOf('scheduleReceiptCloudSync') >= 0, '云端同步延后后台');
 ok(receiptCode.indexOf('disposeReceiptScene') >= 0, '旧版低网格场景可重建');
 ok(receiptCode.indexOf('isEditActionHit') >= 0, '编辑按钮与拖拽分流');
+ok(receiptCode.indexOf('saveAndReturnHome') >= 0, '对外保存并返回');
 ok(html.indexOf('receipt-edit-save-btn') >= 0, '编辑页 DOM 保存按钮');
+ok(html.indexOf('bindReceiptEditSaveUi') >= 0, 'index 内绑定保存按钮');
 ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 (function () {
