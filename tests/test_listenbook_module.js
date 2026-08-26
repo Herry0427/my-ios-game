@@ -90,6 +90,12 @@ ok(t.UTTERANCE_MAX >= 280, '朗读块加长减少卡顿');
 ok(html.indexOf('lb-lyric-box') >= 0 && html.indexOf('lb-lyric-toggle') >= 0, '三行歌词区与文字开关');
 ok(src.indexOf('lyricsOn: true') >= 0, '默认显示歌词');
 (function () {
+  var u = t.splitIntoUtterances('真正的读人，并不是简单地评价别人，而是从他人的人生。', 320);
+  ok(u.length === 3, '逗号句号各算一行');
+  ok(u[0].slice(-1) === '，' && u[1].slice(-1) === '，' && u[2].slice(-1) === '。', '标点留在该行末尾');
+  ok(u[0].indexOf('并不是') < 0, '超长不再挤在一行里');
+})();
+(function () {
   var w = t.lyricWindow(['甲。', '乙。', '丙。', '丁。'], 1);
   ok(w.prev === '甲。' && w.cur === '乙。' && w.next === '丙。', '歌词窗口上一句当前下一句');
 })();

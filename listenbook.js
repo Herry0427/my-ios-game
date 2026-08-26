@@ -83,15 +83,17 @@
     return t.length > 22 ? t.slice(0, 22) : t;
   }
 
+  var PUNCT_ONE = /[。！？；;!?\n，,、：:]/;
+
   function splitKeepPunct(text) {
-    var raw = String(text || '').split(/([。！？；;!?\n])/);
+    var raw = String(text || '').split(/([。！？；;!?\n，,、：:])/);
     var out = [];
     var i;
     var p;
     for (i = 0; i < raw.length; i++) {
       p = raw[i];
       if (!p) continue;
-      if (/^[。！？；;!?\n]$/.test(p) && out.length) out[out.length - 1] += p;
+      if (PUNCT_ONE.test(p) && p.length === 1 && out.length) out[out.length - 1] += p;
       else out.push(p);
     }
     return out.length ? out : [String(text || '')];
@@ -960,6 +962,7 @@
       addItem: addItem,
       nextListIndex: nextListIndex,
       scoreVoice: scoreVoice,
+      splitKeepPunct: splitKeepPunct,
       lyricWindow: lyricWindow,
       PREVIEW_CHARS: PREVIEW_CHARS,
       SEGMENT_MAX: SEGMENT_MAX,
