@@ -87,6 +87,12 @@ ok(
   '增强女声优先于发糊的婷婷压缩音'
 );
 ok(t.UTTERANCE_MAX >= 280, '朗读块加长减少卡顿');
+ok(html.indexOf('lb-lyric-box') >= 0 && html.indexOf('lb-lyric-toggle') >= 0, '三行歌词区与文字开关');
+ok(src.indexOf('lyricsOn: true') >= 0, '默认显示歌词');
+(function () {
+  var w = t.lyricWindow(['甲。', '乙。', '丙。', '丁。'], 1);
+  ok(w.prev === '甲。' && w.cur === '乙。' && w.next === '丙。', '歌词窗口上一句当前下一句');
+})();
 
 console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
 process.exit(fails ? 1 : 0);

@@ -170,10 +170,26 @@
       border-top: 1px solid rgba(0, 255, 204, 0.18);
       background: linear-gradient(180deg, rgba(6, 6, 13, 0), rgba(6, 6, 13, 0.96) 18%);
     }
-    #listenbook-screen .lb-now {
-      font-size: 0.72rem; color: var(--neon-green); margin: 0 2px 8px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    #listenbook-screen .lb-lyric-wrap { margin: 0 0 8px; }
+    #listenbook-screen .lb-lyric-toggle {
+      display: block; margin: 0 0 6px auto; padding: 4px 10px; min-height: 28px;
+      border-radius: 8px; font-size: 0.62rem; font-weight: 700; cursor: pointer;
+      border: 1px solid rgba(0, 255, 204, 0.32); background: rgba(0, 255, 204, 0.06);
+      color: var(--neon-cyan);
     }
+    #listenbook-screen .lb-lyric-box {
+      height: calc(3 * 1.35em);
+      overflow: hidden;
+      font-size: 0.86rem;
+      line-height: 1.35;
+      padding: 2px 4px;
+    }
+    #listenbook-screen .lb-lyric-off .lb-lyric-box { display: none; }
+    #listenbook-screen .lb-lyric-line {
+      height: 1.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #listenbook-screen .lb-lyric-dim { color: var(--text-dim); }
+    #listenbook-screen .lb-lyric-on { color: var(--neon-green); font-weight: 700; }
     #listenbook-screen .lb-controls, #listenbook-screen .lb-opts {
       display: flex; gap: 8px; margin-bottom: 8px;
     }
@@ -1878,7 +1894,14 @@
       <ul class="lb-list" id="lb-list"></ul>
     </div>
     <div class="lb-player" id="lb-player">
-      <p class="lb-now" id="lb-now">先加入一条文本再播放</p>
+      <div class="lb-lyric-wrap" id="lb-lyric-wrap">
+        <button type="button" class="lb-lyric-toggle" id="lb-lyric-toggle">文字：开</button>
+        <div class="lb-lyric-box" id="lb-lyric-box">
+          <div class="lb-lyric-line lb-lyric-dim" id="lb-lyric-prev"></div>
+          <div class="lb-lyric-line lb-lyric-on" id="lb-lyric-cur">加入文本后，这里会跟着朗读滚三行</div>
+          <div class="lb-lyric-line lb-lyric-dim" id="lb-lyric-next"></div>
+        </div>
+      </div>
       <div class="lb-controls">
         <button type="button" class="lb-nav-btn" id="lb-prev">上一条</button>
         <button type="button" id="lb-play">播放</button>

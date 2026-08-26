@@ -29,6 +29,7 @@
     loop: 'one',
     rate: 1,
     voiceURI: '',
+    lyricsOn: true,
     bound: false
   };
   var speakGen = 0;
@@ -254,10 +255,37 @@
   function splitIntoUtterances(text, maxChars) {
     var cap = maxChars == null ? UTTERANCE_MAX : maxChars;
     var t = String(text || '').replace(/^\s+|\s+$/g, '');
+    var parts;
+    var out = [];
+    var i;
+    var p;
+    var bits;
+    var j;
     if (!t) return [];
-    return splitLongBlock(t, cap).filter(function (s) {
-      return s.replace(/^\s+|\s+$/g, '');
-    });
+    parts = splitKeepPunct(t);
+    for (i = 0; i < parts.length; i++) {
+      p = String(parts[i] || '').replace(/^\s+|\s+$/g, '');
+      if (!p) continue;
+      if (p.length <= cap) {
+        out.push(p);
+        continue;
+      }
+      bits = hardSlice(p, cap);
+      for (j = 0; j < bits.length; j++) out.push(bits[j]);
+    }
+    return out;
+  }
+
+  function lyricWindow(lines, idx) {
+    var list = lines || [];
+    var i = idx == null ? 0 : idx;
+    if (i < 0) i = 0;
+    if (list.length && i >= list.length) i = list.length - 1;
+    return {
+      prev: i > 0 ? list[i - 1] : '',
+      cur: list[i] || '',
+      next: i + 1 < list.length ? list[i + 1] : ''
+    };
   }
 
   function previewText(text) {
@@ -394,6 +422,7 @@
       if (o && RATES.indexOf(Number(o.rate)) >= 0) state.rate = Number(o.rate);
       if (o && typeof o.voiceURI === 'string') state.voiceURI = o.voiceURI;
       if (o && o.splitOn) state.splitOn = true;
+      if (o && o.lyricsOn === false) state.lyricsOn = false;
       if (o && typeof o.index === 'number' && o.index >= 0) state.index = o.index;
     } catch (e) {}
   }
@@ -410,6 +439,7 @@
           rate: state.rate,
           voiceURI: state.voiceURI,
           splitOn: state.splitOn,
+          lyricsOn: state.lyricsOn,
           index: state.index
         })
       );
@@ -586,6 +616,53 @@
     if (loopBtn) loopBtn.textContent = LOOP_LABEL[state.loop] || LOOP_LABEL.one;
     if (rateBtn) rateBtn.textContent = RATE_LABEL[String(state.rate)] || '语速：常速';
     if (voiceBtn) voiceBtn.textContent = voiceButtonLabel();
+    updateLyricToggle();
+    updateLyrics();
+  }
+
+  function currentLyricLines() {
+    var segs = activeSegments();
+    if (!segs.length) return [];
+    return splitIntoUtterances(segs[state.index] ? segs[state.index].body : '');
+  }
+
+  function updateLyricToggle() {
+    var wrap = el('lb-lyric-wrap');
+    var btn = el('lb-lyric-toggle');
+    if (wrap) wrap.classList.toggle('lb-lyric-off', !state.lyricsOn);
+    if (btn) btn.textContent = state.lyricsOn ? '文字：开' : '文字：关';
+  }
+
+  function updateLyrics() {
+    var win;
+    var lines;
+    var prev = el('lb-lyric-prev');
+    var cur = el('lb-lyric-cur');
+    var next = el('lb-lyric-next');
+    if (!prev || !cur || !next) return;
+    lines = currentLyricLines();
+    win = lyricWindow(lines, state.playing ? state.utterIndex : 0);
+    if (!lines.length) {
+      prev.textContent = '';
+      cur.textContent = '加入文本后，这里会跟着朗读滚三行';
+      next.textContent = '';
+      return;
+    }
+    prev.textContent = win.prev || ' ';
+    cur.textContent = win.cur || ' ';
+    next.textContent = win.next || ' ';
+  }
+
+  function toggleLyrics() {
+    state.lyricsOn = !state.lyricsOn;
+    saveStore();
+    updateLyricToggle();
+  }
+
+  function updatePlayChrome() {
+    var play = el('lb-play');
+    if (play) play.textContent = state.playing ? '停止' : '播放';
+    updateLyrics();
   }
 
   function ttsAvailable() {
@@ -685,7 +762,7 @@
     chunk = utters[state.utterIndex];
     state.playing = true;
     startKeepalive();
-    renderAll();
+    updatePlayChrome();
     speakText(chunk, function (err) {
       if (!state.playing) return;
       if (err && err.message === 'no_tts') {
@@ -824,6 +901,7 @@
     if (el('lb-loop')) el('lb-loop').addEventListener('click', cycleLoop);
     if (el('lb-rate')) el('lb-rate').addEventListener('click', cycleRate);
     if (el('lb-voice')) el('lb-voice').addEventListener('click', cycleVoice);
+    if (el('lb-lyric-toggle')) el('lb-lyric-toggle').addEventListener('click', toggleLyrics);
     list = el('lb-list');
     if (list) {
       list.addEventListener('click', function (e) {
@@ -882,6 +960,7 @@
       addItem: addItem,
       nextListIndex: nextListIndex,
       scoreVoice: scoreVoice,
+      lyricWindow: lyricWindow,
       PREVIEW_CHARS: PREVIEW_CHARS,
       SEGMENT_MAX: SEGMENT_MAX,
       UTTERANCE_MAX: UTTERANCE_MAX
