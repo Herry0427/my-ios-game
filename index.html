@@ -159,6 +159,12 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     #listenbook-screen .lb-item-len { display: block; font-size: 0.62rem; color: var(--text-dim); margin-top: 4px; }
+    #listenbook-screen .lb-item-del {
+      flex-shrink: 0; width: 36px; height: 36px; margin: -4px -4px 0 0;
+      border: 0; border-radius: 10px; background: transparent;
+      color: var(--text-dim); font-size: 1.2rem; line-height: 1; cursor: pointer;
+    }
+    #listenbook-screen .lb-item-del:active { color: var(--neon-red); }
     #listenbook-screen .lb-player {
       flex-shrink: 0; padding: 10px 0 calc(12px + var(--safe-bottom));
       border-top: 1px solid rgba(0, 255, 204, 0.18);
@@ -177,13 +183,8 @@
       background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98));
       color: var(--neon-cyan);
     }
-    #listenbook-screen #lb-voice {
-      flex: 1; min-height: 44px; width: 100%; border-radius: 12px; font-size: 0.82rem;
-      font-weight: 700; color: var(--neon-cyan); padding: 0 10px;
-      border: 2px solid rgba(0, 255, 204, 0.35);
-      background: rgba(12, 18, 28, 0.96);
-    }
-    #listenbook-screen:not(.lb-split-on) .lb-nav-btn { display: none; }
+    #listenbook-screen .lb-opts button { font-size: 0.72rem; }
+    #listenbook-screen:not(.lb-has-list) .lb-nav-btn { display: none; }
     #listenbook-screen #lb-play {
       border-color: var(--neon-magenta); color: #fff;
       background: linear-gradient(145deg, rgba(90, 24, 70, 0.95), rgba(35, 12, 45, 0.98));
@@ -1865,28 +1866,27 @@
       <h2 class="lb-title">听书</h2>
     </div>
     <div class="lb-compose">
-      <textarea id="lb-input" placeholder="粘贴要背的全文，再长也可以…" enterkeyhint="done"></textarea>
+      <textarea id="lb-input" placeholder="粘贴要背的全文，再点加入列表，可保存多条…" enterkeyhint="done"></textarea>
       <div class="lb-compose-row">
+        <button type="button" id="lb-add-btn">加入列表</button>
         <button type="button" id="lb-split-btn">拆成段落</button>
-        <button type="button" id="lb-clear-btn">清空</button>
+        <button type="button" id="lb-clear-btn">清空输入</button>
       </div>
     </div>
-      <p class="lb-meta" id="lb-meta">粘贴全文后点播放即可，只有需要按章听时再点拆成段落</p>
+    <p class="lb-meta" id="lb-meta">粘贴一条后点加入列表，可保存多条；点某条即可朗读</p>
     <div class="lb-list-scroll" id="lb-list-scroll">
       <ul class="lb-list" id="lb-list"></ul>
     </div>
     <div class="lb-player" id="lb-player">
-      <p class="lb-now" id="lb-now">先粘贴文本再播放</p>
+      <p class="lb-now" id="lb-now">先加入一条文本再播放</p>
       <div class="lb-controls">
-        <button type="button" class="lb-nav-btn" id="lb-prev">上一段</button>
+        <button type="button" class="lb-nav-btn" id="lb-prev">上一条</button>
         <button type="button" id="lb-play">播放</button>
-        <button type="button" class="lb-nav-btn" id="lb-next">下一段</button>
+        <button type="button" class="lb-nav-btn" id="lb-next">下一条</button>
       </div>
       <div class="lb-opts">
-        <select id="lb-voice" aria-label="选择音色"></select>
-      </div>
-      <div class="lb-opts">
-        <button type="button" id="lb-loop">循环：开</button>
+        <button type="button" id="lb-voice">音色：自动</button>
+        <button type="button" id="lb-loop">循环：单条</button>
         <button type="button" id="lb-rate">语速：常速</button>
       </div>
       <p class="lb-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB</p>
