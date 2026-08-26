@@ -177,6 +177,13 @@
       background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98));
       color: var(--neon-cyan);
     }
+    #listenbook-screen #lb-voice {
+      flex: 1; min-height: 44px; width: 100%; border-radius: 12px; font-size: 0.82rem;
+      font-weight: 700; color: var(--neon-cyan); padding: 0 10px;
+      border: 2px solid rgba(0, 255, 204, 0.35);
+      background: rgba(12, 18, 28, 0.96);
+    }
+    #listenbook-screen:not(.lb-split-on) .lb-nav-btn { display: none; }
     #listenbook-screen #lb-play {
       border-color: var(--neon-magenta); color: #fff;
       background: linear-gradient(145deg, rgba(90, 24, 70, 0.95), rgba(35, 12, 45, 0.98));
@@ -1864,20 +1871,23 @@
         <button type="button" id="lb-clear-btn">清空</button>
       </div>
     </div>
-    <p class="lb-meta" id="lb-meta">粘贴全文后自动分段，越长越好背</p>
+      <p class="lb-meta" id="lb-meta">粘贴全文后点播放即可，只有需要按章听时再点拆成段落</p>
     <div class="lb-list-scroll" id="lb-list-scroll">
       <ul class="lb-list" id="lb-list"></ul>
     </div>
     <div class="lb-player" id="lb-player">
-      <p class="lb-now" id="lb-now">还没有段落</p>
+      <p class="lb-now" id="lb-now">先粘贴文本再播放</p>
       <div class="lb-controls">
-        <button type="button" id="lb-prev">上一段</button>
+        <button type="button" class="lb-nav-btn" id="lb-prev">上一段</button>
         <button type="button" id="lb-play">播放</button>
-        <button type="button" id="lb-next">下一段</button>
+        <button type="button" class="lb-nav-btn" id="lb-next">下一段</button>
       </div>
       <div class="lb-opts">
-        <button type="button" id="lb-loop">循环：单段</button>
-        <button type="button" id="lb-rate">语速：慢</button>
+        <select id="lb-voice" aria-label="选择音色"></select>
+      </div>
+      <div class="lb-opts">
+        <button type="button" id="lb-loop">循环：开</button>
+        <button type="button" id="lb-rate">语速：常速</button>
       </div>
       <p class="lb-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB</p>
     </div>

@@ -1,34 +1,37 @@
 /**
- * 听书：粘贴超长文本 → 智能分段 → 系统朗读循环背诵（Web Speech，不导出文件）
+ * 听书：粘贴超长文本，默认整篇连读；点「拆成段落」才分段。系统语音可选音色。
  */
 (function (global) {
   'use strict';
 
-  var STORAGE_KEY = 'arcade_listenbook_v1';
+  var STORAGE_KEY = 'arcade_listenbook_v2';
   var SEGMENT_MAX = 1400;
-  var UTTERANCE_MAX = 120;
+  var UTTERANCE_MAX = 320;
   var MERGE_MIN = 80;
   var DECOR_LINE = /^[\s=\-*_—－]{3,}$/;
   var CHAPTER_RE = /^第[一二三四五六七八九十百零0-9]+章/;
   var LOOP_MODES = ['one', 'all', 'off'];
-  var LOOP_LABEL = { one: '循环：单段', all: '循环：全部', off: '循环：关' };
-  var RATES = [0.75, 0.9, 1, 1.15];
-  var RATE_LABEL = { '0.75': '语速：很慢', '0.9': '语速：慢', '1': '语速：常速', '1.15': '语速：快' };
+  var LOOP_LABEL = { one: '循环：开', all: '循环：逐段', off: '循环：关' };
+  var RATES = [0.85, 0.95, 1, 1.1];
+  var RATE_LABEL = { '0.85': '语速：慢', '0.95': '语速：稍慢', '1': '语速：常速', '1.1': '语速：稍快' };
+  var SAMPLE_LINE = '这是当前音色。用于朗读备考资料，口齿会更清楚一些。';
 
   var state = {
     text: '',
     segments: [],
+    splitOn: false,
     index: 0,
     utterIndex: 0,
     playing: false,
     loop: 'one',
-    rate: 0.9,
+    rate: 1,
+    voiceURI: '',
     bound: false
   };
   var speakGen = 0;
   var keepTimer = null;
   var persistTimer = null;
-  var splitTimer = null;
+  var textTimer = null;
 
   function cleanForSpeech(text) {
     var lines = String(text || '')
@@ -48,6 +51,16 @@
       .replace(/\n{3,}/g, '\n\n')
       .replace(/★/g, '星标')
       .replace(/^\s+|\s+$/g, '');
+  }
+
+  function textForSpeak(text) {
+    var t = cleanForSpeech(text);
+    if (!t) return '';
+    t = t.replace(/\n{2,}/g, '。');
+    t = t.replace(/\n/g, '，');
+    t = t.replace(/[，。]{2,}/g, '。');
+    t = t.replace(/^[，。]+|[，。]+$/g, '');
+    return t;
   }
 
   function isChapterTitle(line) {
@@ -188,6 +201,7 @@
     var packed;
     var i;
     var title;
+    var spoken;
     if (!cleaned) return [];
     chapters = splitChapterBlocks(cleaned);
     for (c = 0; c < chapters.length; c++) {
@@ -200,13 +214,19 @@
       if (!packed.length) continue;
       title = chapters[c].title;
       if (packed.length === 1) {
-        out.push({ title: title, body: packed[0], charCount: packed[0].length });
+        spoken = textForSpeak(packed[0]);
+        out.push({
+          title: title,
+          body: spoken,
+          charCount: spoken.length
+        });
       } else {
         for (i = 0; i < packed.length; i++) {
+          spoken = textForSpeak(packed[i]);
           out.push({
             title: title + '（' + (i + 1) + '/' + packed.length + '）',
-            body: packed[i],
-            charCount: packed[i].length
+            body: spoken,
+            charCount: spoken.length
           });
         }
       }
@@ -223,8 +243,8 @@
     prev = segs[segs.length - 2];
     if (last.charCount >= MERGE_MIN) return;
     if (prev.charCount + last.charCount + 1 > maxChars) return;
-    prev.body += '\n' + last.body;
-    prev.charCount = prev.body.length;
+    prev.body += last.body;
+    prev.charCount = prev.charCount + last.charCount;
     segs.pop();
   }
 
@@ -237,14 +257,74 @@
     });
   }
 
+  function wholeSegment(text) {
+    var body = textForSpeak(text);
+    if (!body) return [];
+    return [{ title: '全文', body: body, charCount: body.length }];
+  }
+
+  function activeSegments() {
+    if (state.splitOn && state.segments.length) return state.segments;
+    return wholeSegment(state.text);
+  }
+
+  function scoreVoice(v) {
+    var n = (String(v && v.name || '') + ' ' + String(v && v.lang || '')).toLowerCase();
+    var s = 0;
+    if (!n.replace(/\s/g, '')) return -999;
+    if (!/zh|cmn|yue|chinese|中文|普通话|国语|粤|ting|meijia|sinji|nannan|tian/.test(n)) s -= 250;
+    if (/compact/.test(n)) s -= 90;
+    if (/ting-ting|tingting/.test(n) && !/enhanced|premium|siri/.test(n)) s -= 50;
+    if (/enhanced|premium|neural|siri|质量/.test(n)) s += 120;
+    if (/meijia|美佳|nannan|tian-tian|婷婷（增强|yu-shu/.test(n)) s += 55;
+    if (/zh-cn|zh_cn|zh-hans|cmn-hans|普通话/.test(n)) s += 35;
+    if (/zh-tw|zh-hk|yue|sinji|粤/.test(n)) s += 8;
+    if (/male|男|yunxi|yunyang|liang|kangkang/.test(n)) s += 5;
+    return s;
+  }
+
+  function listZhVoices() {
+    var all;
+    var i;
+    var v;
+    var n;
+    var out = [];
+    if (!ttsAvailable()) return [];
+    all = window.speechSynthesis.getVoices() || [];
+    for (i = 0; i < all.length; i++) {
+      v = all[i];
+      n = String(v.lang || '') + ' ' + String(v.name || '');
+      if (!/zh|cmn|yue|chinese|中文|普通话|国语|粤|ting|meijia|sinji/i.test(n)) continue;
+      out.push(v);
+    }
+    out.sort(function (a, b) {
+      return scoreVoice(b) - scoreVoice(a);
+    });
+    return out;
+  }
+
+  function resolveVoice() {
+    var list = listZhVoices();
+    var i;
+    if (!list.length) return null;
+    if (state.voiceURI) {
+      for (i = 0; i < list.length; i++) {
+        if (list[i].voiceURI === state.voiceURI || list[i].name === state.voiceURI) return list[i];
+      }
+    }
+    return list[0];
+  }
+
   function loadStore() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('arcade_listenbook_v1');
       if (!raw) return;
       var o = JSON.parse(raw);
       if (o && typeof o.text === 'string') state.text = o.text;
       if (o && LOOP_MODES.indexOf(o.loop) >= 0) state.loop = o.loop;
       if (o && RATES.indexOf(Number(o.rate)) >= 0) state.rate = Number(o.rate);
+      if (o && typeof o.voiceURI === 'string') state.voiceURI = o.voiceURI;
+      if (o && o.splitOn) state.splitOn = true;
       if (o && typeof o.index === 'number' && o.index >= 0) state.index = o.index;
     } catch (e) {}
   }
@@ -257,6 +337,8 @@
           text: state.text,
           loop: state.loop,
           rate: state.rate,
+          voiceURI: state.voiceURI,
+          splitOn: state.splitOn,
           index: state.index
         })
       );
@@ -272,15 +354,70 @@
     return document.getElementById(id);
   }
 
-  function applyText(text, opts) {
+  function setSourceText(text, opts) {
     state.text = String(text || '');
-    state.segments = splitIntoSegments(state.text);
-    if (!state.segments.length) state.index = 0;
-    else if (state.index >= state.segments.length) state.index = 0;
+    if (opts && opts.clearSplit) {
+      state.splitOn = false;
+      state.segments = [];
+      state.index = 0;
+    }
+    if (state.splitOn) state.segments = splitIntoSegments(state.text);
+    else state.segments = [];
     if (opts && opts.resetIndex) state.index = 0;
+    if (state.index >= activeSegments().length) state.index = 0;
     state.utterIndex = 0;
     renderAll();
     scheduleSave();
+  }
+
+  function doSplit() {
+    state.splitOn = true;
+    state.segments = splitIntoSegments(state.text);
+    state.index = 0;
+    state.utterIndex = 0;
+    renderAll();
+    saveStore();
+  }
+
+  function clearSplit() {
+    state.splitOn = false;
+    state.segments = [];
+    state.index = 0;
+    state.utterIndex = 0;
+    renderAll();
+    saveStore();
+  }
+
+  function fillVoiceSelect() {
+    var sel = el('lb-voice');
+    var list = listZhVoices();
+    var i;
+    var v;
+    var label;
+    var html;
+    var keep = state.voiceURI;
+    if (!sel) return;
+    html = '<option value="">自动（优先清晰女声）</option>';
+    for (i = 0; i < list.length; i++) {
+      v = list[i];
+      label = v.name || v.voiceURI || ('音色' + (i + 1));
+      if (v.lang) label += ' · ' + v.lang;
+      html += '<option value="' + escapeAttr(v.voiceURI || v.name) + '">' + escapeHtml(label) + '</option>';
+    }
+    sel.innerHTML = html;
+    sel.value = keep || '';
+    if (keep && sel.value !== keep) sel.value = '';
+  }
+
+  function escapeAttr(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   function renderAll() {
@@ -291,72 +428,62 @@
     var play = el('lb-play');
     var loopBtn = el('lb-loop');
     var rateBtn = el('lb-rate');
+    var splitBtn = el('lb-split-btn');
+    var screen = el('listenbook-screen');
+    var segs = activeSegments();
     var i;
     var s;
     var html;
+    if (screen) screen.classList.toggle('lb-split-on', !!state.splitOn);
     if (input && input.value !== state.text) input.value = state.text;
+    if (splitBtn) splitBtn.textContent = state.splitOn ? '改回整篇' : '拆成段落';
     if (meta) {
-      meta.textContent = state.segments.length
-        ? '共 ' + state.segments.length + ' 段 · ' + state.text.length + ' 字'
-        : '粘贴全文后自动分段，越长越好背';
+      if (!state.text) meta.textContent = '粘贴全文后点播放即可，只有需要按章听时再点拆成段落';
+      else if (state.splitOn) meta.textContent = '已拆成 ' + segs.length + ' 段 · ' + state.text.length + ' 字';
+      else meta.textContent = '整篇连读 · ' + state.text.length + ' 字';
     }
     if (list) {
       html = '';
-      for (i = 0; i < state.segments.length; i++) {
-        s = state.segments[i];
-        html +=
-          '<li class="lb-item' +
-          (i === state.index ? ' lb-item--on' : '') +
-          '" data-lb-i="' +
-          i +
-          '"><span class="lb-item-idx">' +
-          (i + 1 < 10 ? '0' : '') +
-          (i + 1) +
-          '</span><span class="lb-item-main"><span class="lb-item-title"></span><span class="lb-item-len">约 ' +
-          s.charCount +
-          ' 字</span></span></li>';
+      if (state.splitOn) {
+        for (i = 0; i < segs.length; i++) {
+          html +=
+            '<li class="lb-item' +
+            (i === state.index ? ' lb-item--on' : '') +
+            '" data-lb-i="' +
+            i +
+            '"><span class="lb-item-idx">' +
+            (i + 1 < 10 ? '0' : '') +
+            (i + 1) +
+            '</span><span class="lb-item-main"><span class="lb-item-title"></span><span class="lb-item-len">约 ' +
+            segs[i].charCount +
+            ' 字</span></span></li>';
+        }
       }
       list.innerHTML = html;
-      for (i = 0; i < state.segments.length; i++) {
-        list.children[i].querySelector('.lb-item-title').textContent = state.segments[i].title;
-      }
-      s = list.querySelector('.lb-item--on');
-      if (s && s.scrollIntoView) {
-        try {
-          s.scrollIntoView({ block: 'nearest' });
-        } catch (e2) {}
+      if (state.splitOn) {
+        for (i = 0; i < segs.length; i++) {
+          list.children[i].querySelector('.lb-item-title').textContent = segs[i].title;
+        }
+        s = list.querySelector('.lb-item--on');
+        if (s && s.scrollIntoView) {
+          try {
+            s.scrollIntoView({ block: 'nearest' });
+          } catch (e2) {}
+        }
       }
     }
     if (now) {
-      now.textContent = state.segments.length
-        ? (state.playing ? '朗读中 · ' : '') + state.segments[state.index].title
-        : '还没有段落';
+      now.textContent = !segs.length
+        ? '先粘贴文本再播放'
+        : (state.playing ? '朗读中 · ' : '') + segs[state.index].title;
     }
     if (play) play.textContent = state.playing ? '停止' : '播放';
     if (loopBtn) loopBtn.textContent = LOOP_LABEL[state.loop] || LOOP_LABEL.one;
-    if (rateBtn) rateBtn.textContent = RATE_LABEL[String(state.rate)] || '语速：慢';
+    if (rateBtn) rateBtn.textContent = RATE_LABEL[String(state.rate)] || '语速：常速';
   }
 
   function ttsAvailable() {
     return typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance;
-  }
-
-  function pickZhVoice() {
-    var voices;
-    var i;
-    var v;
-    var n;
-    if (!ttsAvailable()) return null;
-    voices = window.speechSynthesis.getVoices() || [];
-    for (i = 0; i < voices.length; i++) {
-      v = voices[i];
-      n = String(v.lang || '') + ' ' + String(v.name || '');
-      if (/zh-CN|zh_CN|zh-Hans|cmn-Hans|Tingting|Ting-Ting|Meijia|Sinji|普通话|中文/i.test(n)) return v;
-    }
-    for (i = 0; i < voices.length; i++) {
-      if (/^zh/i.test(voices[i].lang || '')) return voices[i];
-    }
-    return null;
   }
 
   function startKeepalive() {
@@ -366,7 +493,7 @@
       try {
         if (window.speechSynthesis.paused) window.speechSynthesis.resume();
       } catch (e) {}
-    }, 4000);
+    }, 8000);
   }
 
   function stopKeepalive() {
@@ -388,24 +515,29 @@
     renderAll();
   }
 
-  function speakText(text, onDone) {
-    var gen = ++speakGen;
+  function speakText(text, onDone, fresh) {
+    var gen;
     var u;
     var voice;
     if (!ttsAvailable()) {
       if (onDone) onDone(new Error('no_tts'));
       return;
     }
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {}
+    if (fresh) {
+      speakGen += 1;
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    gen = speakGen;
     setTimeout(function () {
       if (gen !== speakGen) return;
       u = new window.SpeechSynthesisUtterance(text);
-      u.lang = 'zh-CN';
+      voice = resolveVoice();
+      u.lang = (voice && voice.lang) || 'zh-CN';
       u.rate = state.rate;
-      u.pitch = 1;
-      voice = pickZhVoice();
+      u.pitch = 1.04;
+      u.volume = 1;
       if (voice) u.voice = voice;
       u.onend = function () {
         if (gen !== speakGen) return;
@@ -422,11 +554,11 @@
         window.speechSynthesis.resume();
       } catch (e2) {}
       window.speechSynthesis.speak(u);
-    }, 50);
+    }, fresh ? 80 : 20);
   }
 
-  function playUtterance() {
-    var segs = state.segments;
+  function playUtterance(fresh) {
+    var segs = activeSegments();
     var utters;
     var chunk;
     if (!segs.length) {
@@ -456,20 +588,21 @@
         return;
       }
       state.utterIndex += 1;
-      playUtterance();
-    });
+      playUtterance(false);
+    }, fresh);
   }
 
   function advanceAfterSegment() {
+    var segs = activeSegments();
     if (state.loop === 'one') {
       state.utterIndex = 0;
-      playUtterance();
+      playUtterance(false);
       return;
     }
-    if (state.loop === 'all') {
-      state.index = (state.index + 1) % state.segments.length;
+    if (state.loop === 'all' && segs.length) {
+      state.index = (state.index + 1) % segs.length;
       state.utterIndex = 0;
-      playUtterance();
+      playUtterance(false);
       return;
     }
     stopSpeak();
@@ -481,19 +614,21 @@
   }
 
   function startPlay(index) {
-    if (!state.segments.length) applyText(state.text || (el('lb-input') && el('lb-input').value) || '');
-    if (!state.segments.length) return;
+    var segs;
+    if (el('lb-input')) state.text = el('lb-input').value || state.text;
+    segs = activeSegments();
+    if (!segs.length) return;
     if (!ttsAvailable()) {
       showTtsHint();
       return;
     }
     if (typeof index === 'number') state.index = index;
     if (state.index < 0) state.index = 0;
-    if (state.index >= state.segments.length) state.index = 0;
+    if (state.index >= segs.length) state.index = 0;
     state.utterIndex = 0;
     state.playing = true;
     saveStore();
-    playUtterance();
+    playUtterance(true);
   }
 
   function togglePlay() {
@@ -505,8 +640,10 @@
   }
 
   function goRel(delta) {
-    if (!state.segments.length) return;
-    var n = (state.index + delta + state.segments.length) % state.segments.length;
+    var segs = activeSegments();
+    var n;
+    if (!segs.length || !state.splitOn) return;
+    n = (state.index + delta + segs.length) % segs.length;
     if (state.playing) startPlay(n);
     else {
       state.index = n;
@@ -525,11 +662,19 @@
 
   function cycleRate() {
     var i = RATES.indexOf(state.rate);
-    if (i < 0) i = 1;
+    if (i < 0) i = 2;
     state.rate = RATES[(i + 1) % RATES.length];
     saveStore();
     renderAll();
     if (state.playing) startPlay(state.index);
+  }
+
+  function onVoiceChange() {
+    var sel = el('lb-voice');
+    state.voiceURI = sel ? sel.value : '';
+    saveStore();
+    if (state.playing) startPlay(state.index);
+    else if (ttsAvailable()) speakText(SAMPLE_LINE, function () {}, true);
   }
 
   function bindOnce() {
@@ -539,28 +684,25 @@
     state.bound = true;
     input = el('lb-input');
     if (input) {
-      input.addEventListener('paste', function () {
-        setTimeout(function () {
-          applyText(input.value, { resetIndex: true });
-        }, 0);
-      });
       input.addEventListener('input', function () {
         if (state.playing) stopSpeak();
-        clearTimeout(splitTimer);
-        splitTimer = setTimeout(function () {
-          applyText(input.value, {});
+        clearTimeout(textTimer);
+        textTimer = setTimeout(function () {
+          setSourceText(input.value, {});
         }, 280);
       });
     }
     if (el('lb-split-btn')) {
       el('lb-split-btn').addEventListener('click', function () {
-        applyText((input && input.value) || state.text, { resetIndex: true });
+        if (input) state.text = input.value || state.text;
+        if (state.splitOn) clearSplit();
+        else doSplit();
       });
     }
     if (el('lb-clear-btn')) {
       el('lb-clear-btn').addEventListener('click', function () {
         stopSpeak();
-        applyText('', { resetIndex: true });
+        setSourceText('', { resetIndex: true, clearSplit: true });
       });
     }
     if (el('lb-play')) el('lb-play').addEventListener('click', togglePlay);
@@ -568,6 +710,7 @@
     if (el('lb-next')) el('lb-next').addEventListener('click', function () { goRel(1); });
     if (el('lb-loop')) el('lb-loop').addEventListener('click', cycleLoop);
     if (el('lb-rate')) el('lb-rate').addEventListener('click', cycleRate);
+    if (el('lb-voice')) el('lb-voice').addEventListener('change', onVoiceChange);
     list = el('lb-list');
     if (list) {
       list.addEventListener('click', function (e) {
@@ -583,7 +726,7 @@
       try {
         window.speechSynthesis.getVoices();
         window.speechSynthesis.addEventListener('voiceschanged', function () {
-          pickZhVoice();
+          fillVoiceSelect();
         });
       } catch (e) {}
     }
@@ -592,7 +735,8 @@
   function onEnter() {
     bindOnce();
     loadStore();
-    applyText(state.text, {});
+    fillVoiceSelect();
+    setSourceText(state.text, {});
   }
 
   function onLeave() {
@@ -606,10 +750,13 @@
     bindOnce: bindOnce,
     _test: {
       cleanForSpeech: cleanForSpeech,
+      textForSpeak: textForSpeak,
       isChapterTitle: isChapterTitle,
       splitIntoSegments: splitIntoSegments,
       splitIntoUtterances: splitIntoUtterances,
       splitChapterBlocks: splitChapterBlocks,
+      wholeSegment: wholeSegment,
+      scoreVoice: scoreVoice,
       SEGMENT_MAX: SEGMENT_MAX,
       UTTERANCE_MAX: UTTERANCE_MAX
     }
