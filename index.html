@@ -58,12 +58,12 @@
     .arcade-title { font-size: clamp(1.2rem, 4.5vw, 1.6rem); font-weight: 800; letter-spacing: 0.1em; text-align: center; text-shadow: 0 0 20px rgba(0, 255, 204, 0.45); }
     .arcade-sub { text-align: center; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 14px; }
     .lobby-hi-bar {
-      text-align: center; font-size: 0.92rem; color: var(--neon-magenta); font-weight: 700;
-      margin: 4px 0 10px;
+      text-align: center; font-size: 0.82rem; color: var(--neon-magenta); font-weight: 700;
+      margin: 2px 0 8px;
     }
     .lobby-hi-bar span { color: var(--neon-green); }
     .btn-logout-switch {
-      display: block; margin: 16px auto 0; padding: 6px 12px; font-size: 0.62rem;
+      display: block; margin: 10px auto 0; padding: 6px 12px; font-size: 0.62rem;
       color: rgba(180, 200, 220, 0.55); background: transparent; border: 1px solid rgba(106, 122, 138, 0.35);
       border-radius: 8px; cursor: pointer; max-width: 520px;
     }
@@ -93,10 +93,24 @@
     .tile-btn:active { transform: scale(0.94); }
     .tile-btn.coming { border-color: rgba(106, 122, 138, 0.4); color: var(--text-dim); cursor: not-allowed; opacity: 0.72; }
     .tile-badge { display: inline-block; margin-top: 6px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); }
-    /* 大厅：固定纵向顺序，避免宽屏宫格打乱 1→4 */
+    /* 大厅：一排两个，磁贴收矮，刷新按钮能露出来 */
+    #lobby-screen .arcade-title { font-size: clamp(1.05rem, 3.8vw, 1.35rem); }
+    #lobby-screen .arcade-sub { font-size: 0.75rem; margin-bottom: 8px; }
     #lobby-screen .lobby-tile-grid {
-      grid-template-columns: 1fr !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px;
       max-width: 520px;
+    }
+    #lobby-screen .tile-btn {
+      min-height: 58px;
+      padding: 8px 6px;
+      font-size: 0.78rem;
+      border-radius: 12px;
+    }
+    #lobby-screen .tile-badge {
+      margin-top: 3px;
+      font-size: 0.54rem;
+      padding: 2px 6px;
     }
     /* —— 听书 listenbook-screen —— */
     #listenbook-screen.screen {

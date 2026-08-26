@@ -61,7 +61,7 @@ var oneShot = t.splitIntoUtterances('短句。', 120);
 ok(oneShot.length === 1 && oneShot[0].indexOf('短句') >= 0, '短文一整块');
 
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-ok(html.indexOf('btn-enter-listenbook') >= 0, '大厅入口');
+ok(html.indexOf('grid-template-columns: 1fr 1fr') >= 0, '大厅一排两个模块');
 ok(html.indexOf('listenbook-screen') >= 0, '听书页面');
 ok(html.indexOf("listenbook: 'listenbook-screen'") >= 0, '路由');
 ok(html.indexOf("case 'listenbook':") >= 0, '左滑返回大厅');
