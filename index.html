@@ -98,6 +98,92 @@
       grid-template-columns: 1fr !important;
       max-width: 520px;
     }
+    /* —— 听书 listenbook-screen —— */
+    #listenbook-screen.screen {
+      min-height: 100dvh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      padding: calc(10px + var(--safe-top)) max(14px, var(--safe-right)) 0 max(14px, var(--safe-left));
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #listenbook-screen .lb-topbar { flex-shrink: 0; margin-bottom: 8px; }
+    #listenbook-screen .lb-title {
+      margin: 0; text-align: center; font-size: clamp(1rem, 3.8vw, 1.25rem);
+      font-weight: 800; letter-spacing: 0.06em; color: var(--neon-cyan);
+      text-shadow: 0 0 16px rgba(0, 255, 204, 0.35);
+    }
+    #listenbook-screen .lb-compose { flex-shrink: 0; margin-bottom: 8px; }
+    #listenbook-screen #lb-input {
+      width: 100%; min-height: 88px; max-height: 28vh; resize: vertical;
+      border-radius: 12px; border: 1px solid rgba(0, 255, 204, 0.28);
+      background: rgba(12, 18, 28, 0.94); color: #e8f4ff;
+      font-size: 0.92rem; line-height: 1.45; padding: 10px 12px;
+      font-family: inherit;
+    }
+    #listenbook-screen .lb-compose-row {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    #listenbook-screen .lb-compose-row button {
+      flex: 1; padding: 10px 8px; border-radius: 10px; font-weight: 700; font-size: 0.78rem;
+      cursor: pointer; border: 1px solid rgba(0, 255, 204, 0.35);
+      background: rgba(0, 255, 204, 0.08); color: var(--neon-cyan);
+    }
+    #listenbook-screen #lb-clear-btn {
+      border-color: rgba(106, 122, 138, 0.45); color: var(--text-dim); background: transparent;
+    }
+    #listenbook-screen .lb-meta {
+      margin: 0 2px 8px; font-size: 0.68rem; color: var(--text-dim); flex-shrink: 0;
+    }
+    #listenbook-screen .lb-list-scroll {
+      flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+    }
+    #listenbook-screen .lb-list { list-style: none; margin: 0; padding: 0; }
+    #listenbook-screen .lb-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 12px 10px; border-radius: 14px; margin-bottom: 8px;
+      background: rgba(18, 26, 40, 0.88); border: 1px solid rgba(0, 255, 204, 0.14);
+      cursor: pointer;
+    }
+    #listenbook-screen .lb-item--on {
+      border-color: var(--neon-green); background: rgba(57, 255, 20, 0.08);
+    }
+    #listenbook-screen .lb-item-idx {
+      font-size: 0.72rem; font-weight: 800; color: var(--neon-magenta); min-width: 1.6em;
+    }
+    #listenbook-screen .lb-item-main { flex: 1; min-width: 0; }
+    #listenbook-screen .lb-item-title {
+      display: block; font-size: 0.88rem; font-weight: 700; color: #e8f4ff;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #listenbook-screen .lb-item-len { display: block; font-size: 0.62rem; color: var(--text-dim); margin-top: 4px; }
+    #listenbook-screen .lb-player {
+      flex-shrink: 0; padding: 10px 0 calc(12px + var(--safe-bottom));
+      border-top: 1px solid rgba(0, 255, 204, 0.18);
+      background: linear-gradient(180deg, rgba(6, 6, 13, 0), rgba(6, 6, 13, 0.96) 18%);
+    }
+    #listenbook-screen .lb-now {
+      font-size: 0.72rem; color: var(--neon-green); margin: 0 2px 8px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #listenbook-screen .lb-controls, #listenbook-screen .lb-opts {
+      display: flex; gap: 8px; margin-bottom: 8px;
+    }
+    #listenbook-screen .lb-controls button, #listenbook-screen .lb-opts button {
+      flex: 1; min-height: 44px; border-radius: 12px; font-weight: 700; font-size: 0.8rem;
+      cursor: pointer; border: 2px solid rgba(0, 255, 204, 0.35);
+      background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98));
+      color: var(--neon-cyan);
+    }
+    #listenbook-screen #lb-play {
+      border-color: var(--neon-magenta); color: #fff;
+      background: linear-gradient(145deg, rgba(90, 24, 70, 0.95), rgba(35, 12, 45, 0.98));
+    }
+    #listenbook-screen .lb-swipe-hint {
+      margin: 0; text-align: center; font-size: 0.62rem; color: var(--text-dim);
+    }
     /* —— 备孕备忘清单 memo-screen（底部录入栏 + 双列表） —— */
     #memo-screen.screen {
       min-height: 100dvh;
@@ -1760,10 +1846,41 @@
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
+      <button type="button" class="tile-btn" id="btn-enter-listenbook">听书 <span class="tile-badge">循环背诵</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
     <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
     <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
+  </section>
+
+  <section id="listenbook-screen" class="screen" aria-label="听书">
+    <div class="lb-topbar">
+      <h2 class="lb-title">听书</h2>
+    </div>
+    <div class="lb-compose">
+      <textarea id="lb-input" placeholder="粘贴要背的全文，再长也可以…" enterkeyhint="done"></textarea>
+      <div class="lb-compose-row">
+        <button type="button" id="lb-split-btn">拆成段落</button>
+        <button type="button" id="lb-clear-btn">清空</button>
+      </div>
+    </div>
+    <p class="lb-meta" id="lb-meta">粘贴全文后自动分段，越长越好背</p>
+    <div class="lb-list-scroll" id="lb-list-scroll">
+      <ul class="lb-list" id="lb-list"></ul>
+    </div>
+    <div class="lb-player" id="lb-player">
+      <p class="lb-now" id="lb-now">还没有段落</p>
+      <div class="lb-controls">
+        <button type="button" id="lb-prev">上一段</button>
+        <button type="button" id="lb-play">播放</button>
+        <button type="button" id="lb-next">下一段</button>
+      </div>
+      <div class="lb-opts">
+        <button type="button" id="lb-loop">循环：单段</button>
+        <button type="button" id="lb-rate">语速：慢</button>
+      </div>
+      <p class="lb-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB</p>
+    </div>
   </section>
 
   <section id="memo-screen" class="screen" aria-label="备孕备忘清单">
@@ -2093,6 +2210,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="receipt.js"></script>
+  <script src="listenbook.js"></script>
   <script>
 (function () {
   'use strict';
@@ -3119,6 +3237,7 @@
   var VIEW_TO_SCREEN = {
     lobby: 'lobby-screen',
     memo_screen: 'memo-screen',
+    listenbook: 'listenbook-screen',
     snake_home: 'snake-home-screen',
     snake_game: 'snake-screen',
     snake_shop: 'shop-screen',
@@ -3156,6 +3275,8 @@
   function getSwipeBackTarget() {
     switch (currentView) {
       case 'memo_screen':
+        return 'lobby';
+      case 'listenbook':
         return 'lobby';
       case 'recipe_detail':
         return recipeDetailReturnView || 'recipe_home';
@@ -3282,6 +3403,8 @@
     }
     if (view === 'recipe_detail') renderRecipeDetailView();
     if (view === 'memo_screen') loadMemos();
+    if (view === 'listenbook' && window.ListenbookModule) ListenbookModule.onEnter();
+    if (view !== 'listenbook' && window.ListenbookModule) ListenbookModule.onLeave();
     if (view === 'receipt_home' || view === 'receipt_calendar' || view === 'receipt_edit') {
       supabaseKeepalive(false);
     }
@@ -5614,6 +5737,9 @@
 
   document.getElementById('btn-enter-memo').onclick = function () {
     goToView('memo_screen');
+  };
+  document.getElementById('btn-enter-listenbook').onclick = function () {
+    goToView('listenbook');
   };
   document.getElementById('btn-logout-switch').onclick = function () {
     clearArcadeSession();
