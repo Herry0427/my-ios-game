@@ -93,24 +93,48 @@
     .tile-btn:active { transform: scale(0.94); }
     .tile-btn.coming { border-color: rgba(106, 122, 138, 0.4); color: var(--text-dim); cursor: not-allowed; opacity: 0.72; }
     .tile-badge { display: inline-block; margin-top: 6px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); }
-    /* 大厅：一排两个，磁贴收矮，刷新按钮能露出来 */
+    /* 大厅：一排两个，底部钉住刷新，避免挤出屏幕 */
+    #lobby-screen.screen { overflow: hidden; }
     #lobby-screen .arcade-title { font-size: clamp(1.05rem, 3.8vw, 1.35rem); }
-    #lobby-screen .arcade-sub { font-size: 0.75rem; margin-bottom: 8px; }
+    #lobby-screen .arcade-sub { font-size: 0.75rem; margin-bottom: 6px; }
     #lobby-screen .lobby-tile-grid {
       grid-template-columns: 1fr 1fr !important;
       gap: 8px;
       max-width: 520px;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      align-content: start;
+      margin-top: 6px !important;
     }
     #lobby-screen .tile-btn {
-      min-height: 58px;
-      padding: 8px 6px;
-      font-size: 0.78rem;
+      min-height: 52px;
+      padding: 6px 4px;
+      font-size: 0.76rem;
       border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
     }
     #lobby-screen .tile-badge {
-      margin-top: 3px;
-      font-size: 0.54rem;
-      padding: 2px 6px;
+      margin-top: 0;
+      font-size: 0.5rem;
+      padding: 1px 5px;
+    }
+    #lobby-screen .lobby-footer {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding-top: 8px;
+    }
+    #lobby-screen .lobby-footer .btn-logout-switch,
+    #lobby-screen .lobby-footer .btn-force-refresh {
+      margin-top: 8px;
+      width: 100%;
+      max-width: none;
     }
     /* —— 听书 listenbook-screen —— */
     #listenbook-screen.screen {
@@ -1880,15 +1904,17 @@
     <h1 class="arcade-title">ARCADE HUB</h1>
     <p class="arcade-sub">我的私人空间</p>
     <p class="lobby-hi-bar">Hi, <span id="lobby-display-name">——</span></p>
-    <div class="grid-menu lobby-tile-grid" style="margin-top:10px">
+    <div class="grid-menu lobby-tile-grid">
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
       <button type="button" class="tile-btn" id="btn-enter-listenbook">听书 <span class="tile-badge">循环背诵</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
-    <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
-    <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
+    <div class="lobby-footer">
+      <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
+      <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
+    </div>
   </section>
 
   <section id="listenbook-screen" class="screen" aria-label="听书">
