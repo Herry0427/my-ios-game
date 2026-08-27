@@ -89,6 +89,13 @@ ok(
 );
 ok(t.UTTERANCE_MAX >= 280, '朗读块加长减少卡顿');
 ok(html.indexOf('lb-lyric-box') >= 0 && html.indexOf('lb-lyric-toggle') >= 0, '三行歌词区与文字开关');
+ok(html.indexOf('id="lb-lyric-toggle"') > html.indexOf('class="lb-opts"'), '文字开关在底部功能区');
+ok(html.indexOf('id="lb-lyric-toggle"') > html.indexOf('id="lb-lyric-box"'), '文字开关在歌词区下方');
+ok(html.indexOf('id="lb-voice-modal"') >= 0 && html.indexOf('id="lb-voice-list"') >= 0, '音色弹出列表');
+ok(src.indexOf('cycleVoice') < 0 && src.indexOf('openVoicePicker') >= 0, '点音色弹出选择、不后台轮换');
+ok(src.indexOf('function pauseSpeak') >= 0 && src.indexOf('paused: false') >= 0, '可暂停');
+ok(src.indexOf('opts && opts.resume') >= 0, '播放从暂停处继续');
+ok(src.indexOf("state.playing ? '暂停' : '播放'") >= 0, '播放中按钮为暂停');
 ok(src.indexOf('lyricsOn: true') >= 0, '默认显示歌词');
 (function () {
   var u = t.splitIntoUtterances('真正的读人，并不是简单地评价别人，而是从他人的人生。', 320);

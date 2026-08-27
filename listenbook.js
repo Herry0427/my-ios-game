@@ -15,7 +15,6 @@
   var LOOP_LABEL = { one: '循环：单条', list: '循环：列表' };
   var RATES = [0.85, 0.95, 1, 1.1];
   var RATE_LABEL = { '0.85': '语速：慢', '0.95': '语速：稍慢', '1': '语速：常速', '1.1': '语速：稍快' };
-  var SAMPLE_LINE = '这是当前音色。用于朗读备考资料，口齿会更清楚一些。';
 
   var state = {
     text: '',
@@ -26,6 +25,7 @@
     index: 0,
     utterIndex: 0,
     playing: false,
+    paused: false,
     loop: 'one',
     rate: 1,
     voiceURI: '',
@@ -487,6 +487,7 @@
     state.text = item.text;
     state.index = 0;
     state.utterIndex = 0;
+    state.paused = false;
     if (state.splitOn) state.segments = splitIntoSegments(state.text);
     else state.segments = [];
     if (!(opts && opts.silent)) renderAll();
@@ -504,6 +505,7 @@
       state.text = currentItem() ? currentItem().text : '';
       state.index = 0;
       state.utterIndex = 0;
+      state.paused = false;
       if (state.splitOn) state.segments = splitIntoSegments(state.text);
     }
     renderAll();
@@ -526,18 +528,70 @@
     return '音色：' + shortVoiceName(v && v.name);
   }
 
-  function cycleVoice() {
-    var list = listZhVoices();
-    var uris = [''];
+  function voicePickerLabel(v) {
+    var n = String((v && v.name) || '音色').replace(/\s+/g, ' ');
+    if (/compact/i.test(n)) n += ' · 可能发糊';
+    else if (/enhanced|premium|neural/i.test(n)) n += ' · 更清晰';
+    return n;
+  }
+
+  function fillVoicePicker() {
+    var box = el('lb-voice-list');
+    var list;
     var i;
-    for (i = 0; i < list.length; i++) uris.push(list[i].voiceURI || list[i].name);
-    i = uris.indexOf(state.voiceURI);
-    if (i < 0) i = 0;
-    state.voiceURI = uris[(i + 1) % uris.length];
+    var btn;
+    var uri;
+    var cur;
+    var hint;
+    if (!box) return;
+    box.innerHTML = '';
+    list = listZhVoices();
+    cur = state.voiceURI || '';
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lb-voice-opt' + (cur === '' ? ' lb-voice-opt--on' : '');
+    btn.setAttribute('data-lb-voice', '');
+    btn.textContent = '自动（优先清晰）';
+    box.appendChild(btn);
+    for (i = 0; i < list.length; i++) {
+      uri = list[i].voiceURI || list[i].name || '';
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lb-voice-opt' + (uri === cur ? ' lb-voice-opt--on' : '');
+      btn.setAttribute('data-lb-voice', uri);
+      btn.textContent = voicePickerLabel(list[i]);
+      box.appendChild(btn);
+    }
+    if (!list.length) {
+      hint = document.createElement('p');
+      hint.className = 'lb-voice-empty';
+      hint.textContent = '未读到中文音色时，将用系统默认';
+      box.appendChild(hint);
+    }
+  }
+
+  function closeVoicePicker() {
+    var m = el('lb-voice-modal');
+    if (m) m.classList.remove('visible');
+  }
+
+  function openVoicePicker() {
+    var m = el('lb-voice-modal');
+    fillVoicePicker();
+    if (m) m.classList.add('visible');
+    if (ttsAvailable()) {
+      try {
+        window.speechSynthesis.getVoices();
+      } catch (e) {}
+    }
+  }
+
+  function applyVoice(uri) {
+    state.voiceURI = uri || '';
     saveStore();
+    closeVoicePicker();
     renderAll();
-    if (state.playing) startPlay();
-    else if (ttsAvailable()) speakText(SAMPLE_LINE, function () {}, true);
+    if (state.playing) startPlay({ resume: true });
   }
 
   function updateVoiceButton() {
@@ -612,9 +666,10 @@
     if (now) {
       now.textContent = !segs.length
         ? '先加入一条文本再播放'
-        : (state.playing ? '朗读中 · ' : '') + (previewText(state.text) || segs[state.index].title);
+        : ((state.playing ? '朗读中 · ' : state.paused ? '已暂停 · ' : '') +
+            (previewText(state.text) || segs[state.index].title));
     }
-    if (play) play.textContent = state.playing ? '停止' : '播放';
+    if (play) play.textContent = state.playing ? '暂停' : '播放';
     if (loopBtn) loopBtn.textContent = LOOP_LABEL[state.loop] || LOOP_LABEL.one;
     if (rateBtn) rateBtn.textContent = RATE_LABEL[String(state.rate)] || '语速：常速';
     if (voiceBtn) voiceBtn.textContent = voiceButtonLabel();
@@ -643,7 +698,7 @@
     var next = el('lb-lyric-next');
     if (!prev || !cur || !next) return;
     lines = currentLyricLines();
-    win = lyricWindow(lines, state.playing ? state.utterIndex : 0);
+    win = lyricWindow(lines, state.playing || state.paused ? state.utterIndex : 0);
     if (!lines.length) {
       prev.textContent = '';
       cur.textContent = '加入文本后，这里会跟着朗读滚三行';
@@ -663,7 +718,7 @@
 
   function updatePlayChrome() {
     var play = el('lb-play');
-    if (play) play.textContent = state.playing ? '停止' : '播放';
+    if (play) play.textContent = state.playing ? '暂停' : '播放';
     updateLyrics();
   }
 
@@ -691,6 +746,21 @@
   function stopSpeak() {
     speakGen += 1;
     state.playing = false;
+    state.paused = false;
+    state.utterIndex = 0;
+    stopKeepalive();
+    if (ttsAvailable()) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    renderAll();
+  }
+
+  function pauseSpeak() {
+    speakGen += 1;
+    state.playing = false;
+    state.paused = true;
     stopKeepalive();
     if (ttsAvailable()) {
       try {
@@ -815,7 +885,7 @@
     if (currentItem()) state.text = currentItem().text;
   }
 
-  function startPlay() {
+  function startPlay(opts) {
     var segs;
     ensureCurrentSaved();
     segs = activeSegments();
@@ -826,7 +896,8 @@
     }
     if (state.index < 0) state.index = 0;
     if (state.index >= segs.length) state.index = 0;
-    state.utterIndex = 0;
+    if (!(opts && opts.resume)) state.utterIndex = 0;
+    state.paused = false;
     state.playing = true;
     saveStore();
     playUtterance(true);
@@ -834,10 +905,10 @@
 
   function togglePlay() {
     if (state.playing) {
-      stopSpeak();
+      pauseSpeak();
       return;
     }
-    startPlay();
+    startPlay({ resume: !!state.paused });
   }
 
   function goRel(delta) {
@@ -859,7 +930,7 @@
     state.rate = RATES[(i + 1) % RATES.length];
     saveStore();
     renderAll();
-    if (state.playing) startPlay();
+    if (state.playing) startPlay({ resume: true });
   }
 
   function bindOnce() {
@@ -902,7 +973,20 @@
     if (el('lb-next')) el('lb-next').addEventListener('click', function () { goRel(1); });
     if (el('lb-loop')) el('lb-loop').addEventListener('click', cycleLoop);
     if (el('lb-rate')) el('lb-rate').addEventListener('click', cycleRate);
-    if (el('lb-voice')) el('lb-voice').addEventListener('click', cycleVoice);
+    if (el('lb-voice')) el('lb-voice').addEventListener('click', openVoicePicker);
+    if (el('lb-voice-cancel')) el('lb-voice-cancel').addEventListener('click', closeVoicePicker);
+    if (el('lb-voice-modal')) {
+      el('lb-voice-modal').addEventListener('click', function (e) {
+        if (e.target === el('lb-voice-modal')) closeVoicePicker();
+      });
+    }
+    if (el('lb-voice-list')) {
+      el('lb-voice-list').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-lb-voice]');
+        if (!btn) return;
+        applyVoice(btn.getAttribute('data-lb-voice'));
+      });
+    }
     if (el('lb-lyric-toggle')) el('lb-lyric-toggle').addEventListener('click', toggleLyrics);
     list = el('lb-list');
     if (list) {
@@ -929,6 +1013,7 @@
         window.speechSynthesis.getVoices();
         window.speechSynthesis.addEventListener('voiceschanged', function () {
           updateVoiceButton();
+          if (el('lb-voice-modal') && el('lb-voice-modal').classList.contains('visible')) fillVoicePicker();
         });
       } catch (e) {}
     }
@@ -942,6 +1027,7 @@
   }
 
   function onLeave() {
+    closeVoicePicker();
     stopSpeak();
     if (state.bound) saveStore();
   }

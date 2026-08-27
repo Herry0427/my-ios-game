@@ -209,12 +209,6 @@
       background: linear-gradient(180deg, rgba(6, 6, 13, 0), rgba(6, 6, 13, 0.96) 18%);
     }
     #listenbook-screen .lb-lyric-wrap { margin: 0 0 8px; }
-    #listenbook-screen .lb-lyric-toggle {
-      display: block; margin: 0 0 6px auto; padding: 4px 10px; min-height: 28px;
-      border-radius: 8px; font-size: 0.62rem; font-weight: 700; cursor: pointer;
-      border: 1px solid rgba(0, 255, 204, 0.32); background: rgba(0, 255, 204, 0.06);
-      color: var(--neon-cyan);
-    }
     #listenbook-screen .lb-lyric-box {
       height: calc(3 * 1.35em);
       overflow: hidden;
@@ -237,7 +231,38 @@
       background: linear-gradient(145deg, rgba(20, 30, 45, 0.95), rgba(8, 12, 22, 0.98));
       color: var(--neon-cyan);
     }
-    #listenbook-screen .lb-opts button { font-size: 0.72rem; }
+    #listenbook-screen .lb-opts button { font-size: 0.68rem; }
+    #lb-voice-modal.modal-root { z-index: 21000; }
+    #lb-voice-modal .lb-voice-card {
+      width: 100%; max-width: 360px; max-height: 74vh; padding: 18px 14px 14px;
+      border-radius: 18px; background: #121a28; border: 2px solid rgba(0, 255, 204, 0.4);
+      display: flex; flex-direction: column; box-sizing: border-box;
+    }
+    #lb-voice-modal .lb-voice-card h3 {
+      margin: 0 0 10px; font-size: 1rem; color: var(--neon-cyan); flex-shrink: 0;
+    }
+    #lb-voice-list {
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;
+      max-height: 52vh; min-height: 0;
+    }
+    #lb-voice-list .lb-voice-opt {
+      text-align: left; min-height: 44px; padding: 10px 12px; border-radius: 12px;
+      cursor: pointer; border: 1px solid rgba(0, 255, 204, 0.28);
+      background: rgba(18, 26, 40, 0.95); color: #e8f4ff;
+      font-size: 0.86rem; font-weight: 700;
+    }
+    #lb-voice-list .lb-voice-opt--on {
+      border-color: var(--neon-green); color: var(--neon-green);
+      background: rgba(57, 255, 20, 0.1);
+    }
+    #lb-voice-list .lb-voice-empty {
+      margin: 4px 2px 0; font-size: 0.72rem; color: var(--text-dim); line-height: 1.45;
+    }
+    #lb-voice-cancel {
+      flex-shrink: 0; min-height: 44px; border-radius: 12px; font-weight: 700; cursor: pointer;
+      border: 1px solid rgba(106, 122, 138, 0.45); background: transparent; color: var(--text-dim);
+    }
     #listenbook-screen:not(.lb-has-list) .lb-nav-btn { display: none; }
     #listenbook-screen #lb-play {
       border-color: var(--neon-magenta); color: #fff;
@@ -1935,7 +1960,6 @@
     </div>
     <div class="lb-player" id="lb-player">
       <div class="lb-lyric-wrap" id="lb-lyric-wrap">
-        <button type="button" class="lb-lyric-toggle" id="lb-lyric-toggle">文字：开</button>
         <div class="lb-lyric-box" id="lb-lyric-box">
           <div class="lb-lyric-line lb-lyric-dim" id="lb-lyric-prev"></div>
           <div class="lb-lyric-line lb-lyric-on" id="lb-lyric-cur">加入文本后，这里会跟着朗读滚三行</div>
@@ -1951,10 +1975,19 @@
         <button type="button" id="lb-voice">音色：自动</button>
         <button type="button" id="lb-loop">循环：单条</button>
         <button type="button" id="lb-rate">语速：常速</button>
+        <button type="button" id="lb-lyric-toggle">文字：开</button>
       </div>
       <p class="lb-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB</p>
     </div>
   </section>
+
+  <div id="lb-voice-modal" class="modal-root" aria-modal="true" role="dialog">
+    <div class="lb-voice-card">
+      <h3>选择音色</h3>
+      <div class="lb-voice-list" id="lb-voice-list"></div>
+      <button type="button" id="lb-voice-cancel">取消</button>
+    </div>
+  </div>
 
   <section id="memo-screen" class="screen" aria-label="备孕备忘清单">
     <div class="memo-topbar">
