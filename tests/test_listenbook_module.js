@@ -93,6 +93,7 @@ ok(html.indexOf('id="lb-lyric-toggle"') > html.indexOf('class="lb-opts"'), '文�
 ok(html.indexOf('id="lb-lyric-toggle"') > html.indexOf('id="lb-lyric-box"'), '文字开关在歌词区下方');
 ok(html.indexOf('id="lb-voice-modal"') >= 0 && html.indexOf('id="lb-voice-list"') >= 0, '音色弹出列表');
 ok(src.indexOf('cycleVoice') < 0 && src.indexOf('openVoicePicker') >= 0, '点音色弹出选择、不后台轮换');
+ok(src.indexOf('SAMPLE_LINE') >= 0 && src.indexOf('previewVoice') >= 0, '选音色自动试听一句');
 ok(src.indexOf('function pauseSpeak') >= 0 && src.indexOf('paused: false') >= 0, '可暂停');
 ok(src.indexOf('opts && opts.resume') >= 0, '播放从暂停处继续');
 ok(src.indexOf("state.playing ? '暂停' : '播放'") >= 0, '播放中按钮为暂停');

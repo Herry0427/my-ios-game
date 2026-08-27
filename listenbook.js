@@ -15,6 +15,7 @@
   var LOOP_LABEL = { one: '循环：单条', list: '循环：列表' };
   var RATES = [0.85, 0.95, 1, 1.1];
   var RATE_LABEL = { '0.85': '语速：慢', '0.95': '语速：稍慢', '1': '语速：常速', '1.1': '语速：稍快' };
+  var SAMPLE_LINE = '这是当前音色。用于朗读备考资料，口齿会更清楚一些。';
 
   var state = {
     text: '',
@@ -586,12 +587,19 @@
     }
   }
 
+  function previewVoice() {
+    if (!ttsAvailable()) return;
+    speakText(SAMPLE_LINE, function () {}, true);
+  }
+
   function applyVoice(uri) {
+    var wasPlaying = state.playing;
     state.voiceURI = uri || '';
     saveStore();
     closeVoicePicker();
-    renderAll();
-    if (state.playing) startPlay({ resume: true });
+    if (wasPlaying) pauseSpeak();
+    else renderAll();
+    previewVoice();
   }
 
   function updateVoiceButton() {
