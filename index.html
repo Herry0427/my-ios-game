@@ -176,7 +176,7 @@
     .rpa-mobile-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     #rpa-url { flex: 1 1 180px; min-width: 0; padding: 9px; border: 1px solid #ccdcd0; border-radius: 9px; font-size: 16px; }
     #rpa-hint { margin: 0; font-size: 12px; color: #66756b; }
-    #rpa-frame { flex: 1; width: 100%; min-height: 0; border: 0; border-radius: 12px; background: #fff; }
+    #rpa-frame { flex: 1; align-self: center; width: 100%; max-width: 430px; min-height: 0; border: 0; border-radius: 12px; background: #fff; }
     /* —— 听书 listenbook-screen —— */
     #listenbook-screen.screen {
       min-height: 100dvh;
@@ -2008,7 +2008,7 @@
   </section>
 
   <section id="rpa-screen" class="screen" aria-label="RPA 报错看板">
-    <div class="rpa-mobile-header"><button type="button" id="rpa-back">‹ 返回</button><span>R</span>PA 报错流程</span></div>
+    <div class="rpa-mobile-header"><button type="button" id="rpa-back">‹ 返回</button><span>RPA 报错流程</span></div>
     <div class="rpa-mobile-controls"><input id="rpa-url" type="url" inputmode="url" placeholder="粘贴内网穿透的 HTTPS 地址" aria-label="RPA 看板地址"><button type="button" id="rpa-connect">连接</button><button type="button" id="rpa-open">单独打开</button></div>
     <p id="rpa-hint" role="status">先在电脑启动看板和穿透，再填写 HTTPS 地址；网址只保存在本机浏览器。</p>
     <iframe id="rpa-frame" title="RPA 异常看板" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>

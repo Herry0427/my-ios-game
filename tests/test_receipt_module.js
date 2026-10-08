@@ -68,6 +68,8 @@ ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-cate
 ['+', '-', '*', '/', '='].forEach(function (key) { ok(html.indexOf('data-key="' + key + '"') >= 0, '运算键 ' + key + ' 在页面'); });
 ok(html.indexOf('id="receipt-entry-tag-delete"') >= 0, '删除标签按钮在页面');
 ok(html.indexOf('id="btn-enter-rpa"') >= 0 && html.indexOf('id="rpa-frame"') >= 0, '手机主页可打开 RPA 看板模块');
+ok(html.includes('<span>RPA 报错流程</span>') && !html.includes('<span>R</span>PA'), 'RPA 模块标题不露出 HTML 残片');
+ok(/#rpa-frame\s*\{[^}]*max-width:\s*430px/.test(html), '嵌入看板保持手机宽度以启用简化布局');
 ok(receiptCode.includes("['工资', '💰']") && receiptCode.includes("['节日福利', '🎁']"), '入账提供工资和节日福利标签');
 ok(/<input id="receipt-entry-note"[^>]*hidden>/.test(html) && !html.includes('<in</button>put'), '备注输入框是有效 HTML，不会露出源码');
 ok(/data-key="back"[^>]*>⌫<\/button>/.test(html) && !html.includes('</button></button>'), '退格及保存按钮标签正确闭合');
