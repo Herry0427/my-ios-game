@@ -68,6 +68,18 @@ ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-cate
 ['+', '-', '*', '/', '='].forEach(function (key) { ok(html.indexOf('data-key="' + key + '"') >= 0, '运算键 ' + key + ' 在页面'); });
 ok(html.indexOf('id="receipt-entry-tag-delete"') >= 0, '删除标签按钮在页面');
 ok(html.indexOf('id="btn-enter-rpa"') >= 0 && html.indexOf('id="rpa-frame"') >= 0, '手机主页可打开 RPA 看板模块');
+ok(html.includes('id="receipt-entry-day-total"') && receiptCode.includes('entryDayExpenseTotal'), '日期左侧显示当日支出合计');
+(function () {
+  var ctx = { window: { getReceiptOwnerKey: function () { return 'summary'; } }, global: {}, console: console };
+  vm.createContext(ctx);
+  vm.runInContext(code, ctx);
+  var x = ctx.window.ReceiptModule._test;
+  var cfg = x.appendEntry(x.normalizeReceiptConfig({ items: [{ qty: 1, name: '旧小票', price: '¥5.00' }] }), { type: 'expense', category: '餐饮', amount: 12.5, note: '' });
+  cfg = x.appendEntry(cfg, { type: 'income', category: '工资', amount: 100, note: '' });
+  cfg = x.appendEntry(cfg, { type: 'excluded', category: '其他', amount: 20, note: '' });
+  ok(x.sumItems(cfg.items) === 17.5, '当日支出含旧小票与快速记账，不计入账或排除项');
+})();
+ok(html.includes("from('rpa_dashboard_settings')") && html.includes('rpaLocalKey(owner)'), 'RPA 地址按账号云端保存与读取');
 ok(html.includes('<span>RPA 报错流程</span>') && !html.includes('<span>R</span>PA'), 'RPA 模块标题不露出 HTML 残片');
 ok(/#rpa-frame\s*\{[^}]*max-width:\s*430px/.test(html), '嵌入看板保持手机宽度以启用简化布局');
 ok(receiptCode.includes("['工资', '💰']") && receiptCode.includes("['节日福利', '🎁']"), '入账提供工资和节日福利标签');

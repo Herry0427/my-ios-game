@@ -394,6 +394,7 @@
     scanDatesWithData();
     renderDayEntries();
     renderEntryTags();
+    renderEntryDraft();
     if (!(scenes.edit && scenes.edit.running)) state.currentCfg = loadDayConfig(state.selectedDate);
     if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
       scenes.calendar.refresh();
@@ -1823,6 +1824,8 @@
     state.currentCfg = loadDayConfig(state.selectedDate);
     clearEditSelection();
     scanDatesWithData();
+    entryDraft.date = dateKey(state.selectedDate);
+    renderEntryDraft();
   }
 
   function clearEditSelection() {
@@ -2196,14 +2199,21 @@
     }
   }
 
+  function entryDayExpenseTotal(d) {
+    var cfg = loadDayConfig(d);
+    return sumItems(cfg.items || []);
+  }
+
   function renderEntryDraft() {
     if (!global.document) return;
     var date = document.getElementById('receipt-entry-date');
+    var total = document.getElementById('receipt-entry-day-total');
     var amount = document.getElementById('receipt-entry-amount');
     var grid = document.getElementById('receipt-entry-categories');
     if (!date || !amount || !grid) return;
     var displayDate = new Date(entryDraft.date + 'T12:00:00');
     date.textContent = isNaN(displayDate.getTime()) ? '选择日期' : (displayDate.getMonth() + 1) + '月' + displayDate.getDate() + '日 ▾';
+    if (total) total.textContent = isNaN(displayDate.getTime()) ? '支出 ¥0.00' : '支出 ¥' + entryDayExpenseTotal(displayDate).toFixed(2);
     amount.textContent = entryDraft.amount || '0.00';
     document.querySelectorAll('#receipt-entry-tabs button').forEach(function (button) {
       button.classList.toggle('selected', button.getAttribute('data-type') === entryDraft.type);

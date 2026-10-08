@@ -1897,6 +1897,9 @@
     #receipt-sync-status { width: 100%; text-align: center; font-size: 12px; }
     .receipt-entry-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; }
     .receipt-entry-header button { border: 0; background: transparent; font-size: 26px; }
+    .receipt-entry-header .receipt-entry-date-summary { display: flex; align-items: center; gap: 8px; min-width: 0; font-variant-numeric: tabular-nums; }
+    #receipt-entry-day-total { color: #168557; font-size: 13px; font-weight: 700; white-space: nowrap; }
+    @media (max-width: 380px) { #receipt-entry-day-total { font-size: 12px; } .receipt-entry-header { padding-left: 12px; padding-right: 12px; } }
     #receipt-entry-date { font-size: 16px; border: 0; background: transparent; color: inherit; padding: 8px; }
     .receipt-entry-tabs { display: flex; margin: 8px 18px; border-radius: 14px; background: #e9edea; padding: 4px; }
     .receipt-entry-tabs button { flex: 1; border: 0; background: transparent; padding: 12px 0; border-radius: 10px; font-size: 15px; color: inherit; }
@@ -2308,7 +2311,7 @@
     <div class="receipt-canvas-wrap" id="receipt-edit-canvas"></div>
   </section>
   <section id="receipt-entry-screen" class="screen receipt-screen" aria-label="记一笔">
-    <header class="receipt-entry-header"><button type="button" id="receipt-entry-close" aria-label="取消">✕</button><button type="button" id="receipt-entry-date" aria-label="打开记账日历"></button></header>
+    <header class="receipt-entry-header"><button type="button" id="receipt-entry-close" aria-label="取消">✕</button><div class="receipt-entry-date-summary"><span id="receipt-entry-day-total">支出 ¥0.00</span><button type="button" id="receipt-entry-date" aria-label="打开记账日历"></button></div></header>
     <div class="receipt-entry-tabs" id="receipt-entry-tabs"><button type="button" data-type="expense" class="selected">支出</button><button type="button" data-type="income">入账</button><button type="button" data-type="excluded">不计入收支</button></div>
     <div class="receipt-entry-value"><span>¥</span><span id="receipt-entry-amount">0.00</span></div>
     <div class="receipt-entry-categories" id="receipt-entry-categories"></div>
@@ -2410,7 +2413,7 @@
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="receipt.js?v=20261008-income-categories-1"></script>
+  <script src="receipt.js?v=20261008-cloud-rpa-day-total-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {
@@ -5946,8 +5949,49 @@
   var rpaUrlInput = document.getElementById('rpa-url');
   var rpaFrame = document.getElementById('rpa-frame');
   var rpaHint = document.getElementById('rpa-hint');
-  var rpaSavedUrl = localStorage.getItem('rpa_dashboard_url') || '';
-  rpaUrlInput.value = rpaSavedUrl;
+  var rpaSavedUrl = '';
+  var rpaUrlOwner = '';
+  var rpaSyncVersion = 0;
+  function rpaLocalKey(owner) { return 'rpa_dashboard_url_' + encodeURIComponent(owner); }
+  async function loadRpaDashboardUrl() {
+    var owner = getNickname();
+    var version = ++rpaSyncVersion;
+    if (!owner) { rpaHint.textContent = '请先登录，再同步看板地址。'; return; }
+    if (rpaUrlOwner !== owner) rpaFrame.removeAttribute('src');
+    rpaUrlOwner = owner;
+    var local = localStorage.getItem(rpaLocalKey(owner)) || '';
+    var legacy = localStorage.getItem('rpa_dashboard_url') || '';
+    if (!local && legacy) local = legacy;
+    rpaSavedUrl = local;
+    rpaUrlInput.value = local;
+    var c = getSb();
+    if (!c) { rpaHint.textContent = '云端未连接；当前只显示本机保存的地址。'; return; }
+    try {
+      var result = await c.from('rpa_dashboard_settings').select('dashboard_url').eq('user_id', owner).maybeSingle();
+      if (result.error) throw result.error;
+      if (owner !== getNickname() || version !== rpaSyncVersion) return;
+      if (result.data && result.data.dashboard_url) {
+        rpaSavedUrl = result.data.dashboard_url;
+        rpaUrlInput.value = rpaSavedUrl;
+        localStorage.setItem(rpaLocalKey(owner), rpaSavedUrl);
+        if (legacy) localStorage.removeItem('rpa_dashboard_url');
+        rpaHint.textContent = '已从云端读取看板地址。';
+      } else if (local) {
+        var saved = await c.from('rpa_dashboard_settings').upsert({ user_id: owner, dashboard_url: local }, { onConflict: 'user_id' });
+        if (saved.error) throw saved.error;
+        if (owner !== getNickname() || version !== rpaSyncVersion) return;
+        localStorage.setItem(rpaLocalKey(owner), local);
+        localStorage.removeItem('rpa_dashboard_url');
+        rpaHint.textContent = '本机地址已同步到云端。';
+      } else {
+        rpaHint.textContent = '请填写穿透工具提供的 HTTPS 地址。';
+      }
+      if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+    } catch (e) {
+      console.warn('[rpa url sync]', e);
+      if (owner === getNickname() && version === rpaSyncVersion) rpaHint.textContent = '云端读取失败；本机地址仍保留，请检查数据库迁移和网络。';
+    }
+  }
   function rpaDashboardUrl() {
     try {
       var url = new URL(rpaUrlInput.value.trim());
@@ -5957,16 +6001,33 @@
   }
   document.getElementById('btn-enter-rpa').onclick = function () {
     goToView('rpa');
+    if (getNickname() !== rpaUrlOwner) { loadRpaDashboardUrl(); return; }
     if (rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+    loadRpaDashboardUrl();
   };
   document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };
-  document.getElementById('rpa-connect').onclick = function () {
+  document.getElementById('rpa-connect').onclick = async function () {
     var url = rpaDashboardUrl();
-    if (!url) return;
-    localStorage.setItem('rpa_dashboard_url', url);
-    rpaSavedUrl = url;
-    rpaFrame.src = url;
-    rpaHint.textContent = '正在连接；若看板无法嵌入，请点“单独打开”。';
+    var owner = getNickname();
+    if (!url || !owner) { if (!owner) rpaHint.textContent = '请先登录，再保存看板地址。'; return; }
+    var c = getSb();
+    if (!c) { rpaHint.textContent = '云端未连接，无法保存跨设备地址；请联网后重试。'; return; }
+    var version = ++rpaSyncVersion;
+    rpaHint.textContent = '正在保存地址到云端…';
+    try {
+      var saved = await c.from('rpa_dashboard_settings').upsert({ user_id: owner, dashboard_url: url }, { onConflict: 'user_id' });
+      if (saved.error) throw saved.error;
+      if (owner !== getNickname() || version !== rpaSyncVersion) return;
+      localStorage.setItem(rpaLocalKey(owner), url);
+      localStorage.removeItem('rpa_dashboard_url');
+      rpaUrlOwner = owner;
+      rpaSavedUrl = url;
+      rpaFrame.src = url;
+      rpaHint.textContent = '地址已保存到云端；同一昵称在其他设备可自动读取。';
+    } catch (e) {
+      console.warn('[rpa url save]', e);
+      if (owner === getNickname() && version === rpaSyncVersion) rpaHint.textContent = '云端保存失败，未覆盖旧地址；请检查数据库迁移和网络后重试。';
+    }
   };
   document.getElementById('rpa-open').onclick = function () {
     var url = rpaDashboardUrl();
