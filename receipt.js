@@ -132,12 +132,7 @@
   var saveDayTimer = null;
   var lastEditChromeTapAt = 0;
   var lastGoodReceiptSize = { w: 0, h: 0 };
-  var deviceGravityTarget = { x: 0, y: -9.8, z: 0 };
-  var deviceGravitySmooth = { x: 0, y: -9.8, z: 0 };
-  var deviceGravityReady = false;
-  var deviceGravityBound = false;
-  var deviceGravityPermission = '';
-  var gyroPromptBound = false;
+  var PAPER_GRAVITY = { x: 0, y: -9.8, z: 0 };
 
   function pad2(n) {
     return n < 10 ? '0' + n : String(n);
@@ -978,9 +973,9 @@
     });
   };
 
-  PhysicsPaper.prototype.update = function (dt, dragIndex, dragPos, gravity) {
+  PhysicsPaper.prototype.update = function (dt, dragIndex, dragPos) {
     var damping = 0.985;
-    var g = gravity || deviceGravitySmooth;
+    var g = PAPER_GRAVITY;
     var wind = new THREE.Vector3(0, 0, Math.sin(Date.now() * 0.002) * 0.3);
     var i;
     var k;
@@ -1014,159 +1009,6 @@
     }
   };
 
-  function isReceiptStandalone() {
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
-    return !!(window.navigator && window.navigator.standalone);
-  }
-
-  function degToRad(d) {
-    return d * Math.PI / 180;
-  }
-
-  function assignGravity(x, y) {
-    deviceGravityTarget.x = x;
-    deviceGravityTarget.y = y;
-    deviceGravityTarget.z = 0;
-    deviceGravityReady = true;
-  }
-
-  function setDeviceGravityFromOrientation(beta, gamma) {
-    if (beta == null || gamma == null) return;
-    var b = degToRad(beta);
-    var g = degToRad(gamma);
-    var gx = Math.sin(g);
-    var gy = -Math.sin(b) * Math.cos(g);
-    var len = Math.sqrt(gx * gx + gy * gy);
-    if (len < 0.05) return;
-    assignGravity((gx / len) * 9.8, (gy / len) * 9.8);
-  }
-
-  function onReceiptDeviceOrientation(e) {
-    setDeviceGravityFromOrientation(e.beta, e.gamma);
-    updateGyroPromptVisible();
-  }
-
-  function onReceiptDeviceMotion(e) {
-    var ag = e.accelerationIncludingGravity;
-    if (!ag || ag.x == null || ag.y == null) return;
-    var x = -ag.x;
-    var y = -ag.y;
-    var len = Math.sqrt(x * x + y * y);
-    if (len < 1.5) return;
-    assignGravity((x / len) * 9.8, (y / len) * 9.8);
-    updateGyroPromptVisible();
-  }
-
-  function startDeviceGravityListeners() {
-    if (deviceGravityBound) return;
-    deviceGravityBound = true;
-    window.addEventListener('deviceorientation', onReceiptDeviceOrientation, true);
-    window.addEventListener('devicemotion', onReceiptDeviceMotion, true);
-    updateGyroPromptVisible();
-  }
-
-  function iosNeedsGyroPrompt() {
-    if (deviceGravityBound) return false;
-    return typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function';
-  }
-
-  function ensureGyroPromptUI() {
-    if (gyroPromptBound) return;
-    gyroPromptBound = true;
-    var btn = document.getElementById('receipt-gyro-prompt');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.id = 'receipt-gyro-prompt';
-      btn.type = 'button';
-      btn.textContent = '点我启用重力下垂';
-      document.body.appendChild(btn);
-    }
-    btn.addEventListener('click', function () {
-      requestGyroPermission(true);
-    });
-  }
-
-  function updateGyroPromptVisible() {
-    var btn = document.getElementById('receipt-gyro-prompt');
-    if (!btn) return;
-    var onReceipt = document.querySelector('.receipt-screen.active');
-    var show = !!(onReceipt && iosNeedsGyroPrompt() && !deviceGravityReady);
-    btn.style.display = show ? 'block' : 'none';
-  }
-
-  function requestGyroPermission(fromGesture) {
-    if (deviceGravityBound) return;
-    if (!fromGesture) return;
-    ensureGyroPromptUI();
-
-    function finishGranted() {
-      deviceGravityPermission = 'granted';
-      startDeviceGravityListeners();
-      updateGyroPromptVisible();
-    }
-
-    function finishDenied() {
-      deviceGravityPermission = 'denied';
-      updateGyroPromptVisible();
-    }
-
-    if (!iosNeedsGyroPrompt()) {
-      finishGranted();
-      return;
-    }
-
-    var orientReq = DeviceOrientationEvent.requestPermission();
-    orientReq
-      .then(function (state) {
-        if (state !== 'granted') {
-          finishDenied();
-          return null;
-        }
-        if (typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function') {
-          return DeviceMotionEvent.requestPermission();
-        }
-        return 'granted';
-      })
-      .then(function (state) {
-        if (state === 'granted') finishGranted();
-        else if (state != null) finishDenied();
-      })
-      .catch(function () {
-        finishDenied();
-      });
-  }
-
-  function onReceiptScreenEnter() {
-    ensureGyroPromptUI();
-    if (iosNeedsGyroPrompt()) {
-      updateGyroPromptVisible();
-      return;
-    }
-    startDeviceGravityListeners();
-    updateGyroPromptVisible();
-  }
-
-  function bindReceiptGyroTouch(el) {
-    if (!el || el._receiptGyroTouch) return;
-    el._receiptGyroTouch = true;
-    el.addEventListener(
-      'touchend',
-      function () {
-        if (iosNeedsGyroPrompt()) requestGyroPermission(true);
-      },
-      { passive: true }
-    );
-  }
-
-  function sampleDeviceGravity(dt) {
-    if (!deviceGravityReady) return deviceGravitySmooth;
-    var t = Math.min(1, dt * 8);
-    deviceGravitySmooth.x += (deviceGravityTarget.x - deviceGravitySmooth.x) * t;
-    deviceGravitySmooth.y += (deviceGravityTarget.y - deviceGravitySmooth.y) * t;
-    return deviceGravitySmooth;
-  }
 
   function receiptContainerSize(container) {
     var w = container.clientWidth;
@@ -1449,7 +1291,7 @@
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.touchAction = 'none';
-    bindReceiptGyroTouch(this.renderer.domElement);
+
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     var dirLight = new THREE.DirectionalLight(0xfffdfa, 0.85);
     dirLight.position.set(5, 5, 8);
@@ -1898,7 +1740,7 @@
         dragIdx = self.grabIndex;
         dragPos = self.dragTargetPos;
       }
-      self.physics.update(dt, dragIdx, dragPos, sampleDeviceGravity(dt));
+      self.physics.update(dt, dragIdx, dragPos);
       for (j = 0; j < self.physics.particles.length; j++) {
         posAttr.setXYZ(j, self.physics.particles[j].pos.x, self.physics.particles[j].pos.y, self.physics.particles[j].pos.z);
       }
@@ -2102,7 +1944,6 @@
   function bindOnce() {
     if (bound) return;
     bound = true;
-    ensureGyroPromptUI();
     wireInlineEditButtons();
     var input = document.getElementById('receipt-edit-input');
     if (input) {
@@ -2142,7 +1983,7 @@
     state.currentCfg = loadDayConfig(state.selectedDate);
     scanDatesWithData();
     stopAllScenes();
-    onReceiptScreenEnter();
+
     var s = getScene(modeKey, canvasId, paperMode);
     if (s) {
       s.start();
@@ -2181,7 +2022,7 @@
     onLeaveAll: function () {
       stopAllScenes();
       clearEditSelection();
-      updateGyroPromptVisible();
+
     },
     _test: {
       normalizeReceiptConfig: normalizeReceiptConfig,
