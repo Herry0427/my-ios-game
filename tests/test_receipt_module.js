@@ -31,12 +31,22 @@ ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '****', price: '¥0.00' }] 
 ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥0.00' }] }), '有名称无金额仍应保存');
 ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有金额可保存');
 ok(receiptCode.indexOf('function cloudOp') >= 0, '云端操作用 Promise.resolve 包装');
+(function () {
+  var income = t.appendEntry(t.normalizeReceiptConfig({ items: [] }), { type: 'income', category: '服务', amount: 25, note: '工资' });
+  ok(income.entries.length === 1 && t.receiptConfigHasData(income), '入账单独存储并算作当天数据');
+  ok(t.sumItems(income.items) === 0, '入账不算作消费');
+  var excluded = t.appendEntry(income, { type: 'excluded', category: '购物', amount: 4, note: '' });
+  ok(t.sumItems(excluded.items) === 0, '不计入收支不算作消费');
+  var expense = t.appendEntry(excluded, { type: 'expense', category: '餐饮', amount: 12.5, note: '' });
+  ok(t.sumItems(expense.items) === 12.5 && expense.entries.length === 3, '支出显示在旧小票且保留三种分类');
+})();
 var k1 = t.randomTerminalForDate(new Date(2026, 5, 1));
 var k2 = t.randomTerminalForDate(new Date(2026, 5, 1));
 ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
+ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
 ok(html.indexOf('btn-force-refresh') >= 0, '大厅强制刷新');
 ok(html.indexOf('forceRefreshAppCache') >= 0, '强制刷新逻辑');
 ok(html.indexOf('receipt_home') >= 0, '路由');

@@ -284,6 +284,7 @@
     } catch (e) {
       return false;
     }
+    if (Array.isArray(cfg.entries) && cfg.entries.length) return true;
     if (sumItems(cfg.items) > 0) return true;
     for (i = 0; i < cfg.items.length; i++) {
       if (receiptItemTouched(cfg.items[i])) return true;
@@ -362,7 +363,8 @@
       title: cfg.title,
       terminal: cfg.terminal,
       items: cfg.items,
-      footer: cfg.footer
+      footer: cfg.footer,
+      entries: cfg.entries || []
     };
   }
 
@@ -380,6 +382,7 @@
 
   function onReceiptCloudSyncDone() {
     scanDatesWithData();
+    renderDayEntries();
     if (!(scenes.edit && scenes.edit.running)) state.currentCfg = loadDayConfig(state.selectedDate);
     if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
       scenes.calendar.refresh();
@@ -1991,10 +1994,127 @@
       scheduleReceiptResize(s);
     }
     updateLegacyImportButton();
-    if (paperMode === 'receipt') scheduleReceiptCloudSync(100);
+    if (paperMode === 'receipt') { renderDayEntries(); scheduleReceiptCloudSync(100); }
+  }
+
+  var entryDraft = { type: 'expense', category: '餐饮', amount: '', date: dateKey(new Date()) };
+  var receiptCategories = [
+    ['餐饮', '🍚'], ['交通', '🚗'], ['服饰', '👕'], ['购物', '🛍️'], ['服务', '🛠️'], ['教育', '📚'],
+    ['娱乐', '🎮'], ['运动', '🏃'], ['生活缴费', '💡'], ['旅行', '✈️'], ['宠物', '🐾'], ['医疗', '🏥']
+  ];
+
+  function renderDayEntries() {
+    var list = global.document && global.document.getElementById('receipt-day-entries');
+    if (!list) return;
+    var cfg = loadDayConfig(state.selectedDate);
+    list.innerHTML = '';
+    (cfg.entries || []).forEach(function (entry) {
+      var line = document.createElement('div');
+      line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '');
+      list.appendChild(line);
+    });
+  }
+
+  function renderEntryDraft() {
+    var date = document.getElementById('receipt-entry-date');
+    var amount = document.getElementById('receipt-entry-amount');
+    var grid = document.getElementById('receipt-entry-categories');
+    if (!date || !amount || !grid) return;
+    date.value = entryDraft.date;
+    amount.textContent = entryDraft.amount || '0.00';
+    document.querySelectorAll('#receipt-entry-tabs button').forEach(function (button) {
+      button.classList.toggle('selected', button.getAttribute('data-type') === entryDraft.type);
+    });
+    grid.innerHTML = '';
+    receiptCategories.forEach(function (category) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'receipt-entry-category' + (entryDraft.category === category[0] ? ' selected' : '');
+      var icon = document.createElement('span');
+      icon.textContent = category[1];
+      var label = document.createElement('span');
+      label.textContent = category[0];
+      button.appendChild(icon);
+      button.appendChild(label);
+      button.onclick = function () { entryDraft.category = category[0]; renderEntryDraft(); };
+      grid.appendChild(button);
+    });
+  }
+
+  function inputEntryAmount(key) {
+    var value = entryDraft.amount;
+    if (key === 'back') value = value.slice(0, -1);
+    else if (key === '.' && value.indexOf('.') < 0) value = (value || '0') + '.';
+    else if (/^\d$/.test(key)) {
+      if (value.split('.')[1] && value.split('.')[1].length >= 2) return;
+      if (value.replace(/\D/g, '').length >= 9) return;
+      value = value === '0' ? key : value + key;
+    }
+    entryDraft.amount = value;
+    renderEntryDraft();
+  }
+
+  function appendEntry(cfg, entry) {
+    if (!Array.isArray(cfg.entries)) cfg.entries = [];
+    cfg.entries.push(entry);
+    if (entry.type === 'expense') {
+      cfg.items.push({ qty: 1, name: entry.category + (entry.note ? ' · ' + entry.note : ''), price: '¥' + entry.amount.toFixed(2) });
+    }
+    return normalizeReceiptConfig(cfg);
+  }
+
+  function saveEntryDraft() {
+    var amount = Number(entryDraft.amount);
+    var date = new Date(entryDraft.date + 'T12:00:00');
+    if (!isFinite(amount) || amount <= 0 || !/^\d+(\.\d{1,2})?$/.test(entryDraft.amount) || isNaN(date.getTime()) || dateKey(date) !== entryDraft.date) {
+      alert('请选择有效日期，并输入大于 0 的金额（最多两位小数）');
+      return false;
+    }
+    if (!ownerKey()) { alert('请先登录，再保存账目'); return false; }
+    var note = document.getElementById('receipt-entry-note').value.trim().slice(0, 200);
+    var cfg = loadDayConfig(date);
+    state.selectedDate = date;
+    state.currentCfg = appendEntry(cfg, { type: entryDraft.type, category: entryDraft.category, amount: amount, note: note });
+    saveCurrentDay();
+    entryDraft.amount = '';
+    document.getElementById('receipt-entry-note').value = '';
+    document.getElementById('receipt-entry-note').hidden = true;
+    if (global.goToView) global.goToView('receipt_home');
+    renderDayEntries();
+    return true;
+  }
+
+  function bindEntryForm() {
+    var form = document.getElementById('receipt-entry-screen');
+    if (!form || form._bound) return;
+    form._bound = true;
+    document.getElementById('receipt-entry-close').onclick = function () { global.goToView('receipt_home'); };
+    document.getElementById('receipt-entry-date').onchange = function (e) { entryDraft.date = e.target.value; };
+    document.getElementById('receipt-entry-tabs').onclick = function (e) {
+      var button = e.target.closest('[data-type]');
+      if (button) { entryDraft.type = button.getAttribute('data-type'); renderEntryDraft(); }
+    };
+    document.getElementById('receipt-entry-keypad').onclick = function (e) {
+      var button = e.target.closest('[data-key]');
+      if (!button) return;
+      if (button.getAttribute('data-key') === 'save') saveEntryDraft();
+      else inputEntryAmount(button.getAttribute('data-key'));
+    };
+    document.getElementById('receipt-entry-note-toggle').onclick = function () {
+      var input = document.getElementById('receipt-entry-note');
+      input.hidden = !input.hidden;
+      if (!input.hidden) input.focus();
+    };
   }
 
   global.ReceiptModule = {
+    onEnterEntry: function () {
+      stopAllScenes();
+      bindEntryForm();
+      entryDraft.date = dateKey(state.selectedDate);
+      renderEntryDraft();
+    },
+    saveEntryDraft: saveEntryDraft,
     bindOnce: bindOnce,
     saveAndReturnHome: saveAndGoHome,
     ensureState: ensureState,
@@ -2030,6 +2150,7 @@
       randomTerminalForDate: randomTerminalForDate,
       dateKey: dateKey,
       receiptConfigHasData: receiptConfigHasData,
+      appendEntry: appendEntry,
       computeReceiptCameraZ: computeReceiptCameraZ,
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;
