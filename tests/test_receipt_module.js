@@ -67,6 +67,8 @@ ok(receiptCode.indexOf('if (calendarBack) calendarBack.onclick') >= 0, '日历�
 ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
 ['+', '-', '*', '/', '='].forEach(function (key) { ok(html.indexOf('data-key="' + key + '"') >= 0, '运算键 ' + key + ' 在页面'); });
 ok(html.indexOf('id="receipt-entry-tag-delete"') >= 0, '删除标签按钮在页面');
+ok(html.indexOf('id="btn-enter-rpa"') >= 0 && html.indexOf('id="rpa-frame"') >= 0, '手机主页可打开 RPA 看板模块');
+ok(receiptCode.includes("['工资', '💰']") && receiptCode.includes("['节日福利', '🎁']"), '入账提供工资和节日福利标签');
 ok(/<input id="receipt-entry-note"[^>]*hidden>/.test(html) && !html.includes('<in</button>put'), '备注输入框是有效 HTML，不会露出源码');
 ok(/data-key="back"[^>]*>⌫<\/button>/.test(html) && !html.includes('</button></button>'), '退格及保存按钮标签正确闭合');
 var keypadMarkup = html.match(/<div class="receipt-entry-keypad" id="receipt-entry-keypad">([\s\S]*?)<\/div>/);

@@ -2026,6 +2026,13 @@
     ['餐饮', '🍚'], ['交通', '🚗'], ['服饰', '👕'], ['购物', '🛍️'], ['服务', '🛠️'], ['教育', '📚'],
     ['娱乐', '🎮'], ['运动', '🏃'], ['生活缴费', '💡'], ['旅行', '✈️'], ['宠物', '🐾'], ['医疗', '🏥']
   ];
+  var incomeCategories = [
+    ['工资', '💰'], ['奖金', '🏆'], ['节日福利', '🎁'], ['补贴', '🧧'], ['报销', '🧾'], ['加班费', '⏱️'],
+    ['兼职', '💼'], ['副业', '✨'], ['理财收益', '📈'], ['退款', '↩️'], ['转账', '💸'], ['其他入账', '➕']
+  ];
+  function isBuiltInCategory(tag) {
+    return receiptCategories.concat(incomeCategories).some(function (category) { return category[0] === tag; });
+  }
 
   function cleanTag(value) {
     return String(value || '').trim().slice(0, 20);
@@ -2124,7 +2131,7 @@
     var tag = cleanTag(value);
     if (!tag) return false;
     if (!ownerKey()) { alert('请先登录，再添加标签'); return false; }
-    if (receiptCategories.some(function (category) { return category[0] === tag; })) {
+    if (isBuiltInCategory(tag)) {
       selectEntryCategory(tag);
       return true;
     }
@@ -2141,7 +2148,7 @@
 
   function deleteEntryTag() {
     var tag = entryDraft.category;
-    if (!ownerKey() || !tag || receiptCategories.some(function (category) { return category[0] === tag; }) || collectSavedTags().indexOf(tag) < 0) return false;
+    if (!ownerKey() || !tag || isBuiltInCategory(tag) || collectSavedTags().indexOf(tag) < 0) return false;
     if (!global.confirm('删除自定义标签“' + tag + '”？已保存的账目不会删除。')) return false;
     storeTagAction(tag, true);
     entryDraft.category = '';
@@ -2202,7 +2209,7 @@
       button.classList.toggle('selected', button.getAttribute('data-type') === entryDraft.type);
     });
     grid.innerHTML = '';
-    receiptCategories.forEach(function (category) {
+    (entryDraft.type === 'income' ? incomeCategories : receiptCategories).forEach(function (category) {
       var button = document.createElement('button');
       button.type = 'button';
       button.className = 'receipt-entry-category';
@@ -2322,7 +2329,12 @@
     };
     document.getElementById('receipt-entry-tabs').onclick = function (e) {
       var button = e.target.closest('[data-type]');
-      if (button) { entryDraft.type = button.getAttribute('data-type'); renderEntryDraft(); }
+      if (button) {
+        var type = button.getAttribute('data-type');
+        if (entryDraft.type !== type) entryDraft.category = '';
+        entryDraft.type = type;
+        renderEntryDraft();
+      }
     };
     document.getElementById('receipt-entry-keypad').onclick = function (e) {
       var button = e.target.closest('[data-key]');

@@ -170,6 +170,13 @@
       width: 100%;
       max-width: none;
     }
+    #rpa-screen.screen { background: #f7f8f6; color: #232b27; padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 10px); gap: 10px; }
+    .rpa-mobile-header { display: flex; align-items: center; gap: 12px; font: 600 16px -apple-system, BlinkMacSystemFont, sans-serif; }
+    .rpa-mobile-header button, .rpa-mobile-controls button { border: 0; border-radius: 9px; background: #e2f1e8; color: #168557; padding: 9px 12px; font-size: 14px; }
+    .rpa-mobile-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    #rpa-url { flex: 1 1 180px; min-width: 0; padding: 9px; border: 1px solid #ccdcd0; border-radius: 9px; font-size: 16px; }
+    #rpa-hint { margin: 0; font-size: 12px; color: #66756b; }
+    #rpa-frame { flex: 1; width: 100%; min-height: 0; border: 0; border-radius: 12px; background: #fff; }
     /* —— 听书 listenbook-screen —— */
     #listenbook-screen.screen {
       min-height: 100dvh;
@@ -1990,6 +1997,7 @@
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
+      <button type="button" class="tile-btn" id="btn-enter-rpa">RPA 报错 <span class="tile-badge">异常流程</span></button>
       <button type="button" class="tile-btn" id="btn-enter-listenbook">听书 <span class="tile-badge">循环背诵</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
@@ -1997,6 +2005,13 @@
       <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
       <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
     </div>
+  </section>
+
+  <section id="rpa-screen" class="screen" aria-label="RPA 报错看板">
+    <div class="rpa-mobile-header"><button type="button" id="rpa-back">‹ 返回</button><span>R</span>PA 报错流程</span></div>
+    <div class="rpa-mobile-controls"><input id="rpa-url" type="url" inputmode="url" placeholder="粘贴内网穿透的 HTTPS 地址" aria-label="RPA 看板地址"><button type="button" id="rpa-connect">连接</button><button type="button" id="rpa-open">单独打开</button></div>
+    <p id="rpa-hint" role="status">先在电脑启动看板和穿透，再填写 HTTPS 地址；网址只保存在本机浏览器。</p>
+    <iframe id="rpa-frame" title="RPA 异常看板" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
   </section>
 
   <section id="listenbook-screen" class="screen" aria-label="听书">
@@ -2395,7 +2410,7 @@
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="receipt.js?v=20261008-tag-delete-calculator-1"></script>
+  <script src="receipt.js?v=20261008-income-categories-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {
@@ -3425,6 +3440,7 @@
     lobby: 'lobby-screen',
     memo_screen: 'memo-screen',
     listenbook: 'listenbook-screen',
+    rpa: 'rpa-screen',
     snake_home: 'snake-home-screen',
     snake_game: 'snake-screen',
     snake_shop: 'shop-screen',
@@ -3483,6 +3499,7 @@
       case 'snake_leaderboard':
         return 'snake_home';
       case 'snake_home':
+      case 'rpa':
       case 'placeholder':
         return 'lobby';
       default:
@@ -5926,6 +5943,35 @@
     }
   });
 
+  var rpaUrlInput = document.getElementById('rpa-url');
+  var rpaFrame = document.getElementById('rpa-frame');
+  var rpaHint = document.getElementById('rpa-hint');
+  var rpaSavedUrl = localStorage.getItem('rpa_dashboard_url') || '';
+  rpaUrlInput.value = rpaSavedUrl;
+  function rpaDashboardUrl() {
+    try {
+      var url = new URL(rpaUrlInput.value.trim());
+      if (url.protocol !== 'https:' || !url.hostname) throw new Error('invalid');
+      return url.href;
+    } catch (e) { rpaHint.textContent = '请填写穿透工具提供的 HTTPS 地址。'; return ''; }
+  }
+  document.getElementById('btn-enter-rpa').onclick = function () {
+    goToView('rpa');
+    if (rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+  };
+  document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };
+  document.getElementById('rpa-connect').onclick = function () {
+    var url = rpaDashboardUrl();
+    if (!url) return;
+    localStorage.setItem('rpa_dashboard_url', url);
+    rpaSavedUrl = url;
+    rpaFrame.src = url;
+    rpaHint.textContent = '正在连接；若看板无法嵌入，请点“单独打开”。';
+  };
+  document.getElementById('rpa-open').onclick = function () {
+    var url = rpaDashboardUrl();
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  };
   document.getElementById('btn-enter-memo').onclick = function () {
     goToView('memo_screen');
   };

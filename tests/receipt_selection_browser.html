@@ -2,7 +2,7 @@
 <html lang="zh"><head><meta charset="utf-8"><title>记账标签点击测试：运行中</title></head><body>
 <div id="receipt-entry-screen"></div>
 <button id="receipt-entry-close"></button><button id="receipt-calendar-back"></button><button id="receipt-entry-date"></button>
-<div id="receipt-entry-tabs"><button data-type="expense"></button></div>
+<div id="receipt-entry-tabs"><button data-type="expense"></button><button data-type="income"></button></div>
 <div id="receipt-entry-amount"></div><div id="receipt-entry-categories"></div>
 <div id="receipt-entry-keypad"><button data-key="1">1</button><button data-key="2">2</button><button data-key="+">+</button><button data-key="*">×</button><button data-key="=">=</button><button data-key="back">⌫</button><button data-key="save">确定</button></div><button id="receipt-entry-tag-toggle"></button><button id="receipt-entry-tag-delete" hidden>删除选中标签</button>
 <form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input"></form>
@@ -33,6 +33,10 @@ localStorage.setItem('receipt_account_receipt-selection-browser-test_2026-01-01'
     check(name);
   }
   check('');
+  document.querySelector('#receipt-entry-tabs [data-type="income"]').click();
+  if (!grid.querySelector('[data-category="工资"]') || !grid.querySelector('[data-category="节日福利"]') || grid.querySelector('[data-category="餐饮"]')) errors.push('入账没有切换到收入标签');
+  document.querySelector('#receipt-entry-tabs [data-type="expense"]').click();
+  if (!grid.querySelector('[data-category="餐饮"]') || grid.querySelector('[data-category="工资"]')) errors.push('切回支出没有恢复支出标签');
   click('餐饮');
   click('彩票');
   click('交通');
