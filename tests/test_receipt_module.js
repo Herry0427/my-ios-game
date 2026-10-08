@@ -30,6 +30,19 @@ ok(t.normalizeReceiptConfig({ items: [{ qty: 2, name: 'a', price: '¥10.00' }] }
 ok(!t.receiptConfigHasData({ items: [{ qty: 1, name: '****', price: '¥0.00' }] }), '空小票无蓝点');
 ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥0.00' }] }), '有名称无金额仍应保存');
 ok(t.receiptConfigHasData({ items: [{ qty: 1, name: '地铁', price: '¥12.60' }] }), '有金额可保存');
+ok(t.receiptConfigHasData({ tagActions: [{ tag: '彩票', time: 1, deleted: true }] }), '只删除标签的日期也能同步');
+ok(t.calculateEntryAmount('2+3*4') === 14 && t.calculateEntryAmount('8/2-1') === 3, '四则运算遵循先乘除后加减');
+ok(t.calculateEntryAmount('0.1+0.2') === 0.3 && t.calculateEntryAmount('10/4') === 2.5, '小数计算精确到分');
+ok(t.calculateEntryAmount('1/0') === null && t.calculateEntryAmount('1+') === null && t.calculateEntryAmount('1..2') === null, '无效算式与除零不能保存');
+ok(t.calculateEntryAmount('1-2') === null && t.calculateEntryAmount('999999999+1') === null, '非正数及超限金额不能保存');
+t.entryDraft.amount = '';
+'12+3*4='.split('').forEach(t.inputEntryAmount);
+ok(t.entryDraft.amount === '24', '按等号显示计算结果');
+t.inputEntryAmount('back');
+ok(t.entryDraft.amount === '2', '计算结果可退格继续输入');
+t.inputEntryAmount('+'); t.inputEntryAmount('5');
+ok(t.calculateEntryAmount(t.entryDraft.amount) === 7, '计算后可继续运算');
+t.entryDraft.amount = '';
 ok(receiptCode.indexOf('function cloudOp') >= 0, '云端操作用 Promise.resolve 包装');
 (function () {
   var income = t.appendEntry(t.normalizeReceiptConfig({ items: [] }), { type: 'income', category: '服务', amount: 25, note: '工资' });
@@ -52,6 +65,8 @@ ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
 ok(/src="receipt\.js\?v=[^"]+"/.test(html), '记账脚本带版本号，手机不会混用旧缓存');
 ok(receiptCode.indexOf('if (calendarBack) calendarBack.onclick') >= 0, '日历返回按钮缺失不阻断手机记账入口');
 ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
+['+', '-', '*', '/', '='].forEach(function (key) { ok(html.indexOf('data-key="' + key + '"') >= 0, '运算键 ' + key + ' 在页面'); });
+ok(html.indexOf('id="receipt-entry-tag-delete"') >= 0, '删除标签按钮在页面');
 ok(html.indexOf('id="receipt-entry-tag-toggle"') >= 0 && html.indexOf('id="receipt-entry-tags"') < 0 && receiptCode.indexOf('receipt-entry-custom-tag') >= 0, '新增标签在上方类别网格快捷勾选');
 ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');
 ok(html.indexOf('id="receipt-entry-history"') < 0 && html.indexOf('id="receipt-entry-date"') >= 0, '日期是日历唯一入口');
@@ -127,7 +142,7 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
     };
   } };
   function device(store, name) {
-    var win = { getSb: function () { return client; }, getReceiptOwnerKey: function () { return name.value; } };
+    var win = { getSb: function () { return client; }, getReceiptOwnerKey: function () { return name.value; }, confirm: function () { return true; } };
     var ctx = { window: win, localStorage: store, console: console, setTimeout: setTimeout, clearTimeout: clearTimeout };
     vm.createContext(ctx);
     vm.runInContext(code, ctx);
@@ -151,6 +166,16 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
   await first.syncReceiptFromCloud();
   ok(rows['甲:' + today].savedTags[0] === '彩票', '标签随账单同步到云端');
   ok(rows['甲:' + today].items[0].name === '云端旧支出', '新增标签不会覆盖当天已有云端账单');
+  firstStore.setItem('receipt_account_%E7%94%B2_2026-01-02', JSON.stringify({ entries: [{ type: 'expense', category: '彩票', amount: 8, tags: ['彩票'] }], savedTags: ['彩票'] }));
+  ok(first._test.deleteEntryTag() === true, '确认后可删除选中的自定义标签');
+  ok(first._test.entryDraft.category === '' && first._test.collectSavedTags().indexOf('彩票') < 0, '删除后不再勾选且历史标签不会回流');
+  ok(first._test.deleteEntryTag() === false, '未选中时不会删除标签');
+  first._test.selectEntryCategory('餐饮');
+  ok(first._test.deleteEntryTag() === false, '内置类别不可删除');
+  await first.syncReceiptFromCloud();
+  ok(rows['甲:' + today].items[0].name === '云端旧支出', '删除标签不会覆盖当天云端账单');
+  ok(first._test.collectSavedTags().indexOf('彩票') < 0, '同步后删除标签不复活');
+  ok(JSON.parse(firstStore.getItem('receipt_account_%E7%94%B2_2026-01-02')).entries[0].tags[0] === '彩票', '删除快捷标签不修改历史账目');
   ok(first.importLegacyDays(), '旧账单可明确归属当前账号');
   await first.syncReceiptFromCloud();
   ok(!!rows['甲:2026-01-01'], '旧账单上传到云端');
@@ -159,7 +184,11 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
   var second = device(secondStore, { value: '甲' });
   await second.syncReceiptFromCloud();
   ok(!!secondStore.getItem('receipt_account_%E7%94%B2_2026-01-01'), '新设备同账号拉取账单');
-  ok(second._test.collectSavedTags().indexOf('彩票') >= 0, '新设备同账号可快捷勾选标签');
+  ok(second._test.collectSavedTags().indexOf('彩票') < 0, '新设备同账号删除的标签不会复活');
+  ok(second._test.addEntryTag('彩票'), '删除的标签可重新添加');
+  await second.syncReceiptFromCloud();
+  await first.syncReceiptFromCloud();
+  ok(first._test.collectSavedTags().indexOf('彩票') >= 0, '重新添加的标签跨设备可见');
   user.value = '乙';
   first.refreshAccount();
   await first.syncReceiptFromCloud();

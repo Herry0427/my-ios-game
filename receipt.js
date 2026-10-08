@@ -288,7 +288,7 @@
     } catch (e) {
       return false;
     }
-    if ((Array.isArray(cfg.entries) && cfg.entries.length) || (Array.isArray(cfg.savedTags) && cfg.savedTags.length)) return true;
+    if ((Array.isArray(cfg.entries) && cfg.entries.length) || (Array.isArray(cfg.savedTags) && cfg.savedTags.length) || (Array.isArray(cfg.tagActions) && cfg.tagActions.length)) return true;
     if (sumItems(cfg.items) > 0) return true;
     for (i = 0; i < cfg.items.length; i++) {
       if (receiptItemTouched(cfg.items[i])) return true;
@@ -373,7 +373,8 @@
       items: cfg.items,
       footer: cfg.footer,
       entries: cfg.entries || [],
-      savedTags: cfg.savedTags || []
+      savedTags: cfg.savedTags || [],
+      tagActions: cfg.tagActions || []
     };
   }
 
@@ -506,6 +507,7 @@
               merged.savedTags = (merged.savedTags || []).concat(local.savedTags || []).filter(function (tag, index, tags) {
                 return tags.indexOf(tag) === index;
               });
+              merged.tagActions = mergeTagActions(merged.tagActions, local.tagActions);
               localStorage.setItem(dayStorageKey(day), JSON.stringify(receiptConfigToPayload(merged)));
             } catch (e) { return false; }
           }
@@ -2029,8 +2031,22 @@
     return String(value || '').trim().slice(0, 20);
   }
 
+  function mergeTagActions(first, second) {
+    var byTag = {};
+    (first || []).concat(second || []).forEach(function (action) {
+      var tag = cleanTag(action && action.tag);
+      var time = Number(action && action.time);
+      if (!tag || !isFinite(time) || time <= 0) return;
+      if (!byTag[tag] || time > byTag[tag].time || (time === byTag[tag].time && action.deleted)) {
+        byTag[tag] = { tag: tag, time: time, deleted: !!action.deleted };
+      }
+    });
+    return Object.keys(byTag).map(function (tag) { return byTag[tag]; });
+  }
+
   function collectSavedTags() {
     var tags = [];
+    var actions = [];
     var prefix = dayPrefix();
     if (!prefix) return tags;
     for (var i = 0; i < localStorage.length; i++) {
@@ -2044,9 +2060,31 @@
           tag = cleanTag(tag);
           if (tag && tags.indexOf(tag) < 0) tags.push(tag);
         });
+        actions = mergeTagActions(actions, cfg.tagActions);
       } catch (e) {}
     }
+    actions.forEach(function (action) {
+      var index = tags.indexOf(action.tag);
+      if (action.deleted && index >= 0) tags.splice(index, 1);
+      else if (!action.deleted && index < 0) tags.push(action.tag);
+    });
     return tags;
+  }
+
+  function storeTagAction(tag, deleted) {
+    var today = new Date();
+    var key = dateKey(today);
+    var cfg = loadDayConfig(today);
+    var previous = mergeTagActions(cfg.tagActions, []).filter(function (action) { return action.tag === tag; })[0];
+    cfg.tagActions = mergeTagActions(cfg.tagActions, [{ tag: tag, time: Math.max(Date.now(), previous ? previous.time + 1 : 0), deleted: deleted }]);
+    if (!deleted && (!cfg.savedTags || cfg.savedTags.indexOf(tag) < 0)) {
+      if (!Array.isArray(cfg.savedTags)) cfg.savedTags = [];
+      cfg.savedTags.push(tag);
+    }
+    localStorage.setItem(dayStorageKey(key), JSON.stringify(receiptConfigToPayload(cfg)));
+    if (pendingDays()[key] !== 'save') markPending(key, 'tag');
+    setSyncStatus('标签已保存在本机，正在同步云端…', false);
+    scheduleReceiptCloudSync(500);
   }
 
   function renderEntryTags() {
@@ -2078,31 +2116,37 @@
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
+    var remove = global.document.getElementById('receipt-entry-tag-delete');
+    if (remove) remove.hidden = !entryDraft.category || !grid.querySelector('.receipt-entry-custom-tag.selected');
   }
 
   function addEntryTag(value) {
     var tag = cleanTag(value);
     if (!tag) return false;
     if (!ownerKey()) { alert('请先登录，再添加标签'); return false; }
-    var tags = collectSavedTags();
-    if (tags.indexOf(tag) < 0) {
-      var today = new Date();
-      var cfg = loadDayConfig(today);
-      if (!Array.isArray(cfg.savedTags)) cfg.savedTags = [];
-      cfg.savedTags.push(tag);
-      var key = dateKey(today);
-      localStorage.setItem(dayStorageKey(key), JSON.stringify(receiptConfigToPayload(cfg)));
-      if (pendingDays()[key] !== 'save') markPending(key, 'tag');
-      setSyncStatus('标签已保存在本机，正在同步云端…', false);
-      scheduleReceiptCloudSync(500);
+    if (receiptCategories.some(function (category) { return category[0] === tag; })) {
+      selectEntryCategory(tag);
+      return true;
     }
+    if (collectSavedTags().indexOf(tag) < 0) storeTagAction(tag, false);
     selectEntryCategory(tag);
+    renderEntryTags();
     return true;
   }
 
   function selectEntryCategory(category) {
     entryDraft.category = category;
     updateEntryCategorySelection();
+  }
+
+  function deleteEntryTag() {
+    var tag = entryDraft.category;
+    if (!ownerKey() || !tag || receiptCategories.some(function (category) { return category[0] === tag; }) || collectSavedTags().indexOf(tag) < 0) return false;
+    if (!global.confirm('删除自定义标签“' + tag + '”？已保存的账目不会删除。')) return false;
+    storeTagAction(tag, true);
+    entryDraft.category = '';
+    renderEntryTags();
+    return true;
   }
 
   function renderDayEntries() {
@@ -2174,14 +2218,52 @@
     renderEntryTags();
   }
 
+  function calculateEntryAmount(expression) {
+    var parts = expression.match(/\d+(?:\.\d*)?|[+\-*/]/g);
+    if (!parts || parts.join('') !== expression || parts.length % 2 !== 1) return null;
+    var values = [];
+    var operators = [];
+    for (var i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) {
+        if (!/^\d+(?:\.\d+)?$/.test(parts[i])) return null;
+        values.push(Number(parts[i]));
+      } else {
+        if (!/^[+\-*/]$/.test(parts[i])) return null;
+        operators.push(parts[i]);
+      }
+    }
+    for (var j = 0; j < operators.length;) {
+      if (operators[j] === '*' || operators[j] === '/') {
+        if (operators[j] === '/' && values[j + 1] === 0) return null;
+        values.splice(j, 2, operators[j] === '*' ? values[j] * values[j + 1] : values[j] / values[j + 1]);
+        operators.splice(j, 1);
+      } else j++;
+    }
+    var result = values[0];
+    for (var k = 0; k < operators.length; k++) result = operators[k] === '+' ? result + values[k + 1] : result - values[k + 1];
+    result = Math.round((result + Number.EPSILON) * 100) / 100;
+    return isFinite(result) && result > 0 && result <= 999999999 ? result : null;
+  }
+
   function inputEntryAmount(key) {
     var value = entryDraft.amount;
     if (key === 'back') value = value.slice(0, -1);
-    else if (key === '.' && value.indexOf('.') < 0) value = (value || '0') + '.';
-    else if (/^\d$/.test(key)) {
-      if (value.split('.')[1] && value.split('.')[1].length >= 2) return;
-      if (value.replace(/\D/g, '').length >= 9) return;
-      value = value === '0' ? key : value + key;
+    else if (key === '=') {
+      var result = calculateEntryAmount(value);
+      if (result === null) { alert('算式无效：请检查金额或除数是否为零'); return; }
+      value = String(result);
+    } else if (/^[+\-*/]$/.test(key)) {
+      if (!value || /[+\-*/.]$/.test(value) || calculateEntryAmount(value) === null) return;
+      value += key;
+    } else if (key === '.') {
+      var operand = value.split(/[+\-*/]/).pop();
+      if (operand.indexOf('.') >= 0) return;
+      value += operand ? '.' : '0.';
+    } else if (/^\d$/.test(key)) {
+      var current = value.split(/[+\-*/]/).pop();
+      if (current.indexOf('.') >= 0 && current.split('.')[1].length >= 2) return;
+      if (value.replace(/\D/g, '').length >= 20) return;
+      value = current === '0' ? value.slice(0, -1) + key : value + key;
     }
     entryDraft.amount = value;
     renderEntryDraft();
@@ -2197,9 +2279,9 @@
   }
 
   function saveEntryDraft() {
-    var amount = Number(entryDraft.amount);
+    var amount = calculateEntryAmount(entryDraft.amount);
     var date = new Date(entryDraft.date + 'T12:00:00');
-    if (!isFinite(amount) || amount <= 0 || !/^\d+(\.\d{1,2})?$/.test(entryDraft.amount) || isNaN(date.getTime()) || dateKey(date) !== entryDraft.date) {
+    if (amount === null || isNaN(date.getTime()) || dateKey(date) !== entryDraft.date) {
       alert('请选择有效日期，并输入大于 0 的金额（最多两位小数）');
       return false;
     }
@@ -2248,6 +2330,8 @@
       if (button.getAttribute('data-key') === 'save') saveEntryDraft();
       else inputEntryAmount(button.getAttribute('data-key'));
     };
+    var deleteTagButton = document.getElementById('receipt-entry-tag-delete');
+    if (deleteTagButton) deleteTagButton.onclick = deleteEntryTag;
     document.getElementById('receipt-entry-tag-toggle').onclick = function () {
       var form = document.getElementById('receipt-entry-tag-form');
       form.hidden = !form.hidden;
@@ -2320,6 +2404,10 @@
       receiptConfigHasData: receiptConfigHasData,
       appendEntry: appendEntry,
       cleanTag: cleanTag,
+      calculateEntryAmount: calculateEntryAmount,
+      inputEntryAmount: inputEntryAmount,
+      deleteEntryTag: deleteEntryTag,
+      mergeTagActions: mergeTagActions,
       collectSavedTags: collectSavedTags,
       addEntryTag: addEntryTag,
       selectEntryCategory: selectEntryCategory,

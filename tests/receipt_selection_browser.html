@@ -4,13 +4,14 @@
 <button id="receipt-entry-close"></button><button id="receipt-calendar-back"></button><button id="receipt-entry-date"></button>
 <div id="receipt-entry-tabs"><button data-type="expense"></button></div>
 <div id="receipt-entry-amount"></div><div id="receipt-entry-categories"></div>
-<div id="receipt-entry-keypad"></div><button id="receipt-entry-tag-toggle"></button>
+<div id="receipt-entry-keypad"><button data-key="1">1</button><button data-key="2">2</button><button data-key="+">+</button><button data-key="*">×</button><button data-key="=">=</button><button data-key="back">⌫</button><button data-key="save">确定</button></div><button id="receipt-entry-tag-toggle"></button><button id="receipt-entry-tag-delete" hidden>删除选中标签</button>
 <form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input"></form>
 <button id="receipt-entry-note-toggle"></button><input id="receipt-entry-note" hidden>
 <span id="receipt-entry-sync-status"></span>
 <script>
 window.getReceiptOwnerKey = function () { return 'receipt-selection-browser-test'; };
 window.getSb = function () { return null; };
+window.confirm = function () { return true; };
 localStorage.setItem('receipt_account_receipt-selection-browser-test_2026-01-01', JSON.stringify({savedTags:['彩票','早餐']}));
 </script>
 <script src="../receipt.js"></script>
@@ -38,7 +39,23 @@ localStorage.setItem('receipt_account_receipt-selection-browser-test_2026-01-01'
   click('早餐');
   module._test.addEntryTag('彩票');
   check('彩票');
-  document.title = errors.length ? 'FAIL: ' + errors.join('; ') : 'PASS: 初始无高亮，点击及新增标签始终单选';
+  var del = document.getElementById('receipt-entry-tag-delete');
+  if (del.hidden) errors.push('选中自定义标签后删除按钮未出现');
+  del.click();
+  check('');
+  if (!del.hidden || grid.querySelector('[data-category="彩票"]')) errors.push('删除后标签仍在快捷区');
+  click('餐饮');
+  if (!del.hidden) errors.push('内置类别显示了删除按钮');
+  var keys = document.getElementById('receipt-entry-keypad');
+  ['1', '2', '+', '2', '*', '2', '='].forEach(function (key) { keys.querySelector('[data-key="' + key + '"]').click(); });
+  if (document.getElementById('receipt-entry-amount').textContent !== '16') errors.push('实际点击计算键后结果不是16');
+  keys.querySelector('[data-key="back"]').click();
+  if (document.getElementById('receipt-entry-amount').textContent !== '1') errors.push('退格无效');
+  keys.querySelector('[data-key="save"]').click();
+  var today = module._test.dateKey(new Date());
+  var saved = JSON.parse(localStorage.getItem('receipt_account_receipt-selection-browser-test_' + today) || '{}');
+  if (!saved.entries || saved.entries[0].amount !== 1 || saved.entries[0].category !== '餐饮') errors.push('点击确定后计算金额未保存');
+  document.title = errors.length ? 'FAIL: ' + errors.join('; ') : 'PASS: 标签单选、删除及键盘运算';
 })();
 </script>
 </body></html>

@@ -1902,8 +1902,10 @@
     .receipt-entry-category span:last-child { max-width: 100%; overflow-wrap: anywhere; }
     .receipt-entry-category.selected { color: #168557; font-weight: bold; }
     .receipt-entry-category.selected span:first-child { background: #ccedda; }
-    .receipt-entry-note-wrap { padding: 8px 22px; }
-    .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 15px; padding: 8px 8px 8px 0; }
+    .receipt-entry-note-wrap { padding: 5px 22px; }
+    .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 14px; padding: 7px 8px 7px 0; }
+    #receipt-entry-tag-delete { color: #a32020; }
+    #receipt-entry-tag-delete[hidden] { display: none; }
 
     #receipt-entry-tag-form { display: flex; gap: 8px; padding: 0 22px 8px; }
     #receipt-entry-tag-form[hidden] { display: none; }
@@ -1911,10 +1913,11 @@
     #receipt-entry-tag-form button { border: 0; border-radius: 8px; background: #18a367; color: #fff; padding: 7px 12px; }
     #receipt-entry-note { display: block; box-sizing: border-box; width: 100%; padding: 9px; font-size: 16px; }
     #receipt-entry-note[hidden] { display: none; }
-    .receipt-entry-keypad { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, minmax(52px, 1fr)); gap: 3px; padding: 8px 12px 12px; max-height: 280px; }
-    .receipt-entry-keypad button { border: 0; border-radius: 8px; background: #fff; font-size: 23px; color: #202b24; touch-action: manipulation; }
-    .receipt-entry-keypad .receipt-entry-confirm { grid-column: 4; grid-row: 2 / 5; color: white; background: #18a367; font-size: 20px; font-weight: bold; }
-    @media (max-height: 650px) { .receipt-entry-categories { gap: 0; padding: 0 8px; max-height: 155px; } .receipt-entry-value { padding: 5px 28px; } .receipt-entry-keypad { max-height: 210px; } }
+    .receipt-entry-keypad { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, minmax(42px, 1fr)); gap: 3px; padding: 6px 12px 10px; height: min(270px, 38vh); flex-shrink: 0; }
+    .receipt-entry-keypad button { border: 0; border-radius: 8px; background: #fff; font-size: 21px; color: #202b24; touch-action: manipulation; }
+    .receipt-entry-keypad .receipt-entry-equals { grid-column: span 2; background: #e2f1e8; color: #168557; }
+    .receipt-entry-keypad .receipt-entry-confirm { grid-column: span 2; color: white; background: #18a367; font-size: 19px; font-weight: bold; }
+    @media (max-height: 650px) { .receipt-entry-categories { gap: 0; padding: 0 8px; max-height: 135px; } .receipt-entry-value { padding: 5px 28px; } .receipt-entry-keypad { height: min(230px, 38vh); } }
   </style>
 </head>
 <body>
@@ -2294,14 +2297,14 @@
     <div class="receipt-entry-tabs" id="receipt-entry-tabs"><button type="button" data-type="expense" class="selected">支出</button><button type="button" data-type="income">入账</button><button type="button" data-type="excluded">不计入收支</button></div>
     <div class="receipt-entry-value"><span>¥</span><span id="receipt-entry-amount">0.00</span></div>
     <div class="receipt-entry-categories" id="receipt-entry-categories"></div>
-    <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><button type="button" id="receipt-entry-tag-toggle">添加标签</button><input id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
+    <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><button type="button" id="receipt-entry-tag-toggle">添加标签</button><button type="button" id="receipt-entry-tag-delete" hidden>删除选中标签</button><in</button>put id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
     <form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input" type="text" maxlength="20" placeholder="例如：彩票" aria-label="新标签"><button type="submit">添加</button></form>
     <span id="receipt-entry-sync-status" role="status"></span>
     <div class="receipt-entry-keypad" id="receipt-entry-keypad">
-      <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="back" aria-label="退格">⌫</button>
-      <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button><button type="button" data-key="save" class="receipt-entry-confirm">确定</button>
-      <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
-      <button type="button" data-key=".">.</button><button type="button" data-key="0">0</button>
+      <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="back" aria-label="退格">⌫<      <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button><button type="button" data-key="+">+</button>
+      <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button><button type="button" data-key="-">−</button>
+      <button type="button" data-key=".">.</button><button type="button" data-key="0">0</button><button type="button" data-key="*">×</button><button type="button" data-key="/">÷</button>
+      <button type="button" data-key="=" class="receipt-entry-equals">=</button><button type="button" data-key="save" class="receipt-entry-confirm">确定</button></button>
     </div>
   </section>
 
@@ -2391,7 +2394,7 @@
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="receipt.js?v=20261008-exclusive-choice-2"></script>
+  <script src="receipt.js?v=20261008-tag-delete-calculator-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {
