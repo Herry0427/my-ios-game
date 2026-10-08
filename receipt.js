@@ -1738,6 +1738,9 @@
       this.refresh();
     } else if (hit.id === 'del') {
       if (state.currentCfg.items.length > 1) {
+        var deletedItem = state.currentCfg.items[hit.index];
+        var matchingEntry = findQuickExpenseIndex(state.currentCfg, deletedItem, hit.index);
+        if (matchingEntry >= 0) state.currentCfg.entries.splice(matchingEntry, 1);
         state.currentCfg.items.splice(hit.index, 1);
         state.currentCfg = normalizeReceiptConfig(state.currentCfg);
         saveCurrentDay();
@@ -2159,6 +2162,57 @@
     return true;
   }
 
+  function quickExpenseMatchesItem(entry, item) {
+    return entry.type === 'expense' && String(item.name || '') === entry.category + (entry.note ? ' · ' + entry.note : '') &&
+      parsePrice(item.price) === Number(entry.amount) && parseQty(item.qty) === 1;
+  }
+
+  function pairedQuickExpenses(cfg) {
+    var paired = {};
+    (cfg.entries || []).forEach(function (entry, entryIndex) {
+      if (entry.type !== 'expense') return;
+      var itemIndex = cfg.items.findIndex(function (item, index) {
+        return !paired[index] && quickExpenseMatchesItem(entry, item);
+      });
+      if (itemIndex >= 0) paired[itemIndex] = entryIndex + 1;
+    });
+    return paired;
+  }
+
+  function findQuickExpenseIndex(cfg, item, index) {
+    if (!item || !Array.isArray(cfg.entries)) return -1;
+    var paired = pairedQuickExpenses(cfg);
+    var itemIndex = index == null ? cfg.items.indexOf(item) : index;
+    return paired[itemIndex] ? paired[itemIndex] - 1 : -1;
+  }
+
+  function removeDayEntry(kind, index) {
+    if (!ownerKey()) return false;
+    var cfg = loadDayConfig(state.selectedDate);
+    var entry = kind === 'entry' && Array.isArray(cfg.entries) ? cfg.entries[index] : null;
+    var item = kind === 'item' && cfg.items[index];
+    if (!entry && !item) return false;
+    if (!global.confirm('删除这条账目？此操作会同步到云端。')) return false;
+    if (entry) {
+      if (entry.type === 'expense') {
+        var paired = pairedQuickExpenses(cfg);
+        var pairedIndex = Object.keys(paired).find(function (itemIndex) { return paired[itemIndex] === index + 1; });
+        var match = pairedIndex === undefined ? -1 : Number(pairedIndex);
+        if (match >= 0) cfg.items.splice(match, 1);
+      }
+      cfg.entries.splice(index, 1);
+    } else {
+      var matchingEntry = findQuickExpenseIndex(cfg, item, index);
+      if (matchingEntry >= 0) cfg.entries.splice(matchingEntry, 1);
+      cfg.items.splice(index, 1);
+    }
+    state.currentCfg = normalizeReceiptConfig(cfg);
+    saveCurrentDay();
+    renderDayEntries();
+    renderEntryDraft();
+    return true;
+  }
+
   function renderDayEntries() {
     var list = global.document && global.document.getElementById('receipt-day-entries');
     if (!list) return;
@@ -2169,26 +2223,37 @@
     list.appendChild(heading);
     var count = 0;
     var entries = Array.isArray(cfg.entries) ? cfg.entries : [];
-    entries.forEach(function (entry) {
+    entries.forEach(function (entry, index) {
       var line = document.createElement('div');
       line.className = 'receipt-day-row';
-      line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '') + (entry.tags && entry.tags.length ? ' · #' + entry.tags.join(' #') : '');
+      var text = document.createElement('span');
+      text.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '') + (entry.tags && entry.tags.length ? ' · #' + entry.tags.join(' #') : '');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = '删除';
+      button.setAttribute('data-entry-index', index);
+      line.appendChild(text);
+      line.appendChild(button);
       list.appendChild(line);
       count += 1;
     });
     // 旧版小票条目没有分类记录，仍可在这里查看，不重复列出快速记账的支出。
-    var quickExpenses = entries.filter(function (entry) { return entry.type === 'expense'; });
-    (cfg.items || []).forEach(function (item) {
+    var paired = pairedQuickExpenses(cfg);
+    (cfg.items || []).forEach(function (item, index) {
       if (isPlaceholderItem(item)) return;
       var name = String(item.name || '未命名');
       var price = parsePrice(item.price);
-      var match = quickExpenses.findIndex(function (entry) {
-        return name === entry.category + (entry.note ? ' · ' + entry.note : '') && price === Number(entry.amount) && parseQty(item.qty) === 1;
-      });
-      if (match >= 0) { quickExpenses.splice(match, 1); return; }
+      if (paired[index]) return;
       var line = document.createElement('div');
       line.className = 'receipt-day-row';
-      line.textContent = '小票 · ' + name + '  ¥' + (price * parseQty(item.qty)).toFixed(2);
+      var text = document.createElement('span');
+      text.textContent = '小票 · ' + name + '  ¥' + (price * parseQty(item.qty)).toFixed(2);
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = '删除';
+      button.setAttribute('data-item-index', index);
+      line.appendChild(text);
+      line.appendChild(button);
       list.appendChild(line);
       count += 1;
     });
@@ -2323,6 +2388,13 @@
     var form = document.getElementById('receipt-entry-screen');
     if (!form || form._bound) return;
     form._bound = true;
+    var dayList = document.getElementById('receipt-day-entries');
+    if (dayList) dayList.onclick = function (e) {
+      var button = e.target.closest('button[data-entry-index], button[data-item-index]');
+      if (!button || !this.contains(button)) return;
+      if (button.hasAttribute('data-entry-index')) removeDayEntry('entry', Number(button.getAttribute('data-entry-index')));
+      else removeDayEntry('item', Number(button.getAttribute('data-item-index')));
+    };
     document.getElementById('receipt-entry-close').onclick = function () { global.goToView('lobby'); };
     var calendarBack = document.getElementById('receipt-calendar-back');
     if (calendarBack) calendarBack.onclick = function () { global.goToView('receipt_entry'); };
@@ -2429,6 +2501,8 @@
       calculateEntryAmount: calculateEntryAmount,
       inputEntryAmount: inputEntryAmount,
       deleteEntryTag: deleteEntryTag,
+      removeDayEntry: removeDayEntry,
+      findQuickExpenseIndex: findQuickExpenseIndex,
       mergeTagActions: mergeTagActions,
       collectSavedTags: collectSavedTags,
       addEntryTag: addEntryTag,
