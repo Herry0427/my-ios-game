@@ -2019,7 +2019,7 @@
     if (paperMode === 'receipt') { renderDayEntries(); scheduleReceiptCloudSync(100); }
   }
 
-  var entryDraft = { type: 'expense', category: '餐饮', amount: '', date: dateKey(new Date()), tags: [] };
+  var entryDraft = { type: 'expense', category: '', amount: '', date: dateKey(new Date()) };
   var receiptCategories = [
     ['餐饮', '🍚'], ['交通', '🚗'], ['服饰', '👕'], ['购物', '🛍️'], ['服务', '🛠️'], ['教育', '📚'],
     ['娱乐', '🎮'], ['运动', '🏃'], ['生活缴费', '💡'], ['旅行', '✈️'], ['宠物', '🐾'], ['医疗', '🏥']
@@ -2055,7 +2055,7 @@
     grid.querySelectorAll('.receipt-entry-custom-tag').forEach(function (button) { button.remove(); });
     collectSavedTags().forEach(function (tag) {
       var button = document.createElement('button');
-      var selected = entryDraft.tags.indexOf(tag) >= 0;
+      var selected = entryDraft.category === tag;
       button.type = 'button';
       button.className = 'receipt-entry-category receipt-entry-custom-tag' + (selected ? ' selected' : '');
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
@@ -2066,12 +2066,7 @@
       label.textContent = tag;
       button.appendChild(icon);
       button.appendChild(label);
-      button.onclick = function () {
-        var index = entryDraft.tags.indexOf(tag);
-        if (index < 0) entryDraft.tags.push(tag);
-        else entryDraft.tags.splice(index, 1);
-        renderEntryTags();
-      };
+      button.onclick = function () { selectEntryCategory(tag); };
       grid.appendChild(button);
     });
   }
@@ -2092,9 +2087,13 @@
       setSyncStatus('标签已保存在本机，正在同步云端…', false);
       scheduleReceiptCloudSync(500);
     }
-    if (entryDraft.tags.indexOf(tag) < 0) entryDraft.tags.push(tag);
-    renderEntryTags();
+    selectEntryCategory(tag);
     return true;
+  }
+
+  function selectEntryCategory(category) {
+    entryDraft.category = category;
+    renderEntryDraft();
   }
 
   function renderDayEntries() {
@@ -2102,13 +2101,14 @@
     if (!list) return;
     var cfg = loadDayConfig(state.selectedDate);
     list.innerHTML = '';
-    var heading = document.createElement('strong');
-    heading.textContent = dateKey(state.selectedDate) + ' 账目记录';
+    var heading = document.createElement('h2');
+    heading.textContent = dateKey(state.selectedDate) + ' · 账目记录';
     list.appendChild(heading);
     var count = 0;
-    var entries = cfg.entries || [];
+    var entries = Array.isArray(cfg.entries) ? cfg.entries : [];
     entries.forEach(function (entry) {
       var line = document.createElement('div');
+      line.className = 'receipt-day-row';
       line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '') + (entry.tags && entry.tags.length ? ' · #' + entry.tags.join(' #') : '');
       list.appendChild(line);
       count += 1;
@@ -2124,6 +2124,7 @@
       });
       if (match >= 0) { quickExpenses.splice(match, 1); return; }
       var line = document.createElement('div');
+      line.className = 'receipt-day-row';
       line.textContent = '小票 · ' + name + '  ¥' + (price * parseQty(item.qty)).toFixed(2);
       list.appendChild(line);
       count += 1;
@@ -2136,6 +2137,7 @@
   }
 
   function renderEntryDraft() {
+    if (!global.document) return;
     var date = document.getElementById('receipt-entry-date');
     var amount = document.getElementById('receipt-entry-amount');
     var grid = document.getElementById('receipt-entry-categories');
@@ -2157,7 +2159,7 @@
       label.textContent = category[0];
       button.appendChild(icon);
       button.appendChild(label);
-      button.onclick = function () { entryDraft.category = category[0]; renderEntryDraft(); };
+      button.onclick = function () { selectEntryCategory(category[0]); };
       grid.appendChild(button);
     });
     renderEntryTags();
@@ -2192,15 +2194,15 @@
       alert('请选择有效日期，并输入大于 0 的金额（最多两位小数）');
       return false;
     }
+    if (!entryDraft.category) { alert('请选择一个标签'); return false; }
     if (!ownerKey()) { alert('请先登录，再保存账目'); return false; }
     var note = document.getElementById('receipt-entry-note').value.trim().slice(0, 200);
     var cfg = loadDayConfig(date);
     state.selectedDate = date;
-    state.currentCfg = appendEntry(cfg, { type: entryDraft.type, category: entryDraft.category, amount: amount, note: note, tags: entryDraft.tags.slice() });
+    state.currentCfg = appendEntry(cfg, { type: entryDraft.type, category: entryDraft.category, amount: amount, note: note, tags: [] });
     saveCurrentDay();
     entryDraft.amount = '';
-    entryDraft.tags = [];
-    renderEntryTags();
+    entryDraft.category = '';
     document.getElementById('receipt-entry-note').value = '';
     document.getElementById('receipt-entry-note').hidden = true;
     setSyncStatus('已保存在本机，正在同步云端…', false);
@@ -2259,7 +2261,6 @@
       bindEntryForm();
       entryDraft.date = dateKey(state.selectedDate);
       renderEntryDraft();
-      renderEntryTags();
       scheduleReceiptCloudSync(100);
     },
     saveEntryDraft: saveEntryDraft,
@@ -2278,7 +2279,13 @@
     },
     scheduleReceiptCloudSync: scheduleReceiptCloudSync,
     onEnterHome: function () {
-      enterReceiptView('home', 'receipt-home-canvas', 'receipt');
+      bindOnce();
+      stopAllScenes();
+      state.currentCfg = loadDayConfig(state.selectedDate);
+      scanDatesWithData();
+      renderDayEntries();
+      updateLegacyImportButton();
+      scheduleReceiptCloudSync(100);
     },
     onEnterCalendar: function () {
       enterReceiptView('calendar', 'receipt-calendar-canvas', 'calendar');
@@ -2302,6 +2309,8 @@
       cleanTag: cleanTag,
       collectSavedTags: collectSavedTags,
       addEntryTag: addEntryTag,
+      selectEntryCategory: selectEntryCategory,
+      entryDraft: entryDraft,
       computeReceiptCameraZ: computeReceiptCameraZ,
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;

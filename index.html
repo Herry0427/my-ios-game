@@ -1880,8 +1880,14 @@
 
     #receipt-entry-screen { background: #f7f8f6; color: #232b27; gap: 0; padding: calc(var(--safe-top) + 8px) 0 var(--safe-bottom); }
     #receipt-entry-sync-status { display: block; padding: 0 22px; min-height: 20px; text-align: right; font-size: 12px; }
-    .receipt-day-entries { position: absolute; top: calc(var(--safe-top) + 10px); left: 12px; right: 12px; z-index: 5; max-height: min(35vh, 250px); overflow: auto; font-size: 12px; background: #fffdf0e8; border-radius: 8px; padding: 4px 8px; }
+    #receipt-home-screen { background: #f7f8f6; color: #232b27; }
+    .receipt-day-entries { flex: 1; min-height: 0; overflow-y: auto; margin: 0 14px 8px; padding: 14px; font-size: 13px; background: #fff; border-radius: 14px; }
+    .receipt-day-entries h2 { margin: 0 0 12px; font-size: 16px; }
+    .receipt-day-row { padding: 10px 0; border-top: 1px solid #eef2ef; line-height: 1.5; }
     .receipt-day-entries:empty { display: none; }
+    .receipt-day-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 0 14px 10px; }
+    .receipt-day-actions button { border: 0; border-radius: 10px; background: #e2f1e8; color: #168557; font-size: 13px; padding: 9px 12px; }
+    #receipt-sync-status { width: 100%; text-align: center; font-size: 12px; }
     .receipt-entry-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; }
     .receipt-entry-header button { border: 0; background: transparent; font-size: 26px; }
     #receipt-entry-date { font-size: 16px; border: 0; background: transparent; color: inherit; padding: 8px; }
@@ -2265,13 +2271,13 @@
     </div>
   </section>
 
-  <section id="receipt-home-screen" class="screen receipt-screen" aria-label="今日消费">
-    <div class="receipt-canvas-wrap" id="receipt-home-canvas"></div>
+  <section id="receipt-home-screen" class="screen receipt-screen" aria-label="单日账目">
     <div id="receipt-day-entries" class="receipt-day-entries" aria-live="polite"></div>
-    <div style="position:absolute;bottom:8px;left:8px;right:8px;z-index:5;text-align:center;pointer-events:none">
-      <button type="button" id="receipt-entry-open" style="pointer-events:auto;background:#18a367;color:white;border:0;border-radius:16px;padding:8px 16px">返回记账</button>
-      <span id="receipt-sync-status" role="status" style="background:#fff;padding:4px 8px;border-radius:6px;font-size:12px"></span>
-      <button id="receipt-import-legacy" type="button" hidden style="pointer-events:auto">导入此浏览器的旧账单</button>
+    <div class="receipt-day-actions">
+      <button type="button" id="receipt-entry-open">返回记账</button>
+</button>      <button type="button" id="receipt-open-legacy">查看 / 编辑旧小票</button>
+      <button id="receipt-import-legacy" type="button" hidden>导入此</button>浏览器的旧账单</button>
+      <span id="receipt-sync-status" role="status"></span>
     </div>
   </section>
 
@@ -2385,7 +2391,7 @@
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="receipt.js?v=20261008-calendar-tags-1"></script>
+  <script src="receipt.js?v=20261008-single-choice-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {
@@ -6008,6 +6014,7 @@
     goToView('receipt_entry');
   };
   document.getElementById('receipt-entry-open').onclick = function () { goToView('receipt_entry'); };
+  document.getElementById('receipt-open-legacy').onclick = function () { goToView('receipt_edit'); };
   document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };
   document.getElementById('btn-snake-game').onclick = function () { goToView('snake_game'); };
   document.getElementById('btn-snake-warehouse').onclick = function () { goToView('snake_warehouse'); };

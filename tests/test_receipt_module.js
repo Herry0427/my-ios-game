@@ -57,6 +57,9 @@ ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*
 ok(html.indexOf('id="receipt-entry-history"') < 0 && html.indexOf('id="receipt-entry-date"') >= 0, '日期是日历唯一入口');
 ok(receiptCode.indexOf("global.goToView('receipt_calendar')") >= 0 && receiptCode.indexOf("global.goToView('receipt_home')") >= 0, '点击日期进入日历并能查看当天小票');
 ok(html.indexOf('id="receipt-calendar-back"') >= 0, '日历可以返回记账界面');
+ok(html.indexOf('id="receipt-home-canvas"') < 0 && html.indexOf('id="receipt-day-entries"') >= 0, '单日账目只显示一处明细');
+ok(html.indexOf('id="receipt-open-legacy"') >= 0, '旧小票编辑入口保留');
+ok(receiptCode.indexOf("if (!entryDraft.category) { alert('请选择一个标签'); return false; }") >= 0, '没选标签无法提交');
 ok(html.indexOf('btn-force-refresh') >= 0, '大厅强制刷新');
 ok(html.indexOf('forceRefreshAppCache') >= 0, '强制刷新逻辑');
 ok(html.indexOf('receipt_home') >= 0, '路由');
@@ -138,7 +141,13 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
   ok(!rows['甲:2026-01-01'], '旧数据不会未经确认自动上传');
   var today = first._test.dateKey(new Date());
   rows['甲:' + today] = { items: [{ qty: 1, name: '云端旧支出', price: '¥18.00' }] };
+  ok(first._test.entryDraft.category === '', '进入记账时不默认选中标签');
   ok(first._test.addEntryTag('彩票'), '自定义标签可立即添加');
+  ok(first._test.entryDraft.category === '彩票', '添加后立即选中新标签');
+  first._test.selectEntryCategory('餐饮');
+  ok(first._test.entryDraft.category === '餐饮', '点击另一标签只保留当前选择');
+  first._test.selectEntryCategory('彩票');
+  ok(first._test.entryDraft.category === '彩票', '再次选择自定义标签不会多选');
   await first.syncReceiptFromCloud();
   ok(rows['甲:' + today].savedTags[0] === '彩票', '标签随账单同步到云端');
   ok(rows['甲:' + today].items[0].name === '云端旧支出', '新增标签不会覆盖当天已有云端账单');
