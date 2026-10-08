@@ -69,6 +69,8 @@ ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-cate
 ok(html.indexOf('id="receipt-entry-tag-delete"') >= 0, '删除标签按钮在页面');
 ok(/<input id="receipt-entry-note"[^>]*hidden>/.test(html) && !html.includes('<in</button>put'), '备注输入框是有效 HTML，不会露出源码');
 ok(/data-key="back"[^>]*>⌫<\/button>/.test(html) && !html.includes('</button></button>'), '退格及保存按钮标签正确闭合');
+var keypadMarkup = html.match(/<div class="receipt-entry-keypad" id="receipt-entry-keypad">([\s\S]*?)<\/div>/);
+ok(!!keypadMarkup && !keypadMarkup[1].replace(/<button\b[^>]*>[\s\S]*?<\/button>/g, '').trim(), '数字键盘按钮之间不能露出源码文字');
 ok(html.indexOf('id="receipt-entry-tag-toggle"') >= 0 && html.indexOf('id="receipt-entry-tags"') < 0 && receiptCode.indexOf('receipt-entry-custom-tag') >= 0, '新增标签在上方类别网格快捷勾选');
 ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');
 ok(html.indexOf('id="receipt-entry-history"') < 0 && html.indexOf('id="receipt-entry-date"') >= 0, '日期是日历唯一入口');
