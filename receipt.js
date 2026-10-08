@@ -55,6 +55,7 @@
   var bound = false;
   var cloudSyncTimer = null;
   var syncStatus = '';
+  var receiptChangeVersion = 0;
 
   function ownerKey() {
     return getReceiptOwnerKey();
@@ -82,6 +83,7 @@
     var days = pendingDays();
     days[day] = action;
     localStorage.setItem(pendingKey(), JSON.stringify(days));
+    receiptChangeVersion += 1;
   }
 
   function setSyncStatus(text, error) {
@@ -286,7 +288,7 @@
     } catch (e) {
       return false;
     }
-    if (Array.isArray(cfg.entries) && cfg.entries.length) return true;
+    if ((Array.isArray(cfg.entries) && cfg.entries.length) || (Array.isArray(cfg.savedTags) && cfg.savedTags.length)) return true;
     if (sumItems(cfg.items) > 0) return true;
     for (i = 0; i < cfg.items.length; i++) {
       if (receiptItemTouched(cfg.items[i])) return true;
@@ -318,7 +320,10 @@
       if (!key || key.indexOf(prefix) !== 0) continue;
       dk = key.slice(prefix.length);
       raw = localStorage.getItem(key);
-      if (raw && receiptConfigHasData(raw)) map[dk] = true;
+      if (raw && receiptConfigHasData(raw)) {
+        var cfg = normalizeReceiptConfig(JSON.parse(raw));
+        if ((cfg.entries && cfg.entries.length) || cfg.items.some(receiptItemTouched)) map[dk] = true;
+      }
     }
     state.datesWithData = map;
   }
@@ -344,6 +349,7 @@
         var raw = JSON.parse(localStorage.getItem(key));
         if (!receiptConfigHasData(raw)) continue;
         var cfg = normalizeReceiptConfig(raw);
+        if (Array.isArray(cfg.savedTags) && cfg.savedTags.length && !(cfg.entries && cfg.entries.length) && !cfg.items.some(receiptItemTouched)) continue;
         total += sumItems(cfg.items);
         if (!currency) currency = cfg.currency;
         count += 1;
@@ -366,7 +372,8 @@
       terminal: cfg.terminal,
       items: cfg.items,
       footer: cfg.footer,
-      entries: cfg.entries || []
+      entries: cfg.entries || [],
+      savedTags: cfg.savedTags || []
     };
   }
 
@@ -385,6 +392,7 @@
   function onReceiptCloudSyncDone() {
     scanDatesWithData();
     renderDayEntries();
+    renderEntryTags();
     if (!(scenes.edit && scenes.edit.running)) state.currentCfg = loadDayConfig(state.selectedDate);
     if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
       scenes.calendar.refresh();
@@ -472,9 +480,11 @@
       return Promise.resolve(false);
     }
     if (state.cloudSyncing) return state.cloudSyncPromise.then(function (ok) {
-      if (owner !== ownerKey()) return syncReceiptFromCloud();
+      if (owner !== ownerKey() || receiptChangeVersion !== state.cloudSyncVersion) return syncReceiptFromCloud();
       return ok;
     });
+    var syncVersion = receiptChangeVersion;
+    state.cloudSyncVersion = syncVersion;
     state.cloudSyncing = true;
     state.cloudSyncPromise = c
       .from('receipt_days')
@@ -489,6 +499,16 @@
         var pending = pendingDays();
         for (i = 0; i < rows.length; i++) {
           var day = String(rows[i].day_key).slice(0, 10);
+          if (pending[day] === 'tag') {
+            try {
+              var local = JSON.parse(localStorage.getItem(dayStorageKey(day)) || '{}');
+              var merged = normalizeReceiptConfig(rows[i].config);
+              merged.savedTags = (merged.savedTags || []).concat(local.savedTags || []).filter(function (tag, index, tags) {
+                return tags.indexOf(tag) === index;
+              });
+              localStorage.setItem(dayStorageKey(day), JSON.stringify(receiptConfigToPayload(merged)));
+            } catch (e) { return false; }
+          }
           // A confirmed legacy import must not overwrite an existing cloud receipt.
           if (pending[day] === 'legacy') {
             var resolved = pendingDays();
@@ -499,7 +519,7 @@
           if (!pending[day] && owner === ownerKey()) applyCloudRowToLocal(rows[i]);
           cloudKeys[day] = true;
         }
-        if (owner !== ownerKey()) return false;
+        if (owner !== ownerKey() || receiptChangeVersion !== syncVersion) return false;
         var tasks = [];
         Object.keys(pending).forEach(function (day) {
           var raw = localStorage.getItem(dayStorageKey(day));
@@ -1999,11 +2019,76 @@
     if (paperMode === 'receipt') { renderDayEntries(); scheduleReceiptCloudSync(100); }
   }
 
-  var entryDraft = { type: 'expense', category: '餐饮', amount: '', date: dateKey(new Date()) };
+  var entryDraft = { type: 'expense', category: '餐饮', amount: '', date: dateKey(new Date()), tags: [] };
   var receiptCategories = [
     ['餐饮', '🍚'], ['交通', '🚗'], ['服饰', '👕'], ['购物', '🛍️'], ['服务', '🛠️'], ['教育', '📚'],
     ['娱乐', '🎮'], ['运动', '🏃'], ['生活缴费', '💡'], ['旅行', '✈️'], ['宠物', '🐾'], ['医疗', '🏥']
   ];
+
+  function cleanTag(value) {
+    return String(value || '').trim().slice(0, 20);
+  }
+
+  function collectSavedTags() {
+    var tags = [];
+    var prefix = dayPrefix();
+    if (!prefix) return tags;
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (!key || key.indexOf(prefix) !== 0) continue;
+      try {
+        var cfg = JSON.parse(localStorage.getItem(key));
+        (cfg.savedTags || []).concat((cfg.entries || []).reduce(function (all, entry) {
+          return all.concat(entry.tags || []);
+        }, [])).forEach(function (tag) {
+          tag = cleanTag(tag);
+          if (tag && tags.indexOf(tag) < 0) tags.push(tag);
+        });
+      } catch (e) {}
+    }
+    return tags;
+  }
+
+  function renderEntryTags() {
+    var list = global.document && global.document.getElementById('receipt-entry-tags');
+    if (!list) return;
+    list.innerHTML = '';
+    collectSavedTags().forEach(function (tag) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = entryDraft.tags.indexOf(tag) >= 0 ? 'selected' : '';
+      button.setAttribute('aria-pressed', entryDraft.tags.indexOf(tag) >= 0 ? 'true' : 'false');
+      button.textContent = tag;
+      button.onclick = function () {
+        var index = entryDraft.tags.indexOf(tag);
+        if (index < 0) entryDraft.tags.push(tag);
+        else entryDraft.tags.splice(index, 1);
+        renderEntryTags();
+      };
+      list.appendChild(button);
+    });
+  }
+
+  function addEntryTag(value) {
+    var tag = cleanTag(value);
+    if (!tag) return false;
+    if (!ownerKey()) { alert('请先登录，再添加标签'); return false; }
+    var tags = collectSavedTags();
+    if (tags.indexOf(tag) < 0) {
+      var today = new Date();
+      var cfg = loadDayConfig(today);
+      if (!Array.isArray(cfg.savedTags)) cfg.savedTags = [];
+      cfg.savedTags.push(tag);
+      var key = dateKey(today);
+      localStorage.setItem(dayStorageKey(key), JSON.stringify(receiptConfigToPayload(cfg)));
+      if (pendingDays()[key] !== 'save') markPending(key, 'tag');
+      setSyncStatus('标签已保存在本机，正在同步云端…', false);
+      scheduleReceiptCloudSync(500);
+    }
+    if (entryDraft.tags.indexOf(tag) < 0) entryDraft.tags.push(tag);
+    renderEntryTags();
+    return true;
+  }
 
   function renderDayEntries() {
     var list = global.document && global.document.getElementById('receipt-day-entries');
@@ -2012,7 +2097,7 @@
     list.innerHTML = '';
     (cfg.entries || []).forEach(function (entry) {
       var line = document.createElement('div');
-      line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '');
+      line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '') + (entry.tags && entry.tags.length ? ' · #' + entry.tags.join(' #') : '');
       list.appendChild(line);
     });
   }
@@ -2076,9 +2161,11 @@
     var note = document.getElementById('receipt-entry-note').value.trim().slice(0, 200);
     var cfg = loadDayConfig(date);
     state.selectedDate = date;
-    state.currentCfg = appendEntry(cfg, { type: entryDraft.type, category: entryDraft.category, amount: amount, note: note });
+    state.currentCfg = appendEntry(cfg, { type: entryDraft.type, category: entryDraft.category, amount: amount, note: note, tags: entryDraft.tags.slice() });
     saveCurrentDay();
     entryDraft.amount = '';
+    entryDraft.tags = [];
+    renderEntryTags();
     document.getElementById('receipt-entry-note').value = '';
     document.getElementById('receipt-entry-note').hidden = true;
     setSyncStatus('已保存在本机，正在同步云端…', false);
@@ -2104,6 +2191,19 @@
       if (button.getAttribute('data-key') === 'save') saveEntryDraft();
       else inputEntryAmount(button.getAttribute('data-key'));
     };
+    document.getElementById('receipt-entry-tag-toggle').onclick = function () {
+      var form = document.getElementById('receipt-entry-tag-form');
+      form.hidden = !form.hidden;
+      if (!form.hidden) document.getElementById('receipt-entry-tag-input').focus();
+    };
+    document.getElementById('receipt-entry-tag-form').onsubmit = function (e) {
+      e.preventDefault();
+      var input = document.getElementById('receipt-entry-tag-input');
+      if (addEntryTag(input.value)) {
+        input.value = '';
+        e.currentTarget.hidden = true;
+      }
+    };
     document.getElementById('receipt-entry-note-toggle').onclick = function () {
       var input = document.getElementById('receipt-entry-note');
       input.hidden = !input.hidden;
@@ -2117,6 +2217,7 @@
       bindEntryForm();
       entryDraft.date = dateKey(state.selectedDate);
       renderEntryDraft();
+      renderEntryTags();
       scheduleReceiptCloudSync(100);
     },
     saveEntryDraft: saveEntryDraft,
@@ -2156,6 +2257,9 @@
       dateKey: dateKey,
       receiptConfigHasData: receiptConfigHasData,
       appendEntry: appendEntry,
+      cleanTag: cleanTag,
+      collectSavedTags: collectSavedTags,
+      addEntryTag: addEntryTag,
       computeReceiptCameraZ: computeReceiptCameraZ,
       debugNavAt: function (clientX, clientY) {
         var s = scenes.home;

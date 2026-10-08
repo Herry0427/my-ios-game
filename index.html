@@ -1864,7 +1864,15 @@
     .receipt-entry-category.selected { color: #168557; font-weight: bold; }
     .receipt-entry-category.selected span:first-child { background: #ccedda; }
     .receipt-entry-note-wrap { padding: 8px 22px; }
-    .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 15px; padding: 8px 0; }
+    .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 15px; padding: 8px 8px 8px 0; }
+    .receipt-entry-tags { display: flex; gap: 8px; overflow-x: auto; padding: 2px 22px 8px; min-height: 30px; }
+    .receipt-entry-tags:empty { display: none; }
+    .receipt-entry-tags button { flex: none; border: 1px solid #c9ded0; background: #fff; border-radius: 16px; padding: 5px 12px; color: #347553; font-size: 13px; }
+    .receipt-entry-tags button.selected { background: #18a367; border-color: #18a367; color: #fff; }
+    #receipt-entry-tag-form { display: flex; gap: 8px; padding: 0 22px 8px; }
+    #receipt-entry-tag-form[hidden] { display: none; }
+    #receipt-entry-tag-input { flex: 1; min-width: 0; font-size: 16px; padding: 7px; border: 1px solid #a5b8aa; border-radius: 8px; }
+    #receipt-entry-tag-form button { border: 0; border-radius: 8px; background: #18a367; color: #fff; padding: 7px 12px; }
     #receipt-entry-note { display: block; box-sizing: border-box; width: 100%; padding: 9px; font-size: 16px; }
     #receipt-entry-note[hidden] { display: none; }
     .receipt-entry-keypad { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, minmax(52px, 1fr)); gap: 3px; padding: 8px 12px 12px; max-height: 280px; }
@@ -2249,7 +2257,9 @@
     <div class="receipt-entry-tabs" id="receipt-entry-tabs"><button type="button" data-type="expense" class="selected">支出</button><button type="button" data-type="income">入账</button><button type="button" data-type="excluded">不计入收支</button></div>
     <div class="receipt-entry-value"><span>¥</span><span id="receipt-entry-amount">0.00</span></div>
     <div class="receipt-entry-categories" id="receipt-entry-categories"></div>
-    <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><input id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
+    <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><button type="button" id="receipt-entry-tag-toggle">添加标签</button><input id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
+    <form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input" type="text" maxlength="20" placeholder="例如：彩票" aria-label="新标签"><button type="submit">添加</button></form>
+    <div id="receipt-entry-tags" class="receipt-entry-tags" aria-label="快捷标签"></div>
     <div class="receipt-entry-tools"><button type="button" id="receipt-entry-history">历史小票 / 日历</button><span id="receipt-entry-sync-status" role="status"></span></div>
     <div class="receipt-entry-keypad" id="receipt-entry-keypad">
       <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="back" aria-label="退格">⌫</button>

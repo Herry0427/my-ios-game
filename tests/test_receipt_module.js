@@ -39,6 +39,9 @@ ok(receiptCode.indexOf('function cloudOp') >= 0, '云端操作用 Promise.resolv
   ok(t.sumItems(excluded.items) === 0, '不计入收支不算作消费');
   var expense = t.appendEntry(excluded, { type: 'expense', category: '餐饮', amount: 12.5, note: '' });
   ok(t.sumItems(expense.items) === 12.5 && expense.entries.length === 3, '支出显示在旧小票且保留三种分类');
+  var tagged = t.appendEntry(expense, { type: 'expense', category: '娱乐', amount: 5, note: '', tags: ['彩票'] });
+  ok(tagged.entries[3].tags[0] === '彩票', '账目保存勾选标签');
+  ok(t.cleanTag('  彩票  ') === '彩票', '标签去掉首尾空白');
 })();
 var k1 = t.randomTerminalForDate(new Date(2026, 5, 1));
 var k2 = t.randomTerminalForDate(new Date(2026, 5, 1));
@@ -47,6 +50,7 @@ ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
 ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
+ok(html.indexOf('id="receipt-entry-tag-toggle"') >= 0 && html.indexOf('id="receipt-entry-tags"') >= 0, '添加标签及快捷勾选入口');
 ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');
 ok(html.indexOf('id="receipt-entry-history"') >= 0 && receiptCode.indexOf("goToView('receipt_home')") >= 0, '历史小票为记账界面的附属入口');
 ok(html.indexOf('btn-force-refresh') >= 0, '大厅强制刷新');
@@ -128,6 +132,12 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
   firstStore.setItem('receipt_day_2026-01-01', JSON.stringify({ items: [{ qty: 1, name: '旧账单', price: '¥9.00' }] }));
   first.refreshAccount();
   ok(!rows['甲:2026-01-01'], '旧数据不会未经确认自动上传');
+  var today = first._test.dateKey(new Date());
+  rows['甲:' + today] = { items: [{ qty: 1, name: '云端旧支出', price: '¥18.00' }] };
+  ok(first._test.addEntryTag('彩票'), '自定义标签可立即添加');
+  await first.syncReceiptFromCloud();
+  ok(rows['甲:' + today].savedTags[0] === '彩票', '标签随账单同步到云端');
+  ok(rows['甲:' + today].items[0].name === '云端旧支出', '新增标签不会覆盖当天已有云端账单');
   ok(first.importLegacyDays(), '旧账单可明确归属当前账号');
   await first.syncReceiptFromCloud();
   ok(!!rows['甲:2026-01-01'], '旧账单上传到云端');
@@ -136,6 +146,7 @@ ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模
   var second = device(secondStore, { value: '甲' });
   await second.syncReceiptFromCloud();
   ok(!!secondStore.getItem('receipt_account_%E7%94%B2_2026-01-01'), '新设备同账号拉取账单');
+  ok(second._test.collectSavedTags().indexOf('彩票') >= 0, '新设备同账号可快捷勾选标签');
   user.value = '乙';
   first.refreshAccount();
   await first.syncReceiptFromCloud();
