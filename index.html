@@ -94,9 +94,22 @@
     .tile-btn.coming { border-color: rgba(106, 122, 138, 0.4); color: var(--text-dim); cursor: not-allowed; opacity: 0.72; }
     .tile-badge { display: inline-block; margin-top: 6px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); }
     /* 大厅：一排两个，底部钉住刷新，避免挤出屏幕 */
-    #lobby-screen.screen { overflow: hidden; }
-    #lobby-screen .arcade-title { font-size: clamp(1.05rem, 3.8vw, 1.35rem); }
-    #lobby-screen .arcade-sub { font-size: 0.75rem; margin-bottom: 6px; }
+    #lobby-screen.screen {
+      overflow: hidden;
+      background: #f7f8f6;
+      color: #232b27;
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #lobby-screen .arcade-title {
+      margin: 8px 0 4px;
+      color: #232b27;
+      font-size: clamp(1rem, 3.8vw, 1.25rem);
+      letter-spacing: 0.02em;
+      text-shadow: none;
+    }
+    #lobby-screen .arcade-sub { color: #66756b; font-size: 0.72rem; margin: 0 0 8px; }
+    #lobby-screen .lobby-hi-bar { color: #596b60; margin: 0 0 8px; font-size: 0.78rem; }
+    #lobby-screen .lobby-hi-bar span { color: #168557; }
     #lobby-screen .lobby-tile-grid {
       grid-template-columns: 1fr 1fr !important;
       gap: 8px;
@@ -108,21 +121,42 @@
       margin-top: 6px !important;
     }
     #lobby-screen .tile-btn {
-      min-height: 52px;
-      padding: 6px 4px;
-      font-size: 0.76rem;
+      min-height: 68px;
+      padding: 10px 6px;
+      font-family: inherit;
+      font-size: 0.83rem;
+      font-weight: 650;
+      color: #26382e;
+      background: #fff;
+      border: 1px solid #e2eae4;
       border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(30, 64, 43, 0.04);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 4px;
     }
+    #lobby-screen .tile-btn:active { background: #eaf5ee; transform: scale(0.98); }
     #lobby-screen .tile-badge {
-      margin-top: 0;
-      font-size: 0.5rem;
-      padding: 1px 5px;
+      margin: 0;
+      font-size: 0.62rem;
+      font-weight: 400;
+      padding: 0;
+      background: transparent;
+      color: #718076;
     }
+    #lobby-screen .btn-logout-switch,
+    #lobby-screen .btn-force-refresh {
+      font-family: inherit;
+      border: 1px solid #e2eae4;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      padding: 9px 12px;
+      color: #66756b;
+      background: #fff;
+    }
+    #lobby-screen .btn-force-refresh { color: #168557; background: #eaf5ee; border-color: #d6eadc; }
     #lobby-screen .lobby-footer {
       flex-shrink: 0;
       width: 100%;
@@ -1856,9 +1890,10 @@
     .receipt-entry-tabs button.selected { background: #fff; color: #169561; font-weight: 700; box-shadow: 0 2px 8px #0001; }
     .receipt-entry-value { display: flex; align-items: baseline; gap: 12px; padding: 18px 28px; font-size: 34px; font-weight: 700; }
     #receipt-entry-amount { font-size: 42px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
-    .receipt-entry-categories { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 2px; padding: 10px 12px; max-height: 210px; overflow-y: auto; align-content: start; }
-    .receipt-entry-category { border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: #444; padding: 6px 0; border-radius: 10px; }
-    .receipt-entry-category span:first-child { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e9eeea; font-size: 21px; }
+    .receipt-entry-categories { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px 0; padding: 4px 8px; max-height: 210px; overflow-y: auto; align-content: start; }
+    .receipt-entry-category { border: 0; min-width: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.15; color: #444; padding: 3px 0; border-radius: 8px; }
+    .receipt-entry-category span:first-child { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: #e9eeea; font-size: 17px; }
+    .receipt-entry-category span:last-child { max-width: 100%; overflow-wrap: anywhere; }
     .receipt-entry-category.selected { color: #168557; font-weight: bold; }
     .receipt-entry-category.selected span:first-child { background: #ccedda; }
     .receipt-entry-note-wrap { padding: 8px 22px; }
@@ -1873,7 +1908,7 @@
     .receipt-entry-keypad { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, minmax(52px, 1fr)); gap: 3px; padding: 8px 12px 12px; max-height: 280px; }
     .receipt-entry-keypad button { border: 0; border-radius: 8px; background: #fff; font-size: 23px; color: #202b24; touch-action: manipulation; }
     .receipt-entry-keypad .receipt-entry-confirm { grid-column: 4; grid-row: 2 / 5; color: white; background: #18a367; font-size: 20px; font-weight: bold; }
-    @media (max-height: 650px) { .receipt-entry-categories { gap: 0; padding: 0 12px; max-height: 155px; } .receipt-entry-value { padding: 5px 28px; } .receipt-entry-keypad { max-height: 210px; } }
+    @media (max-height: 650px) { .receipt-entry-categories { gap: 0; padding: 0 8px; max-height: 155px; } .receipt-entry-value { padding: 5px 28px; } .receipt-entry-keypad { max-height: 210px; } }
   </style>
 </head>
 <body>
