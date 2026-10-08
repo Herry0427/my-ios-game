@@ -1845,6 +1845,9 @@
     #receipt-edit-inline-cancel { background: #eee; color: #333; }
 
     #receipt-entry-screen { background: #f7f8f6; color: #232b27; gap: 0; padding: calc(var(--safe-top) + 8px) 0 var(--safe-bottom); }
+    .receipt-entry-tools { display: flex; align-items: center; justify-content: space-between; padding: 0 22px; gap: 12px; font-size: 12px; }
+    .receipt-entry-tools button { border: 0; border-radius: 12px; background: #e2f1e8; color: #168557; padding: 9px 12px; font-size: 13px; font-weight: 600; }
+    #receipt-entry-sync-status { flex: 1; text-align: right; }
     .receipt-day-entries { position: absolute; top: calc(var(--safe-top) + 10px); left: 12px; right: 12px; z-index: 5; max-height: 65px; overflow: auto; font-size: 12px; background: #fffdf0e8; border-radius: 8px; padding: 4px 8px; }
     .receipt-day-entries:empty { display: none; }
     .receipt-entry-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; }
@@ -2228,7 +2231,7 @@
     <div class="receipt-canvas-wrap" id="receipt-home-canvas"></div>
     <div id="receipt-day-entries" class="receipt-day-entries" aria-live="polite"></div>
     <div style="position:absolute;bottom:8px;left:8px;right:8px;z-index:5;text-align:center;pointer-events:none">
-      <button type="button" id="receipt-entry-open" style="pointer-events:auto;background:#18a367;color:white;border:0;border-radius:16px;padding:8px 16px">＋ 记一笔</button>
+      <button type="button" id="receipt-entry-open" style="pointer-events:auto;background:#18a367;color:white;border:0;border-radius:16px;padding:8px 16px">返回记账</button>
       <span id="receipt-sync-status" role="status" style="background:#fff;padding:4px 8px;border-radius:6px;font-size:12px"></span>
       <button id="receipt-import-legacy" type="button" hidden style="pointer-events:auto">导入此浏览器的旧账单</button>
     </div>
@@ -2247,6 +2250,7 @@
     <div class="receipt-entry-value"><span>¥</span><span id="receipt-entry-amount">0.00</span></div>
     <div class="receipt-entry-categories" id="receipt-entry-categories"></div>
     <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><input id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
+    <div class="receipt-entry-tools"><button type="button" id="receipt-entry-history">历史小票 / 日历</button><span id="receipt-entry-sync-status" role="status"></span></div>
     <div class="receipt-entry-keypad" id="receipt-entry-keypad">
       <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="back" aria-label="退格">⌫</button>
       <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button><button type="button" data-key="save" class="receipt-entry-confirm">确定</button>
@@ -3418,8 +3422,10 @@
         return 'recipe_home';
       case 'recipe_home':
         return 'lobby';
-      case 'receipt_home':
+      case 'receipt_entry':
         return 'lobby';
+      case 'receipt_home':
+        return 'receipt_entry';
       case 'snake_game':
         return 'snake_home';
       case 'snake_shop':
@@ -3539,7 +3545,7 @@
     if (view === 'memo_screen') loadMemos();
     if (view === 'listenbook' && window.ListenbookModule) ListenbookModule.onEnter();
     if (view !== 'listenbook' && window.ListenbookModule) ListenbookModule.onLeave();
-    if (view === 'receipt_home' || view === 'receipt_calendar' || view === 'receipt_edit') {
+    if (view === 'receipt_home' || view === 'receipt_calendar' || view === 'receipt_edit' || view === 'receipt_entry') {
       supabaseKeepalive(false);
     }
     var receiptViews = { receipt_home: 1, receipt_calendar: 1, receipt_edit: 1, receipt_entry: 1 };
@@ -5959,7 +5965,7 @@
     });
   }
   document.getElementById('btn-enter-receipt').onclick = function () {
-    goToView('receipt_home');
+    goToView('receipt_entry');
   };
   document.getElementById('receipt-entry-open').onclick = function () { goToView('receipt_entry'); };
   document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };

@@ -86,11 +86,13 @@
 
   function setSyncStatus(text, error) {
     syncStatus = text;
-    var el = global.document && global.document.getElementById('receipt-sync-status');
-    if (el) {
-      el.textContent = text;
-      el.style.color = error ? '#a32020' : '#28573b';
-    }
+    ['receipt-sync-status', 'receipt-entry-sync-status'].forEach(function (id) {
+      var el = global.document && global.document.getElementById(id);
+      if (el) {
+        el.textContent = text;
+        el.style.color = error ? '#a32020' : '#28573b';
+      }
+    });
   }
 
   function hasLegacyDays() {
@@ -2079,7 +2081,8 @@
     entryDraft.amount = '';
     document.getElementById('receipt-entry-note').value = '';
     document.getElementById('receipt-entry-note').hidden = true;
-    if (global.goToView) global.goToView('receipt_home');
+    setSyncStatus('已保存在本机，正在同步云端…', false);
+    renderEntryDraft();
     renderDayEntries();
     return true;
   }
@@ -2088,7 +2091,8 @@
     var form = document.getElementById('receipt-entry-screen');
     if (!form || form._bound) return;
     form._bound = true;
-    document.getElementById('receipt-entry-close').onclick = function () { global.goToView('receipt_home'); };
+    document.getElementById('receipt-entry-close').onclick = function () { global.goToView('lobby'); };
+    document.getElementById('receipt-entry-history').onclick = function () { global.goToView('receipt_home'); };
     document.getElementById('receipt-entry-date').onchange = function (e) { entryDraft.date = e.target.value; };
     document.getElementById('receipt-entry-tabs').onclick = function (e) {
       var button = e.target.closest('[data-type]');
@@ -2113,6 +2117,7 @@
       bindEntryForm();
       entryDraft.date = dateKey(state.selectedDate);
       renderEntryDraft();
+      scheduleReceiptCloudSync(100);
     },
     saveEntryDraft: saveEntryDraft,
     bindOnce: bindOnce,

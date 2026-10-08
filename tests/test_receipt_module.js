@@ -47,6 +47,8 @@ ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
 ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
+ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');
+ok(html.indexOf('id="receipt-entry-history"') >= 0 && receiptCode.indexOf("goToView('receipt_home')") >= 0, '历史小票为记账界面的附属入口');
 ok(html.indexOf('btn-force-refresh') >= 0, '大厅强制刷新');
 ok(html.indexOf('forceRefreshAppCache') >= 0, '强制刷新逻辑');
 ok(html.indexOf('receipt_home') >= 0, '路由');
