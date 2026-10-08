@@ -49,6 +49,8 @@ ok(k1 === k2 && /^NO\.\d{3}$/.test(k1), '每日 NO.');
 
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 ok(html.indexOf('btn-enter-receipt') >= 0, '大厅入口');
+ok(/src="receipt\.js\?v=[^"]+"/.test(html), '记账脚本带版本号，手机不会混用旧缓存');
+ok(receiptCode.indexOf('if (calendarBack) calendarBack.onclick') >= 0, '日历返回按钮缺失不阻断手机记账入口');
 ok(html.indexOf('receipt-entry-keypad') >= 0 && html.indexOf('receipt-entry-categories') >= 0, '分类与数字键盘入口');
 ok(html.indexOf('id="receipt-entry-tag-toggle"') >= 0 && html.indexOf('id="receipt-entry-tags"') < 0 && receiptCode.indexOf('receipt-entry-custom-tag') >= 0, '新增标签在上方类别网格快捷勾选');
 ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');

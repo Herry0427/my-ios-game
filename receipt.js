@@ -2214,7 +2214,8 @@
     if (!form || form._bound) return;
     form._bound = true;
     document.getElementById('receipt-entry-close').onclick = function () { global.goToView('lobby'); };
-    document.getElementById('receipt-calendar-back').onclick = function () { global.goToView('receipt_entry'); };
+    var calendarBack = document.getElementById('receipt-calendar-back');
+    if (calendarBack) calendarBack.onclick = function () { global.goToView('receipt_entry'); };
     document.getElementById('receipt-entry-date').onclick = function () {
       if (entryDraft.date) {
         var d = new Date(entryDraft.date + 'T12:00:00');
