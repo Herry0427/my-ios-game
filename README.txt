@@ -18,5 +18,9 @@ my-ios-game — PWA 街机壳 + Supabase 云端。
 
 云端首次建表 / 增量迁移：填好 supabase_local.env 后双击 after_env_fill_run.bat，或见 MIGRATE_ONE_STEP.txt。
 
+记账簿跨设备：使用同一昵称登录后，账单先保存在当前浏览器，并同步到 Supabase 的 receipt_days 表；新设备进入记账簿时拉取。页面底部显示“已同步到云端”才表示本次同步成功。断网时保留本机数据，联网后重新进入记账簿重试；同步成功前不要清除浏览器数据。
+旧版 receipt_day_* 数据不会自动删除或绑定任何昵称。在原设备确认当前昵称就是旧账单的主人后，点击“导入此浏览器的旧账单”并确认；原始本地数据仍保留。只会允许认领一次，避免切换昵称后串账。
+部署前需确保 migrations/016_receipt_days.sql 已应用到目标 Supabase 数据库。昵称只是标识而非安全认证；当前表禁用了 RLS，任何知道公开密钥的人理论上都能读写账单，不应存储敏感财务信息。需要真正私密的跨设备账单时，必须改用 Supabase Auth 并启用按用户隔离的 RLS。
+
 一键拉取并推送：双击 run_push.bat
 仅同步逻辑：sync-to-github.ps1 / push_once.ps1

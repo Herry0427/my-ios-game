@@ -2219,6 +2219,10 @@
 
   <section id="receipt-home-screen" class="screen receipt-screen" aria-label="今日消费">
     <div class="receipt-canvas-wrap" id="receipt-home-canvas"></div>
+    <div style="position:absolute;bottom:8px;left:8px;right:8px;z-index:5;text-align:center;pointer-events:none">
+      <span id="receipt-sync-status" role="status" style="background:#fff;padding:4px 8px;border-radius:6px;font-size:12px"></span>
+      <button id="receipt-import-legacy" type="button" hidden style="pointer-events:auto">导入此浏览器的旧账单</button>
+    </div>
   </section>
 
   <section id="receipt-calendar-screen" class="screen receipt-screen" aria-label="日历">
@@ -3335,6 +3339,7 @@
     await fetchPregnancyUserConfig();
     scheduleSupabaseKeepalive();
     syncHiLabels();
+    if (window.ReceiptModule) ReceiptModule.refreshAccount();
     if (inp) inp.value = getNickname();
     if (modal) modal.classList.remove('visible');
   }
@@ -6003,6 +6008,10 @@
     scheduleSupabaseKeepalive();
     syncHiLabels();
     cloudBanner();
+    if (window.ReceiptModule) ReceiptModule.refreshAccount();
+  };
+  document.getElementById('receipt-import-legacy').onclick = function () {
+    if (confirm('把此浏览器中未标记账号的旧账单归到当前昵称？原始数据会保留；若这些账单属于其他人，请取消。')) ReceiptModule.importLegacyDays();
   };
 
   window.addEventListener('resize', function () { layoutSnakeScreen(); });

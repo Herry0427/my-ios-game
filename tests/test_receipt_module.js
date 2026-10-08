@@ -75,5 +75,58 @@ ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
 })();
 ok(/window\.goToView\s*=\s*goToView/.test(html), 'goToView 暴露给 receipt 模块');
 
-console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
-process.exit(fails ? 1 : 0);
+// Simulate two devices and two nicknames without touching a real database.
+(async function () {
+  var rows = {};
+  var storage = function () {
+    var data = {};
+    return {
+      get length() { return Object.keys(data).length; },
+      key: function (i) { return Object.keys(data)[i] || null; },
+      getItem: function (k) { return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+      setItem: function (k, v) { data[k] = String(v); },
+      removeItem: function (k) { delete data[k]; }
+    };
+  };
+  var client = { from: function () {
+    return {
+      select: function () { return { eq: function (_, owner) {
+        return Promise.resolve({ data: Object.keys(rows).filter(function (k) { return k.indexOf(owner + ':') === 0; }).map(function (k) {
+          return { day_key: k.split(':')[1], config: rows[k] };
+        }) });
+      } }; },
+      upsert: function (r) { rows[r.user_id + ':' + r.day_key] = r.config; return Promise.resolve({ error: null }); },
+      delete: function () { return { eq: function (_, owner) { return { eq: function (_, day) {
+        delete rows[owner + ':' + day]; return Promise.resolve({ error: null });
+      } }; } }; }
+    };
+  } };
+  function device(store, name) {
+    var win = { getSb: function () { return client; }, getReceiptOwnerKey: function () { return name.value; } };
+    var ctx = { window: win, localStorage: store, console: console, setTimeout: setTimeout, clearTimeout: clearTimeout };
+    vm.createContext(ctx);
+    vm.runInContext(code, ctx);
+    return win.ReceiptModule;
+  }
+  var firstStore = storage();
+  var user = { value: '甲' };
+  var first = device(firstStore, user);
+  firstStore.setItem('receipt_day_2026-01-01', JSON.stringify({ items: [{ qty: 1, name: '旧账单', price: '¥9.00' }] }));
+  first.refreshAccount();
+  ok(!rows['甲:2026-01-01'], '旧数据不会未经确认自动上传');
+  ok(first.importLegacyDays(), '旧账单可明确归属当前账号');
+  await first.syncReceiptFromCloud();
+  ok(!!rows['甲:2026-01-01'], '旧账单上传到云端');
+  ok(!!firstStore.getItem('receipt_day_2026-01-01'), '旧账单原始数据保留');
+  var secondStore = storage();
+  var second = device(secondStore, { value: '甲' });
+  await second.syncReceiptFromCloud();
+  ok(!!secondStore.getItem('receipt_account_%E7%94%B2_2026-01-01'), '新设备同账号拉取账单');
+  user.value = '乙';
+  first.refreshAccount();
+  await first.syncReceiptFromCloud();
+  ok(!rows['乙:2026-01-01'], '切换账号不会上传甲的账单到乙');
+  ok(!first.importLegacyDays(), '旧账单不能被第二个账号再次认领');
+  console.log(fails ? '\n共 ' + fails + ' 项失败' : '\n全部通过');
+  process.exit(fails ? 1 : 0);
+})().catch(function (err) { console.error(err); process.exit(1); });

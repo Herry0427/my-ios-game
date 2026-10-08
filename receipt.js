@@ -12,6 +12,9 @@
   var NAV_LABEL_PAD_X = 6;
   var NAV_LABEL_PAD_Y = 4;
   var STORAGE_PREFIX = 'receipt_day_';
+  var ACCOUNT_PREFIX = 'receipt_account_';
+  var PENDING_PREFIX = 'receipt_pending_';
+  var LEGACY_OWNER_KEY = 'receipt_legacy_owner';
   var PAPER_BASE_W = 3.84;
   var PAPER_BASE_H = 7.68;
   var RECEIPT_TARGET_FILL_W = 0.94;
@@ -51,6 +54,80 @@
   var scenes = { home: null, calendar: null, edit: null };
   var bound = false;
   var cloudSyncTimer = null;
+  var syncStatus = '';
+
+  function ownerKey() {
+    return getReceiptOwnerKey();
+  }
+
+  function dayPrefix() {
+    var owner = ownerKey();
+    return owner ? ACCOUNT_PREFIX + encodeURIComponent(owner) + '_' : '';
+  }
+
+  function dayStorageKey(day) {
+    return dayPrefix() + day;
+  }
+
+  function pendingKey() {
+    return PENDING_PREFIX + encodeURIComponent(ownerKey());
+  }
+
+  function pendingDays() {
+    try { return JSON.parse(localStorage.getItem(pendingKey()) || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  function markPending(day, action) {
+    var days = pendingDays();
+    days[day] = action;
+    localStorage.setItem(pendingKey(), JSON.stringify(days));
+  }
+
+  function setSyncStatus(text, error) {
+    syncStatus = text;
+    var el = global.document && global.document.getElementById('receipt-sync-status');
+    if (el) {
+      el.textContent = text;
+      el.style.color = error ? '#a32020' : '#28573b';
+    }
+  }
+
+  function hasLegacyDays() {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf(STORAGE_PREFIX) === 0 && receiptConfigHasData(localStorage.getItem(key))) return true;
+    }
+    return false;
+  }
+
+  function updateLegacyImportButton() {
+    var btn = global.document && global.document.getElementById('receipt-import-legacy');
+    if (btn) btn.hidden = !ownerKey() || !!localStorage.getItem(LEGACY_OWNER_KEY) || !hasLegacyDays();
+  }
+
+  function importLegacyDays() {
+    var owner = ownerKey();
+    if (!owner || localStorage.getItem(LEGACY_OWNER_KEY) || !hasLegacyDays()) return false;
+    // Keep original keys untouched; only the user may claim the unowned legacy data.
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
+      var day = key.slice(STORAGE_PREFIX.length);
+      var raw = localStorage.getItem(key);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !receiptConfigHasData(raw)) continue;
+      if (!localStorage.getItem(dayStorageKey(day))) {
+        localStorage.setItem(dayStorageKey(day), raw);
+        markPending(day, 'legacy');
+      }
+    }
+    localStorage.setItem(LEGACY_OWNER_KEY, owner);
+    updateLegacyImportButton();
+    scanDatesWithData();
+    onReceiptCloudSyncDone();
+    syncReceiptFromCloud().then(onReceiptCloudSyncDone);
+    return true;
+  }
   var editRefreshTimer = null;
   var saveDayTimer = null;
   var lastEditChromeTapAt = 0;
@@ -227,15 +304,7 @@
   }
 
   function pruneEmptyReceiptDays() {
-    var i;
-    var key;
-    var raw;
-    for (i = localStorage.length - 1; i >= 0; i--) {
-      key = localStorage.key(i);
-      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
-      raw = localStorage.getItem(key);
-      if (!raw || !receiptConfigHasData(raw)) localStorage.removeItem(key);
-    }
+    // Never delete existing data automatically; older versions may have used it.
   }
 
   function scanDatesWithData() {
@@ -244,10 +313,12 @@
     var key;
     var dk;
     var raw;
+    var prefix = dayPrefix();
+    if (!prefix) { state.datesWithData = map; return; }
     for (i = 0; i < localStorage.length; i++) {
       key = localStorage.key(i);
-      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
-      dk = key.slice(STORAGE_PREFIX.length);
+      if (!key || key.indexOf(prefix) !== 0) continue;
+      dk = key.slice(prefix.length);
       raw = localStorage.getItem(key);
       if (raw && receiptConfigHasData(raw)) map[dk] = true;
     }
@@ -262,10 +333,12 @@
     var key;
     var dk;
     var parts;
+    var prefix = dayPrefix();
+    if (!prefix) return { total: 0, currency: '¥', count: 0 };
     for (i = 0; i < localStorage.length; i++) {
       key = localStorage.key(i);
-      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
-      dk = key.slice(STORAGE_PREFIX.length);
+      if (!key || key.indexOf(prefix) !== 0) continue;
+      dk = key.slice(prefix.length);
       parts = dk.split('-');
       if (parts.length !== 3) continue;
       if (parseInt(parts[0], 10) !== year || parseInt(parts[1], 10) !== month + 1) continue;
@@ -302,15 +375,17 @@
     var dk = String(row.day_key || '').slice(0, 10);
     var cfg = row.config;
     if (!dk || !cfg || !receiptConfigHasData(cfg)) return;
+    if (dateKey(state.selectedDate) === dk && saveDayTimer) return;
     if (scenes.edit && scenes.edit.running && dateKey(state.selectedDate) === dk) return;
     localStorage.setItem(
-      STORAGE_PREFIX + dk,
+      dayStorageKey(dk),
       JSON.stringify(receiptConfigToPayload(normalizeReceiptConfig(cfg)))
     );
   }
 
   function onReceiptCloudSyncDone() {
     scanDatesWithData();
+    if (!(scenes.edit && scenes.edit.running)) state.currentCfg = loadDayConfig(state.selectedDate);
     if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
       scenes.calendar.refresh();
     }
@@ -327,6 +402,7 @@
   function scheduleReceiptCloudSync(delayMs) {
     if (delayMs == null) delayMs = 5000;
     if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    setSyncStatus('正在同步云端…', false);
     cloudSyncTimer = setTimeout(function () {
       cloudSyncTimer = null;
       syncReceiptFromCloud().then(function () {
@@ -365,31 +441,40 @@
     var dk;
     var raw;
     var cfg;
+    var prefix = dayPrefix();
+    var pending = pendingDays();
+    if (!prefix || owner !== ownerKey()) return Promise.resolve(false);
     for (i = 0; i < localStorage.length; i++) {
       key = localStorage.key(i);
-      if (!key || key.indexOf(STORAGE_PREFIX) !== 0) continue;
-      dk = key.slice(STORAGE_PREFIX.length);
-      if (cloudKeys[dk]) continue;
+      if (!key || key.indexOf(prefix) !== 0) continue;
+      dk = key.slice(prefix.length);
+      if (cloudKeys[dk] || pending[dk]) continue;
       raw = localStorage.getItem(key);
       if (!raw || !receiptConfigHasData(raw)) continue;
       try {
         cfg = normalizeReceiptConfig(JSON.parse(raw));
-        tasks.push(upsertReceiptDayCloud(c, owner, dk, cfg));
+        tasks.push(cloudOp(upsertReceiptDayCloud(c, owner, dk, cfg)).then(function (result) {
+          return result && !result.error;
+        }));
       } catch (e) {}
     }
-    if (!tasks.length) return Promise.resolve();
-    return Promise.all(
-      tasks.map(function (p) {
-        return cloudOp(p);
-      })
-    );
+    if (!tasks.length) return Promise.resolve(true);
+    return Promise.all(tasks).then(function (results) {
+      return results.every(function (ok) { return ok; });
+    });
   }
 
   function syncReceiptFromCloud() {
     var c = getCloudClient();
     var owner = getReceiptOwnerKey();
-    if (!c || !owner) return Promise.resolve(false);
-    if (state.cloudSyncing) return state.cloudSyncPromise || Promise.resolve(false);
+    if (!c || !owner) {
+      setSyncStatus('未连接云端，账单仅保存在本机', true);
+      return Promise.resolve(false);
+    }
+    if (state.cloudSyncing) return state.cloudSyncPromise.then(function (ok) {
+      if (owner !== ownerKey()) return syncReceiptFromCloud();
+      return ok;
+    });
     state.cloudSyncing = true;
     state.cloudSyncPromise = c
       .from('receipt_days')
@@ -400,12 +485,40 @@
         var rows = Array.isArray(r.data) ? r.data : [];
         var cloudKeys = {};
         var i;
+        if (owner !== ownerKey()) return false;
+        var pending = pendingDays();
         for (i = 0; i < rows.length; i++) {
-          applyCloudRowToLocal(rows[i]);
-          cloudKeys[String(rows[i].day_key).slice(0, 10)] = true;
+          var day = String(rows[i].day_key).slice(0, 10);
+          // A confirmed legacy import must not overwrite an existing cloud receipt.
+          if (pending[day] === 'legacy') {
+            var resolved = pendingDays();
+            delete resolved[day];
+            localStorage.setItem(pendingKey(), JSON.stringify(resolved));
+            delete pending[day];
+          }
+          if (!pending[day] && owner === ownerKey()) applyCloudRowToLocal(rows[i]);
+          cloudKeys[day] = true;
         }
-        return pushLocalReceiptDaysToCloud(c, owner, cloudKeys).then(function () {
-          return true;
+        if (owner !== ownerKey()) return false;
+        var tasks = [];
+        Object.keys(pending).forEach(function (day) {
+          var raw = localStorage.getItem(dayStorageKey(day));
+          var op = pending[day] === 'delete' ? deleteReceiptDayCloud(c, owner, day)
+            : raw && receiptConfigHasData(raw) ? upsertReceiptDayCloud(c, owner, day, normalizeReceiptConfig(JSON.parse(raw))) : null;
+          if (!op) return;
+          tasks.push(cloudOp(op).then(function (result) {
+            if (result && !result.error && owner === ownerKey()) {
+              var latest = pendingDays();
+              if (latest[day] === pending[day] && (pending[day] === 'delete' || raw === localStorage.getItem(dayStorageKey(day)))) {
+                delete latest[day];
+                localStorage.setItem(pendingKey(), JSON.stringify(latest));
+              }
+            }
+            return !!(result && !result.error);
+          }));
+        });
+        return Promise.all(tasks).then(function (results) {
+          return results.every(function (result) { return result; });
         });
       })
       .catch(function (e) {
@@ -413,6 +526,7 @@
         return false;
       })
       .then(function (ok) {
+        if (owner === ownerKey()) setSyncStatus(ok ? '已同步到云端' : '同步失败，数据仍保存在本机，请联网重试', !ok);
         state.cloudSyncing = false;
         state.cloudSyncPromise = null;
         return ok;
@@ -420,20 +534,13 @@
     return state.cloudSyncPromise;
   }
 
-  function queueReceiptCloudSave(dayKey) {
-    var c = getCloudClient();
-    var owner = getReceiptOwnerKey();
-    if (!c || !owner) return;
-    if (!receiptConfigHasData(state.currentCfg)) {
-      cloudOp(deleteReceiptDayCloud(c, owner, dayKey));
-      return;
-    }
-    cloudOp(upsertReceiptDayCloud(c, owner, dayKey, state.currentCfg));
+  function queueReceiptCloudSave() {
+    scheduleReceiptCloudSync(500);
   }
 
   function loadDayConfig(d) {
     var key = dateKey(d);
-    var raw = localStorage.getItem(STORAGE_PREFIX + key);
+    var raw = ownerKey() ? localStorage.getItem(dayStorageKey(key)) : null;
     if (raw) {
       try {
         return normalizeReceiptConfig(JSON.parse(raw));
@@ -445,9 +552,10 @@
   function scheduleSaveCurrentDay(delayMs) {
     if (delayMs == null) delayMs = 350;
     if (saveDayTimer) clearTimeout(saveDayTimer);
+    var scheduledOwner = ownerKey();
     saveDayTimer = setTimeout(function () {
       saveDayTimer = null;
-      saveCurrentDay();
+      if (scheduledOwner === ownerKey()) saveCurrentDay();
     }, delayMs);
   }
 
@@ -455,18 +563,21 @@
     var key = dateKey(state.selectedDate);
     if (!state.currentCfg.terminal) state.currentCfg.terminal = randomTerminalForDate(state.selectedDate);
     if (!receiptConfigHasData(state.currentCfg)) {
-      localStorage.removeItem(STORAGE_PREFIX + key);
+      if (!ownerKey()) { setSyncStatus('请先登录后保存账单', true); return; }
+      localStorage.removeItem(dayStorageKey(key));
+      markPending(key, 'delete');
+      setSyncStatus('已在本机删除，正在同步云端…', false);
       delete state.datesWithData[key];
       queueReceiptCloudSave(key);
       return;
     }
-    localStorage.setItem(
-      STORAGE_PREFIX + key,
-      JSON.stringify(receiptConfigToPayload(state.currentCfg))
-    );
+    if (!ownerKey()) { setSyncStatus('请先登录后保存账单', true); return; }
+    localStorage.setItem(dayStorageKey(key), JSON.stringify(receiptConfigToPayload(state.currentCfg)));
+    markPending(key, 'save');
+    setSyncStatus('已保存在本机，正在同步云端…', false);
     state.datesWithData[key] = true;
     queueReceiptCloudSave(key);
-    scheduleReceiptCloudSync(8000);
+    scheduleReceiptCloudSync(500);
   }
 
   function seedTodayIfNeeded() {
@@ -2038,7 +2149,8 @@
       if (paperMode !== 'receipt') s.refresh();
       scheduleReceiptResize(s);
     }
-    if (paperMode === 'receipt') scheduleReceiptCloudSync(6000);
+    updateLegacyImportButton();
+    if (paperMode === 'receipt') scheduleReceiptCloudSync(100);
   }
 
   global.ReceiptModule = {
@@ -2046,6 +2158,15 @@
     saveAndReturnHome: saveAndGoHome,
     ensureState: ensureState,
     syncReceiptFromCloud: syncReceiptFromCloud,
+    importLegacyDays: importLegacyDays,
+    refreshAccount: function () {
+      if (saveDayTimer) { clearTimeout(saveDayTimer); saveDayTimer = null; }
+      state.selectedDate = new Date();
+      state.currentCfg = loadDayConfig(state.selectedDate);
+      scanDatesWithData();
+      updateLegacyImportButton();
+      syncReceiptFromCloud().then(onReceiptCloudSyncDone);
+    },
     scheduleReceiptCloudSync: scheduleReceiptCloudSync,
     onEnterHome: function () {
       enterReceiptView('home', 'receipt-home-canvas', 'receipt');
