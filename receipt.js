@@ -2050,22 +2050,29 @@
   }
 
   function renderEntryTags() {
-    var list = global.document && global.document.getElementById('receipt-entry-tags');
-    if (!list) return;
-    list.innerHTML = '';
+    var grid = global.document && global.document.getElementById('receipt-entry-categories');
+    if (!grid) return;
+    grid.querySelectorAll('.receipt-entry-custom-tag').forEach(function (button) { button.remove(); });
     collectSavedTags().forEach(function (tag) {
       var button = document.createElement('button');
+      var selected = entryDraft.tags.indexOf(tag) >= 0;
       button.type = 'button';
-      button.className = entryDraft.tags.indexOf(tag) >= 0 ? 'selected' : '';
-      button.setAttribute('aria-pressed', entryDraft.tags.indexOf(tag) >= 0 ? 'true' : 'false');
-      button.textContent = tag;
+      button.className = 'receipt-entry-category receipt-entry-custom-tag' + (selected ? ' selected' : '');
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.setAttribute('aria-label', '标签：' + tag);
+      var icon = document.createElement('span');
+      icon.textContent = '🏷️';
+      var label = document.createElement('span');
+      label.textContent = tag;
+      button.appendChild(icon);
+      button.appendChild(label);
       button.onclick = function () {
         var index = entryDraft.tags.indexOf(tag);
         if (index < 0) entryDraft.tags.push(tag);
         else entryDraft.tags.splice(index, 1);
         renderEntryTags();
       };
-      list.appendChild(button);
+      grid.appendChild(button);
     });
   }
 
@@ -2095,11 +2102,37 @@
     if (!list) return;
     var cfg = loadDayConfig(state.selectedDate);
     list.innerHTML = '';
-    (cfg.entries || []).forEach(function (entry) {
+    var heading = document.createElement('strong');
+    heading.textContent = dateKey(state.selectedDate) + ' 账目记录';
+    list.appendChild(heading);
+    var count = 0;
+    var entries = cfg.entries || [];
+    entries.forEach(function (entry) {
       var line = document.createElement('div');
       line.textContent = (entry.type === 'income' ? '入账' : entry.type === 'excluded' ? '不计入收支' : '支出') + ' · ' + entry.category + '  ¥' + Number(entry.amount).toFixed(2) + (entry.note ? ' · ' + entry.note : '') + (entry.tags && entry.tags.length ? ' · #' + entry.tags.join(' #') : '');
       list.appendChild(line);
+      count += 1;
     });
+    // 旧版小票条目没有分类记录，仍可在这里查看，不重复列出快速记账的支出。
+    var quickExpenses = entries.filter(function (entry) { return entry.type === 'expense'; });
+    (cfg.items || []).forEach(function (item) {
+      if (isPlaceholderItem(item)) return;
+      var name = String(item.name || '未命名');
+      var price = parsePrice(item.price);
+      var match = quickExpenses.findIndex(function (entry) {
+        return name === entry.category + (entry.note ? ' · ' + entry.note : '') && price === Number(entry.amount) && parseQty(item.qty) === 1;
+      });
+      if (match >= 0) { quickExpenses.splice(match, 1); return; }
+      var line = document.createElement('div');
+      line.textContent = '小票 · ' + name + '  ¥' + (price * parseQty(item.qty)).toFixed(2);
+      list.appendChild(line);
+      count += 1;
+    });
+    if (!count) {
+      var empty = document.createElement('div');
+      empty.textContent = '当天暂无账目记录';
+      list.appendChild(empty);
+    }
   }
 
   function renderEntryDraft() {
@@ -2107,7 +2140,8 @@
     var amount = document.getElementById('receipt-entry-amount');
     var grid = document.getElementById('receipt-entry-categories');
     if (!date || !amount || !grid) return;
-    date.value = entryDraft.date;
+    var displayDate = new Date(entryDraft.date + 'T12:00:00');
+    date.textContent = isNaN(displayDate.getTime()) ? '选择日期' : (displayDate.getMonth() + 1) + '月' + displayDate.getDate() + '日 ▾';
     amount.textContent = entryDraft.amount || '0.00';
     document.querySelectorAll('#receipt-entry-tabs button').forEach(function (button) {
       button.classList.toggle('selected', button.getAttribute('data-type') === entryDraft.type);
@@ -2126,6 +2160,7 @@
       button.onclick = function () { entryDraft.category = category[0]; renderEntryDraft(); };
       grid.appendChild(button);
     });
+    renderEntryTags();
   }
 
   function inputEntryAmount(key) {
@@ -2179,8 +2214,14 @@
     if (!form || form._bound) return;
     form._bound = true;
     document.getElementById('receipt-entry-close').onclick = function () { global.goToView('lobby'); };
-    document.getElementById('receipt-entry-history').onclick = function () { global.goToView('receipt_home'); };
-    document.getElementById('receipt-entry-date').onchange = function (e) { entryDraft.date = e.target.value; };
+    document.getElementById('receipt-calendar-back').onclick = function () { global.goToView('receipt_entry'); };
+    document.getElementById('receipt-entry-date').onclick = function () {
+      if (entryDraft.date) {
+        var d = new Date(entryDraft.date + 'T12:00:00');
+        if (!isNaN(d.getTime())) selectDate(d);
+      }
+      global.goToView('receipt_calendar');
+    };
     document.getElementById('receipt-entry-tabs').onclick = function (e) {
       var button = e.target.closest('[data-type]');
       if (button) { entryDraft.type = button.getAttribute('data-type'); renderEntryDraft(); }
