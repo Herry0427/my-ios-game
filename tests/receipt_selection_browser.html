@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><title>记账标签点击测试：运行中</title></head><body>
+<div id="receipt-entry-screen"></div>
+<button id="receipt-entry-close"></button><button id="receipt-calendar-back"></button><button id="receipt-entry-date"></button>
+<div id="receipt-entry-tabs"><button data-type="expense"></button></div>
+<div id="receipt-entry-amount"></div><div id="receipt-entry-categories"></div>
+<div id="receipt-entry-keypad"></div><button id="receipt-entry-tag-toggle"></button>
+<form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input"></form>
+<button id="receipt-entry-note-toggle"></button><input id="receipt-entry-note" hidden>
+<span id="receipt-entry-sync-status"></span>
+<script>
+window.getReceiptOwnerKey = function () { return 'receipt-selection-browser-test'; };
+window.getSb = function () { return null; };
+localStorage.setItem('receipt_account_receipt-selection-browser-test_2026-01-01', JSON.stringify({savedTags:['彩票','早餐']}));
+</script>
+<script src="../receipt.js"></script>
+<script>
+(function () {
+  var errors = [];
+  var grid = document.getElementById('receipt-entry-categories');
+  var module = window.ReceiptModule;
+  module.onEnterEntry();
+  function check(expected) {
+    var selected = grid.querySelectorAll('.receipt-entry-category.selected');
+    if (selected.length !== (expected ? 1 : 0) || (expected && selected[0].getAttribute('data-category') !== expected))
+      errors.push('期望只有 ' + (expected || '零个') + '高亮，实际为 ' + Array.from(selected).map(function (b) { return b.getAttribute('data-category'); }).join(','));
+  }
+  function click(name) {
+    var button = Array.from(grid.querySelectorAll('.receipt-entry-category')).find(function (b) { return b.getAttribute('data-category') === name; });
+    if (!button) { errors.push('缺少标签 ' + name); return; }
+    button.querySelector('span').click();
+    check(name);
+  }
+  check('');
+  click('餐饮');
+  click('彩票');
+  click('交通');
+  click('早餐');
+  module._test.addEntryTag('彩票');
+  check('彩票');
+  document.title = errors.length ? 'FAIL: ' + errors.join('; ') : 'PASS: 初始无高亮，点击及新增标签始终单选';
+})();
+</script>
+</body></html>

@@ -2055,10 +2055,9 @@
     grid.querySelectorAll('.receipt-entry-custom-tag').forEach(function (button) { button.remove(); });
     collectSavedTags().forEach(function (tag) {
       var button = document.createElement('button');
-      var selected = entryDraft.category === tag;
       button.type = 'button';
-      button.className = 'receipt-entry-category receipt-entry-custom-tag' + (selected ? ' selected' : '');
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.className = 'receipt-entry-category receipt-entry-custom-tag';
+      button.setAttribute('data-category', tag);
       button.setAttribute('aria-label', '标签：' + tag);
       var icon = document.createElement('span');
       icon.textContent = '🏷️';
@@ -2066,8 +2065,18 @@
       label.textContent = tag;
       button.appendChild(icon);
       button.appendChild(label);
-      button.onclick = function () { selectEntryCategory(tag); };
       grid.appendChild(button);
+    });
+    updateEntryCategorySelection();
+  }
+
+  function updateEntryCategorySelection() {
+    var grid = global.document && global.document.getElementById('receipt-entry-categories');
+    if (!grid) return;
+    grid.querySelectorAll('.receipt-entry-category').forEach(function (button) {
+      var selected = !!entryDraft.category && button.getAttribute('data-category') === entryDraft.category;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
   }
 
@@ -2093,7 +2102,7 @@
 
   function selectEntryCategory(category) {
     entryDraft.category = category;
-    renderEntryDraft();
+    updateEntryCategorySelection();
   }
 
   function renderDayEntries() {
@@ -2152,14 +2161,14 @@
     receiptCategories.forEach(function (category) {
       var button = document.createElement('button');
       button.type = 'button';
-      button.className = 'receipt-entry-category' + (entryDraft.category === category[0] ? ' selected' : '');
+      button.className = 'receipt-entry-category';
+      button.setAttribute('data-category', category[0]);
       var icon = document.createElement('span');
       icon.textContent = category[1];
       var label = document.createElement('span');
       label.textContent = category[0];
       button.appendChild(icon);
       button.appendChild(label);
-      button.onclick = function () { selectEntryCategory(category[0]); };
       grid.appendChild(button);
     });
     renderEntryTags();
@@ -2224,6 +2233,10 @@
         if (!isNaN(d.getTime())) selectDate(d);
       }
       global.goToView('receipt_calendar');
+    };
+    document.getElementById('receipt-entry-categories').onclick = function (e) {
+      var button = e.target.closest('.receipt-entry-category');
+      if (button && this.contains(button)) selectEntryCategory(button.getAttribute('data-category'));
     };
     document.getElementById('receipt-entry-tabs').onclick = function (e) {
       var button = e.target.closest('[data-type]');
