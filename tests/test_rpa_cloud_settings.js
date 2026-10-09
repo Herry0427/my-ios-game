@@ -85,7 +85,17 @@ function device(nick, legacy) {
   assert(!alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'loaded dashboard marks errors seen');
   assert.strictEqual(alertDevice.badges.at(-1), 0, 'seen errors clear the home screen badge');
   alertDevice.ctx.currentView = 'lobby';
-  alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 11 }) });
+  alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 12 }) });
+  await alertDevice.ctx.checkRpaAlerts();
+  assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'));
+  alertDevice.elements['btn-enter-rpa'].onclick();
+  assert(!alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 're-entering cached dashboard clears unread dot without another iframe load');
+  assert.strictEqual(alertDevice.badges.at(-1), 0, 're-entering clears desktop badge too');
+  alertDevice.ctx.currentView = 'rpa';
+  await alertDevice.ctx.checkRpaAlerts();
+  assert(!alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'fetch after re-entry cannot restore viewed dot');
+  alertDevice.ctx.currentView = 'lobby';
+  alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 13 }) });
   await alertDevice.ctx.checkRpaAlerts();
   assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'subsequent error reactivates red dot');
   assert.strictEqual(alertDevice.badges.at(-1), 1, 'subsequent errors restore the home screen badge');
