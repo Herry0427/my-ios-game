@@ -11,7 +11,7 @@ function device(nick, legacy) {
   const values = {};
   if (legacy) values.rpa_dashboard_url = legacy;
   const elements = {};
-  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open', 'rpa-alert-dot'].forEach(id => {
+  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open', 'rpa-alert-dot', 'rpa-enable-badge'].forEach(id => {
     const classes = new Set();
     elements[id] = {
       value: '', textContent: '', src: '', onclick: null, listeners: {},
@@ -33,15 +33,18 @@ function device(nick, legacy) {
       async upsert(row) { rows[row.user_id] = { dashboard_url: row.dashboard_url }; return { error: null }; }
     };
   } };
+  const badges = [];
   const ctx = {
+    navigator: { setAppBadge: async n => { badges.push(n); }, clearAppBadge: async () => { badges.push(0); } },
+    Notification: { requestPermission: async () => 'granted' },
     document: { getElementById: id => elements[id], visibilityState: 'visible', addEventListener: () => {} }, localStorage: store,
     getNickname: () => nick.value, getSb: () => client, goToView: () => {},
-    window: { open: () => {} }, URL, console, currentView: 'rpa', setInterval: () => {},
+    window: { open: () => {}, matchMedia: () => ({ matches: true }), Notification: true }, URL, console, currentView: 'rpa', setInterval: () => {},
     fetch: async () => ({ ok: true, json: async () => ({ latest_id: 0 }) })
   };
   vm.createContext(ctx);
   vm.runInContext('var rpaUrlInput = document.getElementById(\'rpa-url\');' + snippet, ctx);
-  return { elements, values, ctx };
+  return { elements, values, ctx, badges };
 }
 (async () => {
   const nick = { value: '甲' };
@@ -66,14 +69,17 @@ function device(nick, legacy) {
   alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 10 }) });
   await alertDevice.ctx.checkRpaAlerts();
   assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'new error shows red dot');
+  assert.strictEqual(alertDevice.badges.at(-1), 1, 'unread errors set the home screen badge');
   alertDevice.elements['btn-enter-rpa'].onclick();
   assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'opening RPA does not clear unread dot before dashboard loads');
   alertDevice.ctx.currentView = 'rpa';
   alertDevice.elements['rpa-frame'].listeners.load();
   assert(!alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'loaded dashboard marks errors seen');
+  assert.strictEqual(alertDevice.badges.at(-1), 0, 'seen errors clear the home screen badge');
   alertDevice.ctx.currentView = 'lobby';
   alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 11 }) });
   await alertDevice.ctx.checkRpaAlerts();
   assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'subsequent error reactivates red dot');
+  assert.strictEqual(alertDevice.badges.at(-1), 1, 'subsequent errors restore the home screen badge');
   console.log('RPA cloud settings and unread alert dot: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

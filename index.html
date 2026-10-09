@@ -2021,7 +2021,7 @@
 
   <section id="rpa-screen" class="screen" aria-label="RPA 报错看板">
     <div class="rpa-mobile-header"><button type="button" id="rpa-back">‹ 返回</button><span>RPA 报错流程</span></div>
-    <div class="rpa-mobile-controls"><input id="rpa-url" type="url" inputmode="url" placeholder="粘贴内网穿透的 HTTPS 地址" aria-label="RPA 看板地址"><button type="button" id="rpa-connect">连接</button><button type="button" id="rpa-open">单独打开</button></div>
+    <div class="rpa-mobile-controls"><input id="rpa-url" type="url" inputmode="url" placeholder="粘贴内网穿透的 HTTPS 地址" aria-label="RPA 看板地址"><button type="button" id="rpa-connect">连接</button><button type="button" id="rpa-open">单独打开</button><button type="button" id="rpa-enable-badge">开启桌面角标</button></div>
     <p id="rpa-hint" role="status">先在电脑启动看板和穿透，再填写 HTTPS 地址；网址只保存在本机浏览器。</p>
     <iframe id="rpa-frame" title="RPA 异常看板" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
   </section>
@@ -5963,11 +5963,19 @@
   var rpaUrlOwner = '';
   var rpaSyncVersion = 0;
   var rpaLatestId = 0;
+  var rpaLatestKnown = false;
+  function syncRpaAppBadge(unread) {
+    if (!navigator.setAppBadge || !navigator.clearAppBadge) return;
+    var change = unread ? navigator.setAppBadge(1) : navigator.clearAppBadge();
+    Promise.resolve(change).catch(function (e) { console.warn('[rpa app badge]', e); });
+  }
   function rpaSeenKey(owner, url) { return 'rpa_seen_' + encodeURIComponent(owner) + '_' + encodeURIComponent(url); }
   function updateRpaAlertDot() {
     var key = rpaSavedUrl && getNickname() ? rpaSeenKey(getNickname(), rpaSavedUrl) : '';
     var seen = key ? Number(localStorage.getItem(key) || 0) : 0;
-    document.getElementById('rpa-alert-dot').classList.toggle('visible', !!key && rpaLatestId > seen);
+    var unread = !!key && rpaLatestId > seen;
+    document.getElementById('rpa-alert-dot').classList.toggle('visible', unread);
+    if (rpaLatestKnown) syncRpaAppBadge(unread);
   }
   async function checkRpaAlerts() {
     var owner = getNickname();
@@ -5979,6 +5987,7 @@
       var data = await response.json();
       if (owner !== getNickname() || url !== rpaSavedUrl) return;
       rpaLatestId = Number(data.latest_id) || 0;
+      rpaLatestKnown = true;
       updateRpaAlertDot();
     } catch (e) { /* 看板未连通时不影响大厅。 */ }
   }
@@ -5993,13 +6002,13 @@
     var version = ++rpaSyncVersion;
     if (!owner) { rpaHint.textContent = '请先登录，再同步看板地址。'; return; }
     if (rpaUrlOwner !== owner) rpaFrame.removeAttribute('src');
-    if (rpaUrlOwner !== owner) rpaLatestId = 0;
+    if (rpaUrlOwner !== owner) { rpaLatestId = 0; rpaLatestKnown = false; }
     rpaUrlOwner = owner;
     updateRpaAlertDot();
     var local = localStorage.getItem(rpaLocalKey(owner)) || '';
     var legacy = localStorage.getItem('rpa_dashboard_url') || '';
     if (!local && legacy) local = legacy;
-    if (rpaSavedUrl !== local) rpaLatestId = 0;
+    if (rpaSavedUrl !== local) { rpaLatestId = 0; rpaLatestKnown = false; }
     rpaSavedUrl = local;
     rpaUrlInput.value = local;
     updateRpaAlertDot();
@@ -6011,7 +6020,7 @@
       if (result.error) throw result.error;
       if (owner !== getNickname() || version !== rpaSyncVersion) return;
       if (result.data && result.data.dashboard_url) {
-        if (rpaSavedUrl !== result.data.dashboard_url) rpaLatestId = 0;
+        if (rpaSavedUrl !== result.data.dashboard_url) { rpaLatestId = 0; rpaLatestKnown = false; }
         rpaSavedUrl = result.data.dashboard_url;
         rpaUrlInput.value = rpaSavedUrl;
         localStorage.setItem(rpaLocalKey(owner), rpaSavedUrl);
@@ -6054,6 +6063,28 @@
       checkRpaAlerts();
     }
   });
+  document.getElementById('rpa-enable-badge').onclick = async function () {
+    if (!window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone) {
+      rpaHint.textContent = '请先在 Safari 中将此网页添加到主屏幕，再从 Arcade 图标打开。';
+      return;
+    }
+    if (!('Notification' in window) || !navigator.setAppBadge) {
+      rpaHint.textContent = '当前设备或浏览器不支持桌面角标。';
+      return;
+    }
+    try {
+      var permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        rpaHint.textContent = '需要允许通知，才能在 iPhone 主屏幕显示角标。';
+        return;
+      }
+      rpaHint.textContent = '桌面角标已开启：应用打开时同步未读状态；关闭应用后不会实时刷新。';
+      updateRpaAlertDot();
+      checkRpaAlerts();
+    } catch (e) {
+      rpaHint.textContent = '开启失败，请检查 iPhone 设置中的 Arcade 通知权限。';
+    }
+  };
   document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };
   document.getElementById('rpa-connect').onclick = async function () {
     var url = rpaDashboardUrl();
@@ -6072,6 +6103,7 @@
       rpaUrlOwner = owner;
       rpaSavedUrl = url;
       rpaLatestId = 0;
+      rpaLatestKnown = false;
       updateRpaAlertDot();
       checkRpaAlerts();
       rpaFrame.src = url;
