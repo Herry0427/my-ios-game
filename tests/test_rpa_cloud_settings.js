@@ -11,8 +11,15 @@ function device(nick, legacy) {
   const values = {};
   if (legacy) values.rpa_dashboard_url = legacy;
   const elements = {};
-  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open'].forEach(id => {
-    elements[id] = { value: '', textContent: '', src: '', onclick: null, removeAttribute(name) { if (name === 'src') this.src = ''; } };
+  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open', 'rpa-alert-dot'].forEach(id => {
+    const classes = new Set();
+    elements[id] = {
+      value: '', textContent: '', src: '', onclick: null, listeners: {},
+      classList: { toggle(name, on) { if (on) classes.add(name); else classes.delete(name); }, contains(name) { return classes.has(name); } },
+      addEventListener(name, cb) { this.listeners[name] = cb; },
+      getAttribute(name) { return name === 'src' ? this.src : null; },
+      removeAttribute(name) { if (name === 'src') this.src = ''; }
+    };
   });
   const store = {
     getItem: key => values[key] || null,
@@ -27,9 +34,10 @@ function device(nick, legacy) {
     };
   } };
   const ctx = {
-    document: { getElementById: id => elements[id] }, localStorage: store,
+    document: { getElementById: id => elements[id], visibilityState: 'visible', addEventListener: () => {} }, localStorage: store,
     getNickname: () => nick.value, getSb: () => client, goToView: () => {},
-    window: { open: () => {} }, URL, console, currentView: 'rpa'
+    window: { open: () => {} }, URL, console, currentView: 'rpa', setInterval: () => {},
+    fetch: async () => ({ ok: true, json: async () => ({ latest_id: 0 }) })
   };
   vm.createContext(ctx);
   vm.runInContext('var rpaUrlInput = document.getElementById(\'rpa-url\');' + snippet, ctx);
@@ -52,5 +60,20 @@ function device(nick, legacy) {
   const other = device({ value: '乙' });
   await other.ctx.loadRpaDashboardUrl();
   assert.strictEqual(other.elements['rpa-url'].value, '');
-  console.log('RPA address migration, cross-device update, and account isolation: PASS');
+  const alertDevice = device({ value: '甲' });
+  alertDevice.ctx.currentView = 'lobby';
+  await alertDevice.ctx.loadRpaDashboardUrl();
+  alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 10 }) });
+  await alertDevice.ctx.checkRpaAlerts();
+  assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'new error shows red dot');
+  alertDevice.elements['btn-enter-rpa'].onclick();
+  assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'opening RPA does not clear unread dot before dashboard loads');
+  alertDevice.ctx.currentView = 'rpa';
+  alertDevice.elements['rpa-frame'].listeners.load();
+  assert(!alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'loaded dashboard marks errors seen');
+  alertDevice.ctx.currentView = 'lobby';
+  alertDevice.ctx.fetch = async () => ({ ok: true, json: async () => ({ latest_id: 11 }) });
+  await alertDevice.ctx.checkRpaAlerts();
+  assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'subsequent error reactivates red dot');
+  console.log('RPA cloud settings and unread alert dot: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -138,6 +138,13 @@
       gap: 4px;
     }
     #lobby-screen .tile-btn:active { background: #eaf5ee; transform: scale(0.98); }
+    #btn-enter-rpa { position: relative; }
+    #rpa-alert-dot {
+      display: none; position: absolute; top: 7px; right: 7px;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #e02b3a; box-shadow: 0 0 0 2px #fff;
+    }
+    #rpa-alert-dot.visible { display: block; }
     #lobby-screen .tile-badge {
       margin: 0;
       font-size: 0.62rem;
@@ -2002,7 +2009,7 @@
       <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
       <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
       <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
-      <button type="button" class="tile-btn" id="btn-enter-rpa">RPA 报错 <span class="tile-badge">异常流程</span></button>
+      <button type="button" class="tile-btn" id="btn-enter-rpa">RPA 报错 <span class="tile-badge">异常流程</span><span id="rpa-alert-dot" aria-hidden="true"></span></button>
       <button type="button" class="tile-btn" id="btn-enter-listenbook">听书 <span class="tile-badge">循环背诵</span></button>
       <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
     </div>
@@ -3436,6 +3443,7 @@
     scheduleSupabaseKeepalive();
     syncHiLabels();
     if (window.ReceiptModule) ReceiptModule.refreshAccount();
+    loadRpaDashboardUrl();
     if (inp) inp.value = getNickname();
     if (modal) modal.classList.remove('visible');
   }
@@ -5954,18 +5962,48 @@
   var rpaSavedUrl = '';
   var rpaUrlOwner = '';
   var rpaSyncVersion = 0;
+  var rpaLatestId = 0;
+  function rpaSeenKey(owner, url) { return 'rpa_seen_' + encodeURIComponent(owner) + '_' + encodeURIComponent(url); }
+  function updateRpaAlertDot() {
+    var key = rpaSavedUrl && getNickname() ? rpaSeenKey(getNickname(), rpaSavedUrl) : '';
+    var seen = key ? Number(localStorage.getItem(key) || 0) : 0;
+    document.getElementById('rpa-alert-dot').classList.toggle('visible', !!key && rpaLatestId > seen);
+  }
+  async function checkRpaAlerts() {
+    var owner = getNickname();
+    var url = rpaSavedUrl;
+    if (!owner || !url || document.visibilityState === 'hidden') return;
+    try {
+      var response = await fetch(new URL('api/latest-id', url.endsWith('/') ? url : url + '/').href, { cache: 'no-store' });
+      if (!response.ok) return;
+      var data = await response.json();
+      if (owner !== getNickname() || url !== rpaSavedUrl) return;
+      rpaLatestId = Number(data.latest_id) || 0;
+      updateRpaAlertDot();
+    } catch (e) { /* 看板未连通时不影响大厅。 */ }
+  }
+  function markRpaAlertsSeen() {
+    if (!getNickname() || !rpaSavedUrl || !rpaLatestId) return;
+    localStorage.setItem(rpaSeenKey(getNickname(), rpaSavedUrl), String(rpaLatestId));
+    updateRpaAlertDot();
+  }
   function rpaLocalKey(owner) { return 'rpa_dashboard_url_' + encodeURIComponent(owner); }
   async function loadRpaDashboardUrl() {
     var owner = getNickname();
     var version = ++rpaSyncVersion;
     if (!owner) { rpaHint.textContent = '请先登录，再同步看板地址。'; return; }
     if (rpaUrlOwner !== owner) rpaFrame.removeAttribute('src');
+    if (rpaUrlOwner !== owner) rpaLatestId = 0;
     rpaUrlOwner = owner;
+    updateRpaAlertDot();
     var local = localStorage.getItem(rpaLocalKey(owner)) || '';
     var legacy = localStorage.getItem('rpa_dashboard_url') || '';
     if (!local && legacy) local = legacy;
+    if (rpaSavedUrl !== local) rpaLatestId = 0;
     rpaSavedUrl = local;
     rpaUrlInput.value = local;
+    updateRpaAlertDot();
+    checkRpaAlerts();
     var c = getSb();
     if (!c) { rpaHint.textContent = '云端未连接；当前只显示本机保存的地址。'; return; }
     try {
@@ -5973,6 +6011,7 @@
       if (result.error) throw result.error;
       if (owner !== getNickname() || version !== rpaSyncVersion) return;
       if (result.data && result.data.dashboard_url) {
+        if (rpaSavedUrl !== result.data.dashboard_url) rpaLatestId = 0;
         rpaSavedUrl = result.data.dashboard_url;
         rpaUrlInput.value = rpaSavedUrl;
         localStorage.setItem(rpaLocalKey(owner), rpaSavedUrl);
@@ -5989,6 +6028,8 @@
         rpaHint.textContent = '请填写穿透工具提供的 HTTPS 地址。';
       }
       if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+      updateRpaAlertDot();
+      checkRpaAlerts();
     } catch (e) {
       console.warn('[rpa url sync]', e);
       if (owner === getNickname() && version === rpaSyncVersion) rpaHint.textContent = '云端读取失败；本机地址仍保留，请检查数据库迁移和网络。';
@@ -6007,6 +6048,12 @@
     if (rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
     loadRpaDashboardUrl();
   };
+  rpaFrame.addEventListener('load', function () {
+    if (currentView === 'rpa') {
+      markRpaAlertsSeen();
+      checkRpaAlerts();
+    }
+  });
   document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };
   document.getElementById('rpa-connect').onclick = async function () {
     var url = rpaDashboardUrl();
@@ -6024,6 +6071,9 @@
       localStorage.removeItem('rpa_dashboard_url');
       rpaUrlOwner = owner;
       rpaSavedUrl = url;
+      rpaLatestId = 0;
+      updateRpaAlertDot();
+      checkRpaAlerts();
       rpaFrame.src = url;
       rpaHint.textContent = '地址已保存到云端；同一昵称在其他设备可自动读取。';
     } catch (e) {
@@ -6031,6 +6081,10 @@
       if (owner === getNickname() && version === rpaSyncVersion) rpaHint.textContent = '云端保存失败，未覆盖旧地址；请检查数据库迁移和网络后重试。';
     }
   };
+  setInterval(checkRpaAlerts, 30000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') checkRpaAlerts();
+  });
   document.getElementById('rpa-open').onclick = function () {
     var url = rpaDashboardUrl();
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
@@ -6200,6 +6254,7 @@
     syncHiLabels();
     cloudBanner();
     if (window.ReceiptModule) ReceiptModule.refreshAccount();
+    loadRpaDashboardUrl();
   };
   document.getElementById('receipt-import-legacy').onclick = function () {
     if (confirm('把此浏览器中未标记账号的旧账单归到当前昵称？原始数据会保留；若这些账单属于其他人，请取消。')) ReceiptModule.importLegacyDays();
@@ -6222,6 +6277,7 @@
   initEdgeSwipeBack();
   goToView('lobby');
   bootstrapProfileAndNicknameModal();
+  loadRpaDashboardUrl();
 })();
   </script>
 </body>
