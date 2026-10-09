@@ -11,7 +11,7 @@ function device(nick, legacy) {
   const values = {};
   if (legacy) values.rpa_dashboard_url = legacy;
   const elements = {};
-  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open', 'rpa-alert-dot', 'rpa-enable-badge'].forEach(id => {
+  ['rpa-url', 'rpa-frame', 'rpa-hint', 'btn-enter-rpa', 'rpa-back', 'rpa-connect', 'rpa-open', 'rpa-alert-dot', 'rpa-enable-badge', 'rpa-push-status'].forEach(id => {
     const classes = new Set();
     elements[id] = {
       value: '', textContent: '', src: '', onclick: null, listeners: {},
@@ -35,12 +35,16 @@ function device(nick, legacy) {
   } };
   const badges = [];
   const registrations = [];
+  const pushKey = Buffer.alloc(65);
+  let activeSubscription = null;
+  const registration = { pushManager: {
+    getSubscription: async () => activeSubscription,
+    subscribe: async () => (activeSubscription = { endpoint: 'https://web.push.apple.com/test', options: { applicationServerKey: new Uint8Array(pushKey), }, keys: { p256dh: 'a', auth: 'b' } })
+  } };
   const ctx = {
     navigator: { setAppBadge: async n => { badges.push(n); }, clearAppBadge: async () => { badges.push(0); },
-      serviceWorker: { register: async path => { registrations.push(path); return { pushManager: {
-        getSubscription: async () => null, subscribe: async () => ({ endpoint: 'https://web.push.apple.com/test', keys: { p256dh: 'a', auth: 'b' } })
-      } }; } } }, 
-    Notification: { requestPermission: async () => 'granted' },
+      serviceWorker: { register: async path => { registrations.push(path); return registration; }, getRegistration: async () => registrations.length ? registration : null } }, 
+    Notification: { permission: 'default', requestPermission: async function () { this.permission = 'granted'; return 'granted'; } },
     document: { getElementById: id => elements[id], visibilityState: 'visible', addEventListener: () => {} }, localStorage: store,
     getNickname: () => nick.value, getSb: () => client, goToView: () => {},
     window: { open: () => {}, matchMedia: () => ({ matches: true }), Notification: true, PushManager: true }, URL, console, currentView: 'rpa', setInterval: () => {}, atob, Uint8Array,
@@ -93,5 +97,11 @@ function device(nick, legacy) {
   await alertDevice.elements['rpa-enable-badge'].onclick();
   assert.deepStrictEqual(alertDevice.registrations, ['./rpa-sw.js']);
   assert(alertDevice.elements['rpa-hint'].textContent.includes('后台推送已开启'));
+  await alertDevice.ctx.refreshRpaPushStatus();
+  assert(alertDevice.elements['rpa-push-status'].textContent.includes('已自动恢复'));
+  assert.strictEqual(alertDevice.values['rpa_push_owner_%E7%94%B2'], 'https://example.org/new');
+  alertDevice.ctx.fetch = async () => { throw new Error('offline'); };
+  await alertDevice.ctx.refreshRpaPushStatus();
+  assert(alertDevice.elements['rpa-push-status'].textContent.includes('未确认'), 'offline cannot claim active');
   console.log('RPA cloud settings and unread alert dot: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });
