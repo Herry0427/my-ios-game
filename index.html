@@ -6063,13 +6063,17 @@
       checkRpaAlerts();
     }
   });
+  function rpaPushKeyBytes(base64) {
+    var raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(raw, function (ch) { return ch.charCodeAt(0); });
+  }
   document.getElementById('rpa-enable-badge').onclick = async function () {
     if (!window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone) {
       rpaHint.textContent = '请先在 Safari 中将此网页添加到主屏幕，再从 Arcade 图标打开。';
       return;
     }
-    if (!('Notification' in window) || !navigator.setAppBadge) {
-      rpaHint.textContent = '当前设备或浏览器不支持桌面角标。';
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      rpaHint.textContent = '当前设备不支持后台推送，请升级 iOS 并从主屏幕打开。';
       return;
     }
     try {
@@ -6078,11 +6082,27 @@
         rpaHint.textContent = '需要允许通知，才能在 iPhone 主屏幕显示角标。';
         return;
       }
-      rpaHint.textContent = '桌面角标已开启：应用打开时同步未读状态；关闭应用后不会实时刷新。';
+      var url = rpaSavedUrl;
+      if (!url) { rpaHint.textContent = '请先连接 RPA 看板 HTTPS 地址。'; return; }
+      var registration = await navigator.serviceWorker.register('./rpa-sw.js', { scope: './' });
+      var keyResponse = await fetch(new URL('api/push-key', url.endsWith('/') ? url : url + '/'));
+      if (!keyResponse.ok) throw new Error('看板服务尚未启用推送');
+      var key = (await keyResponse.json()).public_key;
+      var subscription = await registration.pushManager.getSubscription();
+      if (subscription && !subscription.options.applicationServerKey) {
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+      if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: rpaPushKeyBytes(key) });
+      var saved = await fetch(new URL('api/push-subscribe', url.endsWith('/') ? url : url + '/'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(subscription)
+      });
+      if (!saved.ok) throw new Error('看板服务未保存推送订阅');
+      rpaHint.textContent = '后台推送已开启，新错误会通知手机并更新桌面角标。';
       updateRpaAlertDot();
       checkRpaAlerts();
     } catch (e) {
-      rpaHint.textContent = '开启失败，请检查 iPhone 设置中的 Arcade 通知权限。';
+      rpaHint.textContent = '开启后台推送失败：' + (e.message || '请检查看板服务与手机通知权限');
     }
   };
   document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };

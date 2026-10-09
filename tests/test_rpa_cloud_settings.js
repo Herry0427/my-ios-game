@@ -34,17 +34,21 @@ function device(nick, legacy) {
     };
   } };
   const badges = [];
+  const registrations = [];
   const ctx = {
-    navigator: { setAppBadge: async n => { badges.push(n); }, clearAppBadge: async () => { badges.push(0); } },
+    navigator: { setAppBadge: async n => { badges.push(n); }, clearAppBadge: async () => { badges.push(0); },
+      serviceWorker: { register: async path => { registrations.push(path); return { pushManager: {
+        getSubscription: async () => null, subscribe: async () => ({ endpoint: 'https://web.push.apple.com/test', keys: { p256dh: 'a', auth: 'b' } })
+      } }; } } }, 
     Notification: { requestPermission: async () => 'granted' },
     document: { getElementById: id => elements[id], visibilityState: 'visible', addEventListener: () => {} }, localStorage: store,
     getNickname: () => nick.value, getSb: () => client, goToView: () => {},
-    window: { open: () => {}, matchMedia: () => ({ matches: true }), Notification: true }, URL, console, currentView: 'rpa', setInterval: () => {},
+    window: { open: () => {}, matchMedia: () => ({ matches: true }), Notification: true, PushManager: true }, URL, console, currentView: 'rpa', setInterval: () => {}, atob, Uint8Array,
     fetch: async () => ({ ok: true, json: async () => ({ latest_id: 0 }) })
   };
   vm.createContext(ctx);
   vm.runInContext('var rpaUrlInput = document.getElementById(\'rpa-url\');' + snippet, ctx);
-  return { elements, values, ctx, badges };
+  return { elements, values, ctx, badges, registrations };
 }
 (async () => {
   const nick = { value: '甲' };
@@ -81,5 +85,13 @@ function device(nick, legacy) {
   await alertDevice.ctx.checkRpaAlerts();
   assert(alertDevice.elements['rpa-alert-dot'].classList.contains('visible'), 'subsequent error reactivates red dot');
   assert.strictEqual(alertDevice.badges.at(-1), 1, 'subsequent errors restore the home screen badge');
+  alertDevice.ctx.fetch = async (url, options) => {
+    if (String(url).endsWith('/api/push-key')) return { ok: true, json: async () => ({ public_key: Buffer.alloc(65).toString('base64url') }) };
+    if (String(url).endsWith('/api/push-subscribe') && options.method === 'POST') return { ok: true };
+    return { ok: true, json: async () => ({ latest_id: 11 }) };
+  };
+  await alertDevice.elements['rpa-enable-badge'].onclick();
+  assert.deepStrictEqual(alertDevice.registrations, ['./rpa-sw.js']);
+  assert(alertDevice.elements['rpa-hint'].textContent.includes('后台推送已开启'));
   console.log('RPA cloud settings and unread alert dot: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });
