@@ -5965,6 +5965,7 @@
   var rpaSyncVersion = 0;
   var rpaLatestId = 0;
   var rpaLatestKnown = false;
+  var rpaFrameLoadedUrl = '';
   var rpaPushVersion = 0;
   function rpaPushOwnerKey(owner) { return 'rpa_push_owner_' + encodeURIComponent(owner); }
   function rpaPushHint(message) {
@@ -6052,7 +6053,8 @@
       if (owner !== getNickname() || url !== rpaSavedUrl) return;
       rpaLatestId = Number(data.latest_id) || 0;
       rpaLatestKnown = true;
-      updateRpaAlertDot();
+      if (currentView === 'rpa' && rpaFrameLoadedUrl === url) markRpaAlertsSeen();
+      else updateRpaAlertDot();
     } catch (e) { /* 看板未连通时不影响大厅。 */ }
   }
   function markRpaAlertsSeen() {
@@ -6065,7 +6067,7 @@
     var owner = getNickname();
     var version = ++rpaSyncVersion;
     if (!owner) { rpaHint.textContent = '请先登录，再同步看板地址。'; refreshRpaPushStatus(); return; }
-    if (rpaUrlOwner !== owner) rpaFrame.removeAttribute('src');
+    if (rpaUrlOwner !== owner) { rpaFrame.removeAttribute('src'); rpaFrameLoadedUrl = ''; }
     if (rpaUrlOwner !== owner) { rpaLatestId = 0; rpaLatestKnown = false; }
     rpaUrlOwner = owner;
     updateRpaAlertDot();
@@ -6101,7 +6103,7 @@
       } else {
         rpaHint.textContent = '请填写穿透工具提供的 HTTPS 地址。';
       }
-      if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+      if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) { rpaFrameLoadedUrl = ''; rpaFrame.src = rpaSavedUrl; }
       updateRpaAlertDot();
       checkRpaAlerts();
       refreshRpaPushStatus();
@@ -6120,11 +6122,16 @@
   document.getElementById('btn-enter-rpa').onclick = function () {
     goToView('rpa');
     if (getNickname() !== rpaUrlOwner) { loadRpaDashboardUrl(); return; }
-    if (rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) rpaFrame.src = rpaSavedUrl;
+    if (rpaSavedUrl && rpaFrame.src !== rpaSavedUrl) { rpaFrameLoadedUrl = ''; rpaFrame.src = rpaSavedUrl; }
+    if (rpaFrameLoadedUrl === rpaSavedUrl && rpaSavedUrl) {
+      markRpaAlertsSeen();
+      checkRpaAlerts();
+    }
     loadRpaDashboardUrl();
   };
   rpaFrame.addEventListener('load', function () {
-    if (currentView === 'rpa') {
+    if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src === rpaSavedUrl) {
+      rpaFrameLoadedUrl = rpaSavedUrl;
       markRpaAlertsSeen();
       checkRpaAlerts();
     }
@@ -6192,6 +6199,7 @@
       updateRpaAlertDot();
       checkRpaAlerts();
       refreshRpaPushStatus();
+      if (rpaFrame.src !== url) rpaFrameLoadedUrl = '';
       rpaFrame.src = url;
       rpaHint.textContent = '地址已保存到云端；同一昵称在其他设备可自动读取。';
     } catch (e) {
