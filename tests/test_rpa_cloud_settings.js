@@ -113,5 +113,15 @@ function device(nick, legacy) {
   alertDevice.ctx.fetch = async () => { throw new Error('offline'); };
   await alertDevice.ctx.refreshRpaPushStatus();
   assert(alertDevice.elements['rpa-push-status'].textContent.includes('未确认'), 'offline cannot claim active');
+  alertDevice.ctx.fetch = async (url, options) => {
+    if (String(url).endsWith('/api/push-key')) return { ok: true, json: async () => ({ public_key: Buffer.alloc(65).toString('base64url') }) };
+    if (String(url).endsWith('/api/push-subscribe') && options.method === 'POST') return { ok: true };
+    return { ok: true, json: async () => ({ latest_id: 11 }) };
+  };
+  rows['甲'].dashboard_url = 'https://new-random.cpolar.top/';
+  await alertDevice.ctx.loadRpaDashboardUrl();
+  await alertDevice.ctx.refreshRpaPushStatus();
+  assert.strictEqual(alertDevice.elements['rpa-url'].value, 'https://new-random.cpolar.top/');
+  assert.strictEqual(alertDevice.values['rpa_push_owner_%E7%94%B2'], 'https://new-random.cpolar.top/', 'existing push subscription follows the new tunnel URL');
   console.log('RPA cloud settings and unread alert dot: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });

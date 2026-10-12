@@ -6012,7 +6012,8 @@
       var registration = await rpaPushRegistration();
       var subscription = registration && await registration.pushManager.getSubscription();
       if (version !== rpaPushVersion || owner !== getNickname() || url !== rpaSavedUrl) return;
-      if (localStorage.getItem(rpaPushOwnerKey(owner)) !== url || !subscription) {
+      var previousUrl = localStorage.getItem(rpaPushOwnerKey(owner));
+      if (!subscription || !previousUrl) {
         rpaPushHint('推送未开启或订阅已失效：请点击开启桌面角标。');
         return;
       }
@@ -6023,6 +6024,7 @@
       }
       await rpaPushSubscribeToServer(url, subscription);
       if (version !== rpaPushVersion || owner !== getNickname() || url !== rpaSavedUrl) return;
+      if (previousUrl !== url) localStorage.setItem(rpaPushOwnerKey(owner), url);
       btn.textContent = '已开启 · 检查';
       rpaPushHint('当前昵称的后台推送已开启；本机已有订阅已自动恢复。');
     } catch (e) {
@@ -6208,8 +6210,11 @@
     }
   };
   setInterval(checkRpaAlerts, 30000);
+  setInterval(function () {
+    if (document.visibilityState === 'visible' && getNickname() && getSb()) loadRpaDashboardUrl();
+  }, 60000);
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') { checkRpaAlerts(); refreshRpaPushStatus(); }
+    if (document.visibilityState === 'visible') { checkRpaAlerts(); loadRpaDashboardUrl(); }
   });
   document.getElementById('rpa-open').onclick = function () {
     var url = rpaDashboardUrl();
