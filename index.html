@@ -178,13 +178,10 @@
       width: 100%;
       max-width: none;
     }
-    #rpa-screen.screen { background: #f7f8f6; color: #232b27; padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 10px); gap: 10px; }
-    .rpa-mobile-header { display: flex; align-items: center; gap: 12px; font: 600 16px -apple-system, BlinkMacSystemFont, sans-serif; }
-    .rpa-mobile-header button, .rpa-mobile-controls button { border: 0; border-radius: 9px; background: #e2f1e8; color: #168557; padding: 9px 12px; font-size: 14px; }
-    .rpa-mobile-controls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    #rpa-url { flex: 1 1 180px; min-width: 0; padding: 9px; border: 1px solid #ccdcd0; border-radius: 9px; font-size: 16px; }
-    #rpa-hint { margin: 0; font-size: 12px; color: #66756b; }
-    #rpa-frame { flex: 1; align-self: center; width: 100%; max-width: 430px; min-height: 0; border: 0; border-radius: 12px; background: #fff; }
+    #rpa-screen.screen { background: #f7f8f6; color: #232b27; padding: var(--safe-top) 0 var(--safe-bottom); overflow: hidden; }
+
+    #rpa-frame { flex: 1; align-self: stretch; width: 100%; min-height: 0; border: 0; background: #fff; }
+
     /* —— 听书 listenbook-screen —— */
     #listenbook-screen.screen {
       min-height: 100dvh;
@@ -2021,10 +2018,6 @@
   </section>
 
   <section id="rpa-screen" class="screen" aria-label="RPA 报错看板">
-    <div class="rpa-mobile-header"><button type="button" id="rpa-back">‹ 返回</button><span>RPA 报错流程</span></div>
-    <div class="rpa-mobile-controls"><input id="rpa-url" type="url" inputmode="url" placeholder="粘贴内网穿透的 HTTPS 地址" aria-label="RPA 看板地址"><button type="button" id="rpa-connect">连接</button><button type="button" id="rpa-open">单独打开</button><button type="button" id="rpa-enable-badge">开启桌面角标</button></div>
-    <p id="rpa-hint" role="status">先在电脑启动看板和穿透，再填写 HTTPS 地址。</p>
-    <p id="rpa-push-status" role="status" style="margin:0;font-size:12px;color:#66756b">正在检查当前昵称的推送状态…</p>
     <iframe id="rpa-frame" title="RPA 异常看板" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
   </section>
 
@@ -5958,9 +5951,9 @@
     }
   });
 
-  var rpaUrlInput = document.getElementById('rpa-url');
+  var rpaUrlInput = document.getElementById('rpa-url') || { value: '' };
   var rpaFrame = document.getElementById('rpa-frame');
-  var rpaHint = document.getElementById('rpa-hint');
+  var rpaHint = document.getElementById('rpa-hint') || { textContent: '' };
   var rpaSavedUrl = '';
   var rpaUrlOwner = '';
   var rpaSyncVersion = 0;
@@ -5970,7 +5963,8 @@
   var rpaPushVersion = 0;
   function rpaPushOwnerKey(owner) { return 'rpa_push_owner_' + encodeURIComponent(owner); }
   function rpaPushHint(message) {
-    document.getElementById('rpa-push-status').textContent = message;
+    var el = document.getElementById('rpa-push-status');
+    if (el) el.textContent = message;
   }
   function rpaPushSupported() {
     return ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window) &&
@@ -6002,7 +5996,7 @@
     var url = rpaSavedUrl;
     var version = ++rpaPushVersion;
     var btn = document.getElementById('rpa-enable-badge');
-    btn.textContent = '开启桌面角标';
+    if (btn) btn.textContent = '开启桌面角标';
     if (!owner || !url) { rpaPushHint('推送未开启：请先登录并连接看板。'); return; }
     if (!rpaPushSupported()) { rpaPushHint('推送未开启：请从 iPhone 主屏幕打开 Arcade。'); return; }
     if (Notification.permission !== 'granted') {
@@ -6132,6 +6126,13 @@
     }
     loadRpaDashboardUrl();
   };
+  window.addEventListener('message', function (event) {
+    if (event.data?.type !== 'rpa-return-home' || event.source !== rpaFrame.contentWindow || currentView !== 'rpa') return;
+    try {
+      if (event.origin !== new URL(rpaFrame.src).origin) return;
+    } catch (e) { return; }
+    goToView('lobby');
+  });
   rpaFrame.addEventListener('load', function () {
     if (currentView === 'rpa' && rpaSavedUrl && rpaFrame.src === rpaSavedUrl) {
       rpaFrameLoadedUrl = rpaSavedUrl;
@@ -6143,7 +6144,8 @@
     var raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
     return Uint8Array.from(raw, function (ch) { return ch.charCodeAt(0); });
   }
-  document.getElementById('rpa-enable-badge').onclick = async function () {
+  var rpaBadgeBtn = document.getElementById('rpa-enable-badge');
+  if (rpaBadgeBtn) rpaBadgeBtn.onclick = async function () {
     if (!window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone) {
       rpaHint.textContent = '请先在 Safari 中将此网页添加到主屏幕，再从 Arcade 图标打开。';
       return;
@@ -6180,8 +6182,9 @@
       refreshRpaPushStatus();
     }
   };
-  document.getElementById('rpa-back').onclick = function () { goToView('lobby'); };
-  document.getElementById('rpa-connect').onclick = async function () {
+
+  var rpaConnectBtn = document.getElementById('rpa-connect');
+  if (rpaConnectBtn) rpaConnectBtn.onclick = async function () {
     var url = rpaDashboardUrl();
     var owner = getNickname();
     if (!url || !owner) { if (!owner) rpaHint.textContent = '请先登录，再保存看板地址。'; return; }
@@ -6217,7 +6220,8 @@
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') { checkRpaAlerts(); loadRpaDashboardUrl(); }
   });
-  document.getElementById('rpa-open').onclick = function () {
+  var rpaOpenBtn = document.getElementById('rpa-open');
+  if (rpaOpenBtn) rpaOpenBtn.onclick = function () {
     var url = rpaDashboardUrl();
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
