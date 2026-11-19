@@ -2150,6 +2150,8 @@
   function selectEntryCategory(category) {
     entryDraft.category = category;
     updateEntryCategorySelection();
+    var amount = global.document && global.document.getElementById('receipt-entry-amount');
+    if (amount) amount.focus();
   }
 
   function deleteEntryTag() {
@@ -2279,7 +2281,7 @@
     var displayDate = new Date(entryDraft.date + 'T12:00:00');
     date.textContent = isNaN(displayDate.getTime()) ? '选择日期' : (displayDate.getMonth() + 1) + '月' + displayDate.getDate() + '日 ▾';
     if (total) total.textContent = isNaN(displayDate.getTime()) ? '支出 ¥0.00' : '支出 ¥' + entryDayExpenseTotal(displayDate).toFixed(2);
-    amount.textContent = entryDraft.amount || '0.00';
+    amount.value = entryDraft.amount || '';
     document.querySelectorAll('#receipt-entry-tabs button').forEach(function (button) {
       button.classList.toggle('selected', button.getAttribute('data-type') === entryDraft.type);
     });
@@ -2388,19 +2390,26 @@
     var form = document.getElementById('receipt-entry-screen');
     if (!form || form._bound) return;
     form._bound = true;
+    var amountInput = document.getElementById('receipt-entry-amount');
     var noteInput = document.getElementById('receipt-entry-note');
     var tagInput = document.getElementById('receipt-entry-tag-input');
     var visualViewport = global.visualViewport;
     function syncKeyboardLayout() {
       var active = document.activeElement;
-      var editing = active === noteInput || active === tagInput;
-      form.classList.toggle('keyboard-open', editing);
-      if (editing) {
-        global.setTimeout(function () {
-          if (active === document.activeElement) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }, 250);
+      var editing = active === amountInput || active === noteInput || active === tagInput;
+      if (visualViewport && visualViewport.height > 0) {
+        form.style.setProperty('--receipt-visual-height', visualViewport.height + 'px');
       }
+      form.classList.toggle('keyboard-open', editing);
     }
+    amountInput.addEventListener('input', function () {
+      var value = amountInput.value.replace(/[^0-9.]/g, '');
+      var dot = value.indexOf('.');
+      if (dot >= 0) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+      if (value.charAt(0) === '.') value = '0' + value;
+      entryDraft.amount = value;
+      if (amountInput.value !== value) amountInput.value = value;
+    });
     form.addEventListener('focusin', syncKeyboardLayout);
     form.addEventListener('focusout', function () { global.setTimeout(syncKeyboardLayout, 100); });
     if (visualViewport) visualViewport.addEventListener('resize', syncKeyboardLayout);
@@ -2434,12 +2443,19 @@
         renderEntryDraft();
       }
     };
-    document.getElementById('receipt-entry-keypad').onclick = function (e) {
-      var button = e.target.closest('[data-key]');
-      if (!button) return;
-      if (button.getAttribute('data-key') === 'save') saveEntryDraft();
-      else inputEntryAmount(button.getAttribute('data-key'));
+    document.getElementById('receipt-entry-save').onclick = function () {
+      if (saveEntryDraft()) {
+        amountInput.blur();
+        noteInput.blur();
+        tagInput.blur();
+      }
     };
+    amountInput.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        amountInput.blur();
+      }
+    });
     var deleteTagButton = document.getElementById('receipt-entry-tag-delete');
     if (deleteTagButton) deleteTagButton.onclick = deleteEntryTag;
     document.getElementById('receipt-entry-tag-toggle').onclick = function () {

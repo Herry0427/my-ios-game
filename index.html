@@ -1891,16 +1891,8 @@
     #receipt-edit-inline-cancel { background: #eee; color: #333; }
 
     #receipt-entry-screen { background: #f7f8f6; color: #232b27; gap: 0; padding: calc(var(--safe-top) + 8px) 0 var(--safe-bottom); }
-    #receipt-entry-screen.keyboard-open { overflow-y: auto; overscroll-behavior: contain; }
-    #receipt-entry-screen.keyboard-open > * { flex-shrink: 0; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-header,
-    #receipt-entry-screen.keyboard-open .receipt-entry-tabs,
-    #receipt-entry-screen.keyboard-open .receipt-entry-value { position: sticky; z-index: 2; background: #f7f8f6; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-header { top: 0; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-tabs { top: 48px; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-value { top: 98px; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-keypad { display: none; }
-    #receipt-entry-screen.keyboard-open .receipt-entry-categories { max-height: min(34vh, 220px); }
+    #receipt-entry-screen.keyboard-open { height: var(--receipt-visual-height, 100dvh); bottom: auto; overflow: hidden; padding-bottom: 0; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-categories { flex: 1; min-height: 72px; max-height: none; }
     #receipt-entry-sync-status { display: block; padding: 0 22px; min-height: 20px; text-align: right; font-size: 12px; }
     #receipt-home-screen { background: #f7f8f6; color: #232b27; }
     .receipt-day-entries { flex: 1; min-height: 0; overflow-y: auto; margin: 0 14px 8px; padding: 14px; font-size: 13px; background: #fff; border-radius: 14px; }
@@ -1912,39 +1904,38 @@
     .receipt-day-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 0 14px 10px; }
     .receipt-day-actions button { border: 0; border-radius: 10px; background: #e2f1e8; color: #168557; font-size: 13px; padding: 9px 12px; }
     #receipt-sync-status { width: 100%; text-align: center; font-size: 12px; }
-    .receipt-entry-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; }
+    .receipt-entry-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; flex-shrink: 0; }
     .receipt-entry-header button { border: 0; background: transparent; font-size: 26px; }
     .receipt-entry-header .receipt-entry-date-summary { display: flex; align-items: center; gap: 8px; min-width: 0; font-variant-numeric: tabular-nums; }
     #receipt-entry-day-total { color: #168557; font-size: 13px; font-weight: 700; white-space: nowrap; }
     @media (max-width: 380px) { #receipt-entry-day-total { font-size: 12px; } .receipt-entry-header { padding-left: 12px; padding-right: 12px; } }
     #receipt-entry-date { font-size: 16px; border: 0; background: transparent; color: inherit; padding: 8px; }
-    .receipt-entry-tabs { display: flex; margin: 8px 18px; border-radius: 14px; background: #e9edea; padding: 4px; }
+    .receipt-entry-tabs { display: flex; margin: 8px 18px; border-radius: 14px; background: #e9edea; padding: 4px; flex-shrink: 0; }
     .receipt-entry-tabs button { flex: 1; border: 0; background: transparent; padding: 12px 0; border-radius: 10px; font-size: 15px; color: inherit; }
     .receipt-entry-tabs button.selected { background: #fff; color: #169561; font-weight: 700; box-shadow: 0 2px 8px #0001; }
-    .receipt-entry-value { display: flex; align-items: baseline; gap: 12px; padding: 18px 28px; font-size: 34px; font-weight: 700; }
-    #receipt-entry-amount { font-size: 42px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
-    .receipt-entry-categories { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px 0; padding: 4px 8px; max-height: 210px; overflow-y: auto; align-content: start; }
-    .receipt-entry-category { border: 0; min-width: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.15; color: #444; padding: 3px 0; border-radius: 8px; }
-    .receipt-entry-category span:first-child { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: #e9eeea; font-size: 17px; }
+    .receipt-entry-value { display: flex; align-items: baseline; gap: 12px; padding: 12px 24px; font-size: 26px; font-weight: 700; flex-shrink: 0; }
+    #receipt-entry-amount { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: inherit; text-align: right; font-size: 40px; font-variant-numeric: tabular-nums; }
+    .receipt-entry-categories { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 0; padding: 8px 10px; max-height: 42vh; overflow-y: auto; align-content: start; }
+    .receipt-entry-category { border: 0; min-width: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; line-height: 1.15; color: #444; padding: 4px 0; border-radius: 8px; }
+    .receipt-entry-category span:first-child { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #eef0ee; font-size: 25px; }
     .receipt-entry-category span:last-child { max-width: 100%; overflow-wrap: anywhere; }
     .receipt-entry-category.selected { color: #168557; font-weight: bold; }
-    .receipt-entry-category.selected span:first-child { background: #ccedda; }
-    .receipt-entry-note-wrap { padding: 5px 22px; }
+    .receipt-entry-category.selected span:first-child { background: #ffe25a; }
+    .receipt-entry-note-wrap { padding: 5px 18px; flex-shrink: 0; }
     .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 14px; padding: 7px 8px 7px 0; }
     #receipt-entry-tag-delete { color: #a32020; }
     #receipt-entry-tag-delete[hidden] { display: none; }
-
-    #receipt-entry-tag-form { display: flex; gap: 8px; padding: 0 22px 8px; }
+    #receipt-entry-tag-form { display: flex; gap: 8px; padding: 0 18px 8px; flex-shrink: 0; }
     #receipt-entry-tag-form[hidden] { display: none; }
-    #receipt-entry-tag-input { flex: 1; min-width: 0; font-size: 16px; padding: 7px; border: 1px solid #a5b8aa; border-radius: 8px; }
-    #receipt-entry-tag-form button { border: 0; border-radius: 8px; background: #18a367; color: #fff; padding: 7px 12px; }
-    #receipt-entry-note { display: block; box-sizing: border-box; width: 100%; padding: 9px; font-size: 16px; }
+    #receipt-entry-tag-input { flex: 1; min-width: 0; font-size: 16px; padding: 10px; border: 1px solid #a5b8aa; border-radius: 8px; }
+    #receipt-entry-tag-form button { border: 0; border-radius: 8px; background: #18a367; color: #fff; padding: 7px 16px; }
+    #receipt-entry-note { display: block; box-sizing: border-box; width: 100%; padding: 10px; font-size: 16px; border: 0; border-radius: 8px; background: #eef0ee; }
     #receipt-entry-note[hidden] { display: none; }
-    .receipt-entry-keypad { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, minmax(42px, 1fr)); gap: 3px; padding: 6px 12px 10px; height: min(270px, 38vh); flex-shrink: 0; }
-    .receipt-entry-keypad button { border: 0; border-radius: 8px; background: #fff; font-size: 21px; color: #202b24; touch-action: manipulation; }
-    .receipt-entry-keypad .receipt-entry-equals { grid-column: span 2; background: #e2f1e8; color: #168557; }
-    .receipt-entry-keypad .receipt-entry-confirm { grid-column: span 2; color: white; background: #18a367; font-size: 19px; font-weight: bold; }
-    @media (max-height: 650px) { .receipt-entry-categories { gap: 0; padding: 0 8px; max-height: 135px; } .receipt-entry-value { padding: 5px 28px; } .receipt-entry-keypad { height: min(230px, 38vh); } }
+    #receipt-entry-save { margin: 8px 18px calc(8px + var(--safe-bottom)); padding: 14px; border: 0; border-radius: 12px; background: #ffe13b; color: #222; font-size: 17px; font-weight: 700; flex-shrink: 0; }
+    #receipt-entry-screen.keyboard-open #receipt-entry-save { margin-bottom: 8px; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-note-wrap,
+    #receipt-entry-screen.keyboard-open #receipt-entry-tag-form { flex-shrink: 0; }
+    @media (max-height: 650px) { .receipt-entry-categories { max-height: 32vh; } .receipt-entry-category span:first-child { width: 42px; height: 42px; } }
   </style>
 </head>
 <body>
@@ -2327,18 +2318,12 @@
   <section id="receipt-entry-screen" class="screen receipt-screen" aria-label="记一笔">
     <header class="receipt-entry-header"><button type="button" id="receipt-entry-close" aria-label="取消">✕</button><div class="receipt-entry-date-summary"><span id="receipt-entry-day-total">支出 ¥0.00</span><button type="button" id="receipt-entry-date" aria-label="打开记账日历"></button></div></header>
     <div class="receipt-entry-tabs" id="receipt-entry-tabs"><button type="button" data-type="expense" class="selected">支出</button><button type="button" data-type="income">入账</button><button type="button" data-type="excluded">不计入收支</button></div>
-    <div class="receipt-entry-value"><span>¥</span><span id="receipt-entry-amount">0.00</span></div>
+    <div class="receipt-entry-value"><span>¥</span><input id="receipt-entry-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="金额"></div>
     <div class="receipt-entry-categories" id="receipt-entry-categories"></div>
     <div class="receipt-entry-note-wrap"><button type="button" id="receipt-entry-note-toggle">添加备注</button><button type="button" id="receipt-entry-tag-toggle">添加标签</button><button type="button" id="receipt-entry-tag-delete" hidden>删除选中标签</button><input id="receipt-entry-note" type="text" maxlength="200" placeholder="输入备注" hidden></div>
     <form id="receipt-entry-tag-form" hidden><input id="receipt-entry-tag-input" type="text" maxlength="20" placeholder="例如：彩票" aria-label="新标签"><button type="submit">添加</button></form>
     <span id="receipt-entry-sync-status" role="status"></span>
-    <div class="receipt-entry-keypad" id="receipt-entry-keypad">
-      <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="back" aria-label="退格">⌫</button>
-      <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button><button type="button" data-key="+">+</button>
-      <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button><button type="button" data-key="-">−</button>
-      <button type="button" data-key=".">.</button><button type="button" data-key="0">0</button><button type="button" data-key="*">×</button><button type="button" data-key="/">÷</button>
-      <button type="button" data-key="=" class="receipt-entry-equals">=</button><button type="button" data-key="save" class="receipt-entry-confirm">确定</button>
-    </div>
+    <button type="button" id="receipt-entry-save">保存账目</button>
   </section>
 
   <div id="recipe-lmp-modal" class="modal-root" aria-modal="true" role="dialog">
@@ -2427,7 +2412,7 @@
   </section>
 
   <script src="vendor/three.min.js"></script>
-  <script src="receipt.js?v=20261119-keyboard-layout-2"></script>
+  <script src="receipt.js?v=20261119-system-keyboard-2"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {

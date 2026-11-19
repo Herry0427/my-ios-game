@@ -189,7 +189,7 @@ def tap_paper_nav(page, mode_key, side):
 
 
 def run_flow(page, label):
-    wait_receipt_home(page)
+    page.wait_for_function("window.ReceiptModule && typeof window.goToView === 'function'", timeout=60000)
     page.evaluate("window.goToView('receipt_entry')")
     page.wait_for_selector("#receipt-entry-screen.active")
     page.evaluate(
@@ -218,9 +218,9 @@ def run_flow(page, label):
         page.evaluate(
             """
             () => {
-              const screen = document.getElementById('receipt-entry-screen');
-              const keypad = document.getElementById('receipt-entry-keypad');
-              return screen.classList.contains('keyboard-open') && getComputedStyle(keypad).display === 'none';
+              const receiptScreen = document.getElementById('receipt-entry-screen');
+              const amount = document.getElementById('receipt-entry-amount');
+              return receiptScreen.classList.contains('keyboard-open') && amount.tagName === 'INPUT' && amount.inputMode === 'decimal' && !document.getElementById('receipt-entry-keypad');
             }
             """
         ),
