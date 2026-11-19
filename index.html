@@ -388,34 +388,60 @@
     #listenbook-screen .lb-swipe-hint {
       margin: 0; text-align: center; font-size: 0.62rem; color: var(--text-dim);
     }
-    /* —— 备孕备忘清单 memo-screen（底部录入栏 + 双列表） —— */
+    /* —— 备孕备忘清单 memo-screen（浅色卡片 + 悬浮录入栏） —— */
     #memo-screen.screen {
       min-height: 100dvh;
       min-height: 100svh;
       display: flex;
       flex-direction: column;
-      padding: calc(10px + var(--safe-top)) max(14px, var(--safe-right)) 0 max(14px, var(--safe-left));
+      padding: calc(10px + var(--safe-top)) max(16px, var(--safe-right)) 0 max(16px, var(--safe-left));
       box-sizing: border-box;
       overflow: hidden;
+      background: #F5F7FA;
+      color: #1E293B;
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --memo-kb: 0px;
-      --memo-footer-stack-h: 118px;
+      --memo-footer-stack-h: 100px;
+    }
+    #memo-screen .memo-topbar,
+    #memo-screen .memo-list-scroll {
+      width: 100%;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
     }
     #memo-screen .memo-topbar {
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 14px;
       flex-shrink: 0;
     }
+    #memo-screen .memo-back {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      border-radius: 12px;
+      background: #FFFFFF;
+      color: #334155;
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    #memo-screen .memo-back svg { width: 18px; height: 18px; }
+    #memo-screen .memo-back:active { transform: scale(0.92); background: #EEF1F6; }
     #memo-screen .memo-title {
-      width: 100%;
-      font-size: clamp(1rem, 3.8vw, 1.25rem);
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: var(--neon-cyan);
-      text-shadow: 0 0 16px rgba(0, 255, 204, 0.35);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #1E293B;
+      text-shadow: none;
       margin: 0;
-      text-align: center;
+      text-align: left;
     }
     #memo-screen .memo-list-scroll {
       flex: 1;
@@ -427,28 +453,47 @@
       padding-bottom: calc(var(--memo-footer-stack-h) + env(safe-area-inset-bottom, 0px));
     }
     #memo-screen .memo-section-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      color: rgba(0, 255, 204, 0.55);
-      margin: 8px 4px 6px;
-      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #64748B;
+      margin: 14px 4px 8px;
+    }
+    #memo-screen .memo-section-label::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6366F1;
+      flex-shrink: 0;
+    }
+    #memo-screen .memo-section-label--done::before { background: #94A3B8; }
+    #memo-screen .memo-section-note {
+      margin-left: auto;
+      color: #94A3B8;
+      font-size: 11px;
+      font-weight: 500;
     }
     #memo-screen .memo-list { margin: 0; padding: 0; list-style: none; }
     #memo-screen .memo-row {
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      padding: 12px 10px;
+      padding: 14px;
       border-radius: 14px;
-      margin-bottom: 8px;
-      background: rgba(18, 26, 40, 0.88);
-      border: 1px solid rgba(0, 255, 204, 0.14);
+      margin-bottom: 10px;
+      background: #FFFFFF;
+      border: 1px solid rgba(17, 24, 39, 0.04);
+      box-shadow: 0 4px 14px rgba(17, 24, 39, 0.05);
+      transition: opacity 0.2s ease, box-shadow 0.2s ease;
     }
     #memo-screen .memo-row.memo-row--pending {
       opacity: 0.62;
       border-style: dashed;
-      border-color: rgba(0, 255, 136, 0.28);
+      border-color: rgba(99, 102, 241, 0.28);
     }
     @keyframes memoRowEnterIn {
       from {
@@ -464,130 +509,129 @@
       animation: memoRowEnterIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
     #memo-screen .memo-sync-badge {
-      font-size: 0.62rem;
-      color: rgba(0, 255, 136, 0.65);
+      font-size: 11px;
+      color: #6366F1;
       margin-top: 4px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
     }
     #memo-screen .memo-check {
-      width: 28px;
-      height: 28px;
-      min-width: 28px;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
       border-radius: 50%;
-      border: 2px solid rgba(0, 255, 204, 0.45);
-      margin-top: 2px;
+      border: 2px solid #CBD5E1;
+      margin-top: 1px;
+      padding: 0;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85rem;
-      color: var(--neon-green);
-      background: rgba(8, 12, 20, 0.9);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      color: transparent;
+      background: #FFFFFF;
+      transition: background 0.18s ease, border-color 0.18s ease, transform 0.15s ease, color 0.18s ease;
       -webkit-tap-highlight-color: transparent;
     }
+    #memo-screen .memo-check:active { transform: scale(0.9); }
     #memo-screen .memo-row.memo-done .memo-check {
-      border-color: #00cc66;
-      background: #00ff88;
-      color: rgba(10, 24, 18, 0.96);
-      font-weight: 800;
+      border-color: #6366F1;
+      background: #6366F1;
+      color: #FFFFFF;
     }
     #memo-screen .memo-row.memo-done .memo-text {
       text-decoration: line-through;
-      color: rgba(150, 165, 185, 0.72);
+      color: #94A3B8;
       opacity: 1;
     }
     #memo-screen .memo-body { flex: 1; min-width: 0; }
     #memo-screen .memo-text {
-      font-size: 0.92rem;
-      line-height: 1.45;
-      color: #dce8f4;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #1E293B;
       word-break: break-word;
+      transition: color 0.18s ease;
     }
     #memo-screen .memo-due {
-      margin-top: 4px;
-      font-size: 0.72rem;
-      color: rgba(160, 176, 198, 0.72);
-      line-height: 1.3;
+      display: inline-flex;
+      align-items: center;
+      margin-top: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #F1F5F9;
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748B;
+      line-height: 1.4;
     }
     #memo-screen .memo-empty {
       text-align: center;
-      color: var(--text-dim);
-      padding: 28px 16px;
-      font-size: 0.88rem;
+      color: #94A3B8;
+      padding: 36px 16px;
+      font-size: 14px;
+      line-height: 1.6;
       list-style: none;
     }
+    #memo-screen .memo-empty::before {
+      content: '📝';
+      display: block;
+      margin-bottom: 10px;
+      font-size: 30px;
+      line-height: 1;
+      filter: grayscale(1);
+      opacity: 0.5;
+    }
     #memo-screen .memo-empty--inline {
-      padding: 14px 12px;
-      font-size: 0.78rem;
-      opacity: 0.85;
+      padding: 16px 12px;
+      font-size: 13px;
     }
-    #memo-screen .memo-divider-line {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 18px 0 14px;
-      padding: 0 4px;
-    }
-    #memo-screen .memo-divider-line::before,
-    #memo-screen .memo-divider-line::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.35), transparent);
-    }
-    #memo-screen .memo-divider-text {
-      font-size: 0.58rem;
-      letter-spacing: 0.02em;
-      color: rgba(120, 170, 150, 0.65);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
+    #memo-screen .memo-empty--inline::before { display: none; }
     #memo-screen #memo-footer-fixed {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
       z-index: 60;
+      padding: 0 max(12px, var(--safe-right)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, var(--safe-left));
       transform: translateY(calc(-1 * var(--memo-kb)));
       will-change: transform;
-      background: linear-gradient(180deg, transparent 0%, rgba(8, 12, 20, 0.97) 28%);
+      background: linear-gradient(180deg, rgba(245, 247, 250, 0) 0%, rgba(245, 247, 250, 0.86) 42%, #F5F7FA 100%);
       pointer-events: none;
     }
     #memo-screen #memo-footer-fixed > * {
       pointer-events: auto;
     }
-    #memo-screen .memo-swipe-hint-bar {
-      margin: 0;
-      padding: 4px max(14px, var(--safe-left)) 6px max(14px, var(--safe-right));
-      font-size: 0.58rem;
-      color: rgba(140, 160, 185, 0.48);
-      text-align: center;
-      line-height: 1.35;
-    }
     #memo-screen .memo-compose-hint {
-      margin: 0;
-      padding: 4px max(14px, var(--safe-left)) 2px max(14px, var(--safe-right));
-      font-size: 0.72rem;
-      line-height: 1.35;
+      margin: 0 4px 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      line-height: 1.4;
       text-align: center;
-      color: rgba(255, 176, 32, 0.95);
-      min-height: 1.35em;
+      color: #B45309;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
     }
     #memo-screen .memo-compose-hint.memo-compose-hint--err {
-      color: rgba(255, 120, 140, 0.95);
+      color: #DC2626;
     }
     #memo-screen .memo-bottom-bar {
       position: relative;
       z-index: 3;
       display: flex;
       flex-direction: row;
-      align-items: stretch;
-      gap: min(10px, 2vw);
-      padding: 8px max(12px, var(--safe-left)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, var(--safe-right));
-      border-top: 1px solid rgba(0, 255, 136, 0.12);
-      background: rgba(10, 14, 22, 0.98);
-      backdrop-filter: blur(10px);
-      max-width: 100vw;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 760px;
+      border-radius: 22px;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      background: rgba(255, 255, 255, 0.86);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12);
       box-sizing: border-box;
       touch-action: manipulation;
     }
@@ -600,35 +644,40 @@
     #memo-screen .memo-bar-input {
       width: 100%;
       min-width: 0;
-      padding: 12px 16px;
-      border-radius: 18px;
-      border: 2px solid rgba(0, 255, 204, 0.28);
-      background: rgba(12, 18, 28, 0.96);
-      color: #e8f4ff;
+      height: 46px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1.5px solid transparent;
+      background: #F1F5F9;
+      color: #1E293B;
+      font-family: inherit;
       font-size: 16px;
       line-height: 1.35;
       box-sizing: border-box;
       -webkit-appearance: none;
       appearance: none;
+      transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
     }
-    #memo-screen .memo-bar-input::placeholder { color: rgba(180, 200, 220, 0.45); }
+    #memo-screen .memo-bar-input::placeholder { color: #94A3B8; }
     #memo-screen .memo-bar-input:focus {
       outline: none;
-      border-color: rgba(0, 255, 136, 0.55);
-      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.12);
+      border-color: #6366F1;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
     }
-    /* 日期：透明 input 铺满 📅 区域，避免 iOS 拒绝程序化 showPicker/click */
+    /* 日期：透明 input 铺满日历区域，避免 iOS 拒绝程序化 showPicker/click */
     #memo-screen label.memo-bar-date-slot {
       position: relative;
       display: block;
-      flex: 0 0 46px;
-      width: 46px;
-      min-width: 46px;
-      height: 48px;
+      flex: 0 0 44px;
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
       align-self: center;
-      border-radius: 14px;
-      border: 2px solid rgba(0, 255, 204, 0.28);
-      background: rgba(15, 22, 35, 0.95);
+      border-radius: 12px;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      background: #F1F5F9;
+      color: #64748B;
       overflow: visible;
       cursor: pointer;
       touch-action: manipulation;
@@ -641,11 +690,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
       line-height: 1;
       pointer-events: none;
       user-select: none;
     }
+    #memo-screen .memo-bar-date-face svg { width: 20px; height: 20px; }
     #memo-screen .memo-bar-date-native {
       position: absolute;
       inset: 0;
@@ -657,22 +706,22 @@
       opacity: 0.03;
       cursor: pointer;
       font-size: 16px;
-      line-height: 48px;
+      line-height: 44px;
       box-sizing: border-box;
       z-index: 2;
-      color-scheme: dark;
+      color-scheme: light;
     }
     #memo-screen .memo-bar-add {
-      flex: 0 0 48px;
-      width: 48px;
-      min-width: 48px;
-      height: 48px;
+      flex: 0 0 44px;
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
       align-self: center;
-      border-radius: 50%;
+      border-radius: 14px;
       border: none;
-      background: #00ff88;
-      color: rgba(8, 22, 16, 0.98);
-      font-size: 1.65rem;
+      background: #6366F1;
+      color: #FFFFFF;
+      font-size: 24px;
       font-weight: 400;
       line-height: 1;
       cursor: pointer;
@@ -680,14 +729,15 @@
       align-items: center;
       justify-content: center;
       padding: 0;
-      box-shadow: 0 4px 14px rgba(0, 255, 136, 0.22);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       position: relative;
       z-index: 4;
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
     #memo-screen .memo-bar-add:disabled {
-      opacity: 0.55;
+      opacity: 0.5;
       cursor: not-allowed;
       transform: none;
       box-shadow: none;
@@ -699,8 +749,8 @@
       display: block;
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(8, 22, 16, 0.25);
-      border-top-color: rgba(8, 22, 16, 0.92);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
       border-radius: 50%;
       animation: memoAddSpin 0.7s linear infinite;
     }
@@ -714,19 +764,19 @@
     #memo-toast {
       position: fixed;
       left: 50%;
-      bottom: calc(118px + env(safe-area-inset-bottom, 0px) + var(--memo-kb, 0px));
+      bottom: calc(var(--memo-footer-stack-h) + env(safe-area-inset-bottom, 0px) + var(--memo-kb, 0px));
       transform: translateX(-50%);
       z-index: 10080;
       max-width: min(92vw, 400px);
       padding: 12px 18px;
       border-radius: 14px;
-      background: rgba(16, 22, 34, 0.97);
-      border: 1px solid rgba(255, 180, 90, 0.38);
-      color: #e8f0fa;
-      font-size: 0.88rem;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(17, 24, 39, 0.08);
+      color: #1E293B;
+      font-size: 14px;
       line-height: 1.45;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
+      box-shadow: 0 12px 40px rgba(17, 24, 39, 0.16);
       pointer-events: none;
     }
     #memo-toast[hidden] {
@@ -2331,19 +2381,18 @@
 
   <section id="memo-screen" class="screen" aria-label="备孕备忘清单">
     <div class="memo-topbar">
+      <button type="button" class="memo-back" id="memo-back" aria-label="返回大厅" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
       <h2 class="memo-title">备忘清单</h2>
     </div>
     <div class="memo-list-scroll" id="memo-list-scroll">
       <div class="memo-section-label">进行中</div>
       <ul class="memo-list" id="memo-list-active"></ul>
-      <div class="memo-divider-line" aria-hidden="true">
-        <span class="memo-divider-text">-- 已完成任务 · 只保留48小时 --</span>
-      </div>
-      <div class="memo-section-label">已完成</div>
+      <div class="memo-section-label memo-section-label--done">已完成<span class="memo-section-note">48 小时后自动清理</span></div>
       <ul class="memo-list" id="memo-list-done"></ul>
     </div>
     <div id="memo-footer-fixed">
-      <p class="memo-swipe-hint-bar">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB · 需 SB_KEY 同步</p>
       <p id="memo-compose-hint" class="memo-compose-hint" role="status" hidden></p>
       <div id="memo-toast" class="memo-toast" role="alert" hidden></div>
       <div class="memo-bottom-bar" id="memo-bottom-bar">
@@ -2351,7 +2400,7 @@
           <input type="text" class="memo-bar-input" id="memo-input" maxlength="2000" placeholder="添加待办…" enterkeyhint="done" autocomplete="off" />
         </div>
         <label class="memo-bar-date-slot" title="截止日期">
-          <span class="memo-bar-date-face" aria-hidden="true">📅</span>
+          <span class="memo-bar-date-face" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></svg></span>
           <input type="date" class="memo-bar-date-native" id="memo-due" name="memo_due" autocomplete="off" aria-label="选择截止日期" />
         </label>
         <button type="button" class="memo-bar-add" id="memo-add-btn" aria-label="添加">+</button>
@@ -6599,6 +6648,12 @@
   document.getElementById('btn-force-refresh').onclick = function () {
     forceRefreshAppCache();
   };
+  var memoBack = document.getElementById('memo-back');
+  if (memoBack) {
+    memoBack.onclick = function () {
+      goToView('lobby');
+    };
+  }
   var memoAdd = document.getElementById('memo-add-btn');
   var memoAddLastTouch = 0;
   if (memoAdd) {
