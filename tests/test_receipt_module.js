@@ -78,6 +78,8 @@ ok(html.includes('id="receipt-entry-day-total"') && receiptCode.includes('entryD
   cfg = x.appendEntry(cfg, { type: 'income', category: '工资', amount: 100, note: '' });
   cfg = x.appendEntry(cfg, { type: 'excluded', category: '其他', amount: 20, note: '' });
   ok(x.sumItems(cfg.items) === 17.5, '当日支出含旧小票与快速记账，不计入账或排除项');
+  var totals = x.dayTotals(cfg);
+  ok(totals.expense === 17.5 && totals.income === 100, '明细汇总支出与收入分开统计，排除项不计入');
 })();
 ok(html.includes("from('rpa_dashboard_settings')") && html.includes('rpaLocalKey(owner)'), 'RPA 地址按账号云端保存与读取');
 ok(html.includes('<span>RPA 报错流程</span>') && !html.includes('<span>R</span>PA'), 'RPA 模块标题不露出 HTML 残片');
@@ -87,7 +89,13 @@ ok(/<input id="receipt-entry-note"[^>]*hidden>/.test(html) && !html.includes('<i
 ok(/<input id="receipt-entry-amount"[^>]*inputmode="decimal"/.test(html) && !html.includes('id="receipt-entry-keypad"'), '金额使用手机系统键盘，不显示自制数字键盘');
 ok(html.includes('id="receipt-entry-save"') && receiptCode.includes("getElementById('receipt-entry-save').onclick"), '记账有明确保存按钮');
 ok(html.indexOf('id="receipt-entry-tag-toggle"') >= 0 && html.indexOf('id="receipt-entry-tags"') < 0 && receiptCode.indexOf('receipt-entry-custom-tag') >= 0, '新增标签在上方类别网格快捷勾选');
-ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_entry'\)/.test(html), '记账簿入口直达记账界面');
+ok(/getElementById\('btn-enter-receipt'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*goToView\('receipt_list'\)/.test(html), '记账簿入口先进入明细');
+ok(html.includes('id="receipt-tabbar"') && html.includes('data-receipt-tab="list"') && html.includes('data-receipt-tab="chart"') && html.includes('data-receipt-tab="entry"') && html.includes('data-receipt-tab="bills"') && html.includes('data-receipt-tab="mine"'), '记账簿有明细/图表/记账/账单/我的五个底部入口');
+ok(html.includes('id="receipt-list-screen"') && html.includes('id="receipt-list-days"') && html.includes('id="receipt-list-income"'), '明细页使用纯列表并显示当月收入支出');
+ok(html.includes('id="receipt-chart-screen"') && html.includes('data-chart-range="week"') && html.includes('data-chart-range="year"') && html.includes('id="receipt-chart-ranking"'), '图表页有周月年切换与排行榜');
+ok(html.includes('id="receipt-bills-screen"') && html.includes('id="receipt-bills-balance"') && html.includes('id="receipt-bills-table"'), '账单页有年度结余与月度明细');
+ok(html.includes('id="receipt-mine-screen"') && html.includes('id="receipt-mine-legacy"') && html.includes('id="receipt-mine-logout"'), '我的页有旧账导入与退出登录');
+ok(receiptCode.includes('renderReceiptList') && receiptCode.includes('renderReceiptChart') && receiptCode.includes('renderReceiptBills'), '底部页面渲染函数齐全');
 ok(html.indexOf('id="receipt-entry-history"') < 0 && html.indexOf('id="receipt-entry-date"') >= 0, '日期是日历唯一入口');
 ok(receiptCode.indexOf("global.goToView('receipt_calendar')") >= 0 && receiptCode.indexOf("global.goToView('receipt_home')") >= 0, '点击日期进入日历并能查看当天小票');
 ok(html.indexOf('id="receipt-calendar-back"') >= 0, '日历可以返回记账界面');
@@ -104,7 +112,7 @@ ok(receiptCode.indexOf('localHitFromClient') >= 0, '纸面平面落点供拖拽'
 ok(receiptCode.indexOf('PAPER_GRAVITY') >= 0, '纸张保留固定下垂效果');
 ok(!/requestPermission|deviceorientation|devicemotion|receipt-gyro-prompt/i.test(receiptCode + html), '记账簿不再请求重力感应权限');
 ok(receiptCode.indexOf('开源节流') >= 0, '底部文案开源节流');
-ok(html.indexOf('receipt-nav-bar') < 0, '无底部功能栏');
+ok(html.indexOf('receipt-nav-bar') < 0 && html.indexOf('id="receipt-tabbar"') >= 0, '使用新的底部五入口导航');
 ok(html.indexOf("case 'receipt_home':") >= 0, '左滑仅首页');
 ok(receiptCode.indexOf('ResizeObserver') >= 0, '容器 ResizeObserver');
 ok(receiptCode.indexOf('pruneEmptyReceiptDays') >= 0, '启动清理空小票键');

@@ -48,7 +48,12 @@
     editBuffer: '',
     datesWithData: {},
     cloudSyncing: false,
-    cloudSyncPromise: null
+    cloudSyncPromise: null,
+    listYear: 0,
+    listMonth: 0,
+    chartType: 'expense',
+    chartRange: 'week',
+    billYear: 0
   };
 
   var scenes = { home: null, calendar: null, edit: null };
@@ -395,6 +400,7 @@
     renderDayEntries();
     renderEntryTags();
     renderEntryDraft();
+    refreshReceiptPages();
     if (!(scenes.edit && scenes.edit.running)) state.currentCfg = loadDayConfig(state.selectedDate);
     if (scenes.calendar && scenes.calendar.running && !scenes.calendar.pointer.down) {
       scenes.calendar.refresh();
@@ -2420,7 +2426,7 @@
       if (button.hasAttribute('data-entry-index')) removeDayEntry('entry', Number(button.getAttribute('data-entry-index')));
       else removeDayEntry('item', Number(button.getAttribute('data-item-index')));
     };
-    document.getElementById('receipt-entry-close').onclick = function () { global.goToView('lobby'); };
+    document.getElementById('receipt-entry-close').onclick = function () { global.goToView('receipt_list'); };
     var calendarBack = document.getElementById('receipt-calendar-back');
     if (calendarBack) calendarBack.onclick = function () { global.goToView('receipt_entry'); };
     document.getElementById('receipt-entry-date').onclick = function () {
@@ -2448,6 +2454,9 @@
         amountInput.blur();
         noteInput.blur();
         tagInput.blur();
+        state.listYear = state.selectedDate.getFullYear();
+        state.listMonth = state.selectedDate.getMonth();
+        global.goToView('receipt_list');
       }
     };
     amountInput.addEventListener('keydown', function (event) {
@@ -2478,7 +2487,557 @@
     };
   }
 
+  var receiptPagesBound = false;
+
+  function categoryIcon(name) {
+    var pool = receiptCategories.concat(incomeCategories);
+    for (var i = 0; i < pool.length; i++) {
+      if (pool[i][0] === name) return pool[i][1];
+    }
+    return '🧾';
+  }
+
+  function formatAmount(value) {
+    return (Math.round((Number(value) || 0) * 100) / 100).toFixed(2);
+  }
+
+  function dayTotals(cfg) {
+    var income = 0;
+    var i;
+    (cfg && Array.isArray(cfg.entries) ? cfg.entries : []).forEach(function (entry) {
+      if (entry.type === 'income') income += Number(entry.amount) || 0;
+    });
+    return {
+      expense: Math.round(sumItems((cfg && cfg.items) || []) * 100) / 100,
+      income: Math.round(income * 100) / 100
+    };
+  }
+
+  function collectReceiptDays() {
+    var result = [];
+    var prefix = dayPrefix();
+    if (!prefix) return result;
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (!key || key.indexOf(prefix) !== 0) continue;
+      var day = key.slice(prefix.length);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      var raw = localStorage.getItem(key);
+      if (!raw) continue;
+      try {
+        var cfg = normalizeReceiptConfig(JSON.parse(raw));
+        if (!receiptConfigHasData(cfg)) continue;
+        result.push({ day: day, cfg: cfg });
+      } catch (e) {}
+    }
+    result.sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : 0; });
+    return result;
+  }
+
+  function receiptRowsForDay(day, cfg) {
+    var rows = [];
+    var paired = pairedQuickExpenses(cfg);
+    (Array.isArray(cfg.entries) ? cfg.entries : []).forEach(function (entry, index) {
+      rows.push({
+        kind: 'entry',
+        index: index,
+        day: day,
+        type: entry.type || 'expense',
+        category: entry.category || '其他',
+        amount: Number(entry.amount) || 0,
+        note: entry.note || '',
+        tags: Array.isArray(entry.tags) ? entry.tags : []
+      });
+    });
+    (cfg.items || []).forEach(function (item, index) {
+      if (paired[index] || isPlaceholderItem(item)) return;
+      var amount = Math.round(parseQty(item.qty) * parsePrice(item.price) * 100) / 100;
+      if (amount <= 0) return;
+      rows.push({
+        kind: 'item',
+        index: index,
+        day: day,
+        type: 'expense',
+        category: String(item.name || '小票').split(' · ')[0],
+        amount: amount,
+        note: '',
+        tags: []
+      });
+    });
+    return rows;
+  }
+
+  function dayLabel(day) {
+    var d = new Date(day + 'T12:00:00');
+    if (isNaN(d.getTime())) return day;
+    var week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + week;
+  }
+
+  function renderReceiptList() {
+    var container = global.document && document.getElementById('receipt-list-days');
+    if (!container) return;
+    var now = new Date();
+    if (!state.listYear) {
+      state.listYear = now.getFullYear();
+      state.listMonth = now.getMonth();
+    }
+    var label = document.getElementById('receipt-list-month');
+    if (label) label.textContent = state.listYear + '年' + (state.listMonth + 1) + '月';
+    var monthPrefix = state.listYear + '-' + pad2(state.listMonth + 1) + '-';
+    var days = collectReceiptDays().filter(function (item) { return item.day.indexOf(monthPrefix) === 0; });
+    var income = 0;
+    var expense = 0;
+    days.forEach(function (item) {
+      var totals = dayTotals(item.cfg);
+      income += totals.income;
+      expense += totals.expense;
+    });
+    var incomeEl = document.getElementById('receipt-list-income');
+    var expenseEl = document.getElementById('receipt-list-expense');
+    if (incomeEl) incomeEl.textContent = formatAmount(income);
+    if (expenseEl) expenseEl.textContent = formatAmount(expense);
+    container.innerHTML = '';
+    if (!days.length) {
+      var empty = document.createElement('div');
+      empty.className = 'receipt-list-empty';
+      empty.textContent = '本月暂无账目，点底部“记账”开始';
+      container.appendChild(empty);
+      return;
+    }
+    var rendered = 0;
+    days.forEach(function (item) {
+      var rows = receiptRowsForDay(item.day, item.cfg);
+      if (!rows.length) return;
+      rendered += 1;
+      var group = document.createElement('div');
+      group.className = 'receipt-list-day';
+      var head = document.createElement('div');
+      head.className = 'receipt-list-day-head';
+      var headDay = document.createElement('strong');
+      headDay.textContent = dayLabel(item.day);
+      var totals = dayTotals(item.cfg);
+      var headTotal = document.createElement('span');
+      headTotal.textContent = totals.expense > 0 ? '支出 ¥' + formatAmount(totals.expense) : '收入 ¥' + formatAmount(totals.income);
+      head.appendChild(headDay);
+      head.appendChild(headTotal);
+      group.appendChild(head);
+      rows.forEach(function (row) {
+        var line = document.createElement('div');
+        line.className = 'receipt-list-row';
+        var icon = document.createElement('span');
+        icon.className = 'receipt-list-icon';
+        icon.textContent = categoryIcon(row.category);
+        var main = document.createElement('div');
+        main.className = 'receipt-list-main';
+        var name = document.createElement('strong');
+        name.textContent = row.category;
+        var detail = document.createElement('small');
+        var bits = [];
+        if (row.type === 'income') bits.push('入账');
+        if (row.type === 'excluded') bits.push('不计入收支');
+        if (row.note) bits.push(row.note);
+        if (row.tags.length) bits.push('#' + row.tags.join(' #'));
+        detail.textContent = bits.join(' · ') || (row.kind === 'item' ? '旧小票' : '');
+        main.appendChild(name);
+        if (detail.textContent) main.appendChild(detail);
+        var amount = document.createElement('span');
+        amount.className = 'receipt-list-amount' + (row.type === 'income' ? ' income' : '');
+        amount.textContent = (row.type === 'income' ? '+' : row.type === 'excluded' ? '' : '-') + '¥' + formatAmount(row.amount);
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'receipt-list-del';
+        del.setAttribute('data-day', row.day);
+        del.setAttribute('data-kind', row.kind);
+        del.setAttribute('data-index', String(row.index));
+        del.setAttribute('aria-label', '删除这条账目');
+        del.textContent = '×';
+        line.appendChild(icon);
+        line.appendChild(main);
+        line.appendChild(amount);
+        line.appendChild(del);
+        group.appendChild(line);
+      });
+      container.appendChild(group);
+    });
+    if (!rendered) {
+      var empty2 = document.createElement('div');
+      empty2.className = 'receipt-list-empty';
+      empty2.textContent = '本月暂无账目，点底部“记账”开始';
+      container.appendChild(empty2);
+    }
+  }
+
+  function startOfLocalDay(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function addLocalDays(d, count) {
+    var next = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    next.setDate(next.getDate() + count);
+    return next;
+  }
+
+  function chartBuckets(range, now) {
+    var buckets = [];
+    var i;
+    if (range === 'week') {
+      var mondayOffset = (now.getDay() + 6) % 7;
+      var start = addLocalDays(now, -mondayOffset);
+      for (i = 0; i < 7; i++) {
+        var day = addLocalDays(start, i);
+        buckets.push({ label: String(day.getDate()), start: startOfLocalDay(day), end: addLocalDays(day, 1), current: sameDay(day, now) });
+      }
+      return buckets;
+    }
+    if (range === 'month') {
+      var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      var week = 0;
+      for (var date = 1; date <= daysInMonth; date += 7) {
+        week += 1;
+        buckets.push({
+          label: week + '周',
+          start: new Date(now.getFullYear(), now.getMonth(), date),
+          end: new Date(now.getFullYear(), now.getMonth(), Math.min(date + 7, daysInMonth + 1)),
+          current: now.getDate() >= date && now.getDate() < date + 7
+        });
+      }
+      return buckets;
+    }
+    for (i = 0; i < 12; i++) {
+      buckets.push({
+        label: String(i + 1),
+        start: new Date(now.getFullYear(), i, 1),
+        end: new Date(now.getFullYear(), i + 1, 1),
+        current: now.getMonth() === i
+      });
+    }
+    return buckets;
+  }
+
+  function receiptTotalsByDay() {
+    var map = {};
+    collectReceiptDays().forEach(function (item) {
+      map[item.day] = dayTotals(item.cfg);
+    });
+    return map;
+  }
+
+  function bucketTotal(bucket, totals, type) {
+    var total = 0;
+    Object.keys(totals).forEach(function (day) {
+      var dt = new Date(day + 'T12:00:00');
+      if (isNaN(dt.getTime()) || dt < bucket.start || dt >= bucket.end) return;
+      total += type === 'income' ? totals[day].income : totals[day].expense;
+    });
+    return Math.round(total * 100) / 100;
+  }
+
+  function renderReceiptChart() {
+    var bars = global.document && document.getElementById('receipt-chart-bars');
+    if (!bars) return;
+    var type = state.chartType === 'income' ? 'income' : 'expense';
+    var range = state.chartRange === 'month' || state.chartRange === 'year' ? state.chartRange : 'week';
+    var now = new Date();
+    var buckets = chartBuckets(range, now);
+    var totals = receiptTotalsByDay();
+    var values = buckets.map(function (bucket) { return bucketTotal(bucket, totals, type); });
+    var total = values.reduce(function (sum, value) { return sum + value; }, 0);
+    total = Math.round(total * 100) / 100;
+    var divisor = range === 'week' ? 7 : range === 'year' ? 12 : new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var average = Math.round((total / divisor) * 100) / 100;
+    var totalEl = document.getElementById('receipt-chart-total');
+    var averageEl = document.getElementById('receipt-chart-average');
+    var totalLabel = document.getElementById('receipt-chart-total-label');
+    var averageLabel = document.getElementById('receipt-chart-average-label');
+    var rankingTitle = document.getElementById('receipt-chart-ranking-title');
+    var totalWord = type === 'income' ? '总收入' : '总支出';
+    if (totalEl) totalEl.textContent = formatAmount(total);
+    if (averageEl) averageEl.textContent = formatAmount(average);
+    if (totalLabel) totalLabel.firstChild.textContent = totalWord;
+    if (averageLabel) averageLabel.firstChild.textContent = '平均值';
+    if (rankingTitle) rankingTitle.textContent = totalWord.replace('总', '') + '排行榜';
+    bars.innerHTML = '';
+    var max = Math.max.apply(null, values.concat([0]));
+    buckets.forEach(function (bucket, index) {
+      var col = document.createElement('div');
+      col.className = 'receipt-bar-col';
+      var bar = document.createElement('div');
+      bar.className = 'receipt-bar' + (bucket.current ? ' highlight' : '');
+      var value = values[index];
+      bar.style.height = (max > 0 ? Math.max(2, Math.round((value / max) * 82)) : 2) + '%';
+      bar.title = bucket.label + '：¥' + formatAmount(value);
+      var label = document.createElement('span');
+      label.className = 'receipt-bar-label';
+      label.textContent = bucket.label;
+      col.appendChild(bar);
+      col.appendChild(label);
+      bars.appendChild(col);
+    });
+    var ranking = document.getElementById('receipt-chart-ranking');
+    if (!ranking) return;
+    ranking.innerHTML = '';
+    var from = buckets[0].start;
+    var to = buckets[buckets.length - 1].end;
+    var grouped = {};
+    collectReceiptDays().forEach(function (item) {
+      var dt = new Date(item.day + 'T12:00:00');
+      if (isNaN(dt.getTime()) || dt < from || dt >= to) return;
+      receiptRowsForDay(item.day, item.cfg).forEach(function (row) {
+        if (row.type !== type) return;
+        grouped[row.category] = (grouped[row.category] || 0) + row.amount;
+      });
+    });
+    var ranked = Object.keys(grouped).map(function (name) {
+      return { name: name, amount: Math.round(grouped[name] * 100) / 100 };
+    }).sort(function (a, b) { return b.amount - a.amount; }).slice(0, 8);
+    if (!ranked.length) {
+      var empty = document.createElement('div');
+      empty.className = 'receipt-rank-empty';
+      empty.textContent = '暂无数据';
+      ranking.appendChild(empty);
+      return;
+    }
+    ranked.forEach(function (row, index) {
+      var line = document.createElement('div');
+      line.className = 'receipt-rank-row';
+      var rank = document.createElement('span');
+      rank.className = 'rank';
+      rank.textContent = String(index + 1);
+      var name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = row.name;
+      var amount = document.createElement('span');
+      amount.className = 'amount';
+      amount.textContent = '¥' + formatAmount(row.amount);
+      line.appendChild(rank);
+      line.appendChild(name);
+      line.appendChild(amount);
+      ranking.appendChild(line);
+    });
+  }
+
+  function renderReceiptBills() {
+    var table = global.document && document.getElementById('receipt-bills-table');
+    if (!table) return;
+    if (!state.billYear) state.billYear = new Date().getFullYear();
+    var label = document.getElementById('receipt-bills-year');
+    if (label) label.textContent = state.billYear + '年';
+    var totals = receiptTotalsByDay();
+    var yearIncome = 0;
+    var yearExpense = 0;
+    table.innerHTML = '';
+    var head = document.createElement('div');
+    head.className = 'receipt-bills-row head';
+    ['月份', '月收入', '月支出', '月结余'].forEach(function (text) {
+      var cell = document.createElement('span');
+      cell.textContent = text;
+      head.appendChild(cell);
+    });
+    table.appendChild(head);
+    for (var month = 11; month >= 0; month--) {
+      var prefix = state.billYear + '-' + pad2(month + 1) + '-';
+      var monthIncome = 0;
+      var monthExpense = 0;
+      Object.keys(totals).forEach(function (day) {
+        if (day.indexOf(prefix) !== 0) return;
+        monthIncome += totals[day].income;
+        monthExpense += totals[day].expense;
+      });
+      monthIncome = Math.round(monthIncome * 100) / 100;
+      monthExpense = Math.round(monthExpense * 100) / 100;
+      yearIncome += monthIncome;
+      yearExpense += monthExpense;
+      var row = document.createElement('div');
+      row.className = 'receipt-bills-row';
+      var name = document.createElement('span');
+      name.textContent = pad2(month + 1) + '月';
+      var income = document.createElement('span');
+      income.textContent = formatAmount(monthIncome);
+      var expense = document.createElement('span');
+      expense.textContent = formatAmount(monthExpense);
+      var balance = document.createElement('span');
+      var monthBalance = Math.round((monthIncome - monthExpense) * 100) / 100;
+      balance.textContent = formatAmount(monthBalance);
+      if (monthBalance < 0) balance.className = 'negative';
+      row.appendChild(name);
+      row.appendChild(income);
+      row.appendChild(expense);
+      row.appendChild(balance);
+      table.appendChild(row);
+    }
+    var balanceEl = document.getElementById('receipt-bills-balance');
+    var incomeEl = document.getElementById('receipt-bills-income');
+    var expenseEl = document.getElementById('receipt-bills-expense');
+    if (balanceEl) balanceEl.textContent = formatAmount(yearIncome - yearExpense);
+    if (incomeEl) incomeEl.textContent = formatAmount(yearIncome);
+    if (expenseEl) expenseEl.textContent = formatAmount(yearExpense);
+  }
+
+  function renderReceiptMine() {
+    var nameEl = global.document && document.getElementById('receipt-mine-name');
+    if (nameEl) {
+      var nickKey = global.STORAGE_NAME || 'myArcadeHub_nickname';
+      var nick = '';
+      try { nick = global.getNickname ? (global.getNickname() || '') : ''; } catch (e) {}
+      if (!nick) nick = localStorage.getItem(nickKey) || '';
+      nameEl.textContent = nick || ownerKey() || '未登录';
+    }
+    var syncEl = document.getElementById('receipt-mine-sync');
+    if (syncEl) {
+      var owner = ownerKey();
+      var cloud = global.getSb ? global.getSb() : null;
+      syncEl.textContent = owner
+        ? '云端同步：' + (cloud ? '已登录，自动同步' : '已登录，但未配置 SB_KEY')
+        : '云端同步：未登录，仅保存在本机';
+    }
+    var legacy = document.getElementById('receipt-mine-legacy');
+    if (legacy) legacy.hidden = !ownerKey() || !!localStorage.getItem(LEGACY_OWNER_KEY) || !hasLegacyDays();
+  }
+
+  function refreshReceiptPages() {
+    if (!global.document) return;
+    var list = document.getElementById('receipt-list-screen');
+    var chart = document.getElementById('receipt-chart-screen');
+    var bills = document.getElementById('receipt-bills-screen');
+    var mine = document.getElementById('receipt-mine-screen');
+    if (list && list.classList.contains('active')) renderReceiptList();
+    if (chart && chart.classList.contains('active')) renderReceiptChart();
+    if (bills && bills.classList.contains('active')) renderReceiptBills();
+    if (mine && mine.classList.contains('active')) renderReceiptMine();
+  }
+
+  function bindReceiptPages() {
+    if (receiptPagesBound) return;
+    receiptPagesBound = true;
+    var prev = document.getElementById('receipt-list-prev');
+    var next = document.getElementById('receipt-list-next');
+    if (prev) prev.onclick = function () {
+      if (!state.listYear) { var now = new Date(); state.listYear = now.getFullYear(); state.listMonth = now.getMonth(); }
+      state.listMonth -= 1;
+      if (state.listMonth < 0) { state.listMonth = 11; state.listYear -= 1; }
+      renderReceiptList();
+    };
+    if (next) next.onclick = function () {
+      if (!state.listYear) { var now = new Date(); state.listYear = now.getFullYear(); state.listMonth = now.getMonth(); }
+      state.listMonth += 1;
+      if (state.listMonth > 11) { state.listMonth = 0; state.listYear += 1; }
+      renderReceiptList();
+    };
+    var listDays = document.getElementById('receipt-list-days');
+    if (listDays) listDays.addEventListener('click', function (e) {
+      var button = e.target.closest('.receipt-list-del');
+      if (!button) return;
+      var day = button.getAttribute('data-day');
+      var kind = button.getAttribute('data-kind');
+      var index = Number(button.getAttribute('data-index'));
+      var date = day ? new Date(day + 'T12:00:00') : null;
+      if (!date || isNaN(date.getTime())) return;
+      state.selectedDate = date;
+      state.currentCfg = loadDayConfig(date);
+      if (removeDayEntry(kind, index)) {
+        renderReceiptList();
+        renderReceiptChart();
+        renderReceiptBills();
+      }
+    });
+    var chartType = document.getElementById('receipt-chart-type');
+    if (chartType) chartType.addEventListener('click', function (e) {
+      var button = e.target.closest('[data-chart-type]');
+      if (!button) return;
+      state.chartType = button.getAttribute('data-chart-type');
+      chartType.querySelectorAll('[data-chart-type]').forEach(function (el) {
+        el.classList.toggle('selected', el === button);
+      });
+      renderReceiptChart();
+    });
+    var chartRange = document.getElementById('receipt-chart-range');
+    if (chartRange) chartRange.addEventListener('click', function (e) {
+      var button = e.target.closest('[data-chart-range]');
+      if (!button) return;
+      state.chartRange = button.getAttribute('data-chart-range');
+      chartRange.querySelectorAll('[data-chart-range]').forEach(function (el) {
+        el.classList.toggle('selected', el === button);
+      });
+      renderReceiptChart();
+    });
+    var billsPrev = document.getElementById('receipt-bills-prev');
+    var billsNext = document.getElementById('receipt-bills-next');
+    if (billsPrev) billsPrev.onclick = function () {
+      if (!state.billYear) state.billYear = new Date().getFullYear();
+      state.billYear -= 1;
+      renderReceiptBills();
+    };
+    if (billsNext) billsNext.onclick = function () {
+      if (!state.billYear) state.billYear = new Date().getFullYear();
+      state.billYear += 1;
+      renderReceiptBills();
+    };
+    var legacyButton = document.getElementById('receipt-mine-legacy');
+    if (legacyButton) legacyButton.onclick = function () {
+      if (importLegacyDays()) {
+        renderReceiptMine();
+        renderReceiptList();
+        renderReceiptChart();
+        renderReceiptBills();
+      } else {
+        alert('当前没有可导入的旧账单，或已经导入过。');
+      }
+    };
+    var paperButton = document.getElementById('receipt-mine-paper');
+    if (paperButton) paperButton.onclick = function () {
+      if (global.goToView) global.goToView('receipt_home');
+    };
+    var refreshButton = document.getElementById('receipt-mine-refresh');
+    if (refreshButton) refreshButton.onclick = function () {
+      if (global.forceRefreshAppCache) global.forceRefreshAppCache();
+    };
+    var logoutButton = document.getElementById('receipt-mine-logout');
+    if (logoutButton) logoutButton.onclick = function () {
+      if (global.clearArcadeSession) global.clearArcadeSession();
+      global.location.reload();
+    };
+  }
+
   global.ReceiptModule = {
+    startNewEntry: function () {
+      state.selectedDate = new Date();
+      state.listYear = state.selectedDate.getFullYear();
+      state.listMonth = state.selectedDate.getMonth();
+      entryDraft.date = dateKey(state.selectedDate);
+      entryDraft.type = 'expense';
+      entryDraft.category = '';
+      entryDraft.amount = '';
+      var note = document.getElementById('receipt-entry-note');
+      if (note) { note.value = ''; note.hidden = true; }
+      var tagForm = document.getElementById('receipt-entry-tag-form');
+      if (tagForm) tagForm.hidden = true;
+      var tagInput = document.getElementById('receipt-entry-tag-input');
+      if (tagInput) tagInput.value = '';
+    },
+    onEnterList: function () {
+      bindReceiptPages();
+      scanDatesWithData();
+      renderReceiptList();
+      scheduleReceiptCloudSync(100);
+    },
+    onEnterChart: function () {
+      bindReceiptPages();
+      scanDatesWithData();
+      renderReceiptChart();
+      scheduleReceiptCloudSync(100);
+    },
+    onEnterBills: function () {
+      bindReceiptPages();
+      scanDatesWithData();
+      renderReceiptBills();
+      scheduleReceiptCloudSync(100);
+    },
+    onEnterMine: function () {
+      bindReceiptPages();
+      renderReceiptMine();
+      scheduleReceiptCloudSync(100);
+    },
     onEnterEntry: function () {
       stopAllScenes();
       bindEntryForm();
@@ -2525,6 +3084,9 @@
     _test: {
       normalizeReceiptConfig: normalizeReceiptConfig,
       sumItems: sumItems,
+      dayTotals: dayTotals,
+      receiptRowsForDay: receiptRowsForDay,
+      collectReceiptDays: collectReceiptDays,
       randomTerminalForDate: randomTerminalForDate,
       dateKey: dateKey,
       receiptConfigHasData: receiptConfigHasData,

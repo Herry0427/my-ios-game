@@ -94,89 +94,160 @@
     .tile-btn:active { transform: scale(0.94); }
     .tile-btn.coming { border-color: rgba(106, 122, 138, 0.4); color: var(--text-dim); cursor: not-allowed; opacity: 0.72; }
     .tile-badge { display: inline-block; margin-top: 6px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; background: rgba(57, 255, 20, 0.15); color: var(--neon-green); }
-    /* 大厅：一排两个，底部钉住刷新，避免挤出屏幕 */
+    /* 大厅：Bento Grid 首页（首屏一屏展示，不滚动） */
     #lobby-screen.screen {
       overflow: hidden;
-      background: #f7f8f6;
-      color: #232b27;
+      background: #F5F7FA;
+      color: #111827;
       font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    #lobby-screen .arcade-title {
-      margin: 8px 0 4px;
-      color: #232b27;
-      font-size: clamp(1rem, 3.8vw, 1.25rem);
-      letter-spacing: 0.02em;
-      text-shadow: none;
-    }
-    #lobby-screen .arcade-sub { color: #66756b; font-size: 0.72rem; margin: 0 0 8px; }
-    #lobby-screen .lobby-hi-bar { color: #596b60; margin: 0 0 8px; font-size: 0.78rem; }
-    #lobby-screen .lobby-hi-bar span { color: #168557; }
-    #lobby-screen .lobby-tile-grid {
-      grid-template-columns: 1fr 1fr !important;
-      gap: 8px;
-      max-width: 520px;
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      align-content: start;
-      margin-top: 6px !important;
-    }
-    #lobby-screen .tile-btn {
-      min-height: 68px;
-      padding: 10px 6px;
-      font-family: inherit;
-      font-size: 0.83rem;
-      font-weight: 650;
-      color: #26382e;
-      background: #fff;
-      border: 1px solid #e2eae4;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(30, 64, 43, 0.04);
-      display: flex;
-      flex-direction: column;
+      padding: calc(var(--safe-top) + 14px) max(18px, var(--safe-right)) calc(var(--safe-bottom) + 14px) max(18px, var(--safe-left));
       align-items: center;
       justify-content: center;
-      gap: 4px;
     }
-    #lobby-screen .tile-btn:active { background: #eaf5ee; transform: scale(0.98); }
+    .lobby-inner {
+      width: 100%;
+      max-width: 760px;
+      max-height: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: clamp(12px, 2.2vh, 20px);
+    }
+    .lobby-welcome {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+      padding: 0 2px;
+    }
+    .lobby-welcome-text { min-width: 0; }
+    .lobby-eyebrow { margin: 0 0 4px; color: #8B95A7; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
+    .lobby-greeting { margin: 0; color: #111827; font-size: clamp(24px, 6.4vw, 30px); line-height: 1.12; font-weight: 750; letter-spacing: -0.02em; }
+    .lobby-greeting span { color: #168557; }
+    .lobby-subtitle { margin: 4px 0 0; color: #7A8699; font-size: 13px; font-weight: 500; }
+    .lobby-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+    .lobby-action-btn {
+      width: 36px;
+      height: 36px;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      border-radius: 12px;
+      background: #fff;
+      color: #5B6678;
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+      transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+    }
+    .lobby-action-btn svg { width: 18px; height: 18px; }
+    .lobby-action-btn:active { transform: scale(0.92); background: #EEF1F6; }
+    .lobby-action-btn:disabled { opacity: 0.55; cursor: wait; }
+    @media (hover: hover) and (pointer: fine) {
+      .lobby-action-btn:hover { color: #168557; background: #fff; box-shadow: 0 4px 12px rgba(17, 24, 39, 0.1); }
+    }
+    #lobby-screen .lobby-tile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      grid-auto-rows: 120px;
+      gap: 12px;
+      max-width: none;
+      margin: 0 !important;
+      flex: 0 0 auto;
+      overflow: visible;
+      align-content: stretch;
+    }
+    #lobby-screen .tile-btn {
+      position: relative;
+      min-height: 0;
+      height: 100%;
+      padding: 14px;
+      font-family: inherit;
+      text-align: left;
+      color: #111827;
+      background: #fff;
+      border: 1px solid rgba(17, 24, 39, 0.04);
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.055);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #lobby-screen .tile-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: #EEF1F6;
+      color: #5B6678;
+    }
+    #lobby-screen .tile-icon svg { width: 20px; height: 20px; }
+    #lobby-screen .tile-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    #lobby-screen .tile-title { font-size: 15px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+    #lobby-screen .tile-sub { color: #7B8798; font-size: 11px; font-weight: 500; line-height: 1.35; }
+    #lobby-screen .tile-memo .tile-icon { background: #EEEFFE; color: #6C72E8; }
+    #lobby-screen .tile-recipe .tile-icon { background: #E8F7EE; color: #2FA36B; }
+    #lobby-screen .tile-receipt .tile-icon { background: #FFF3D6; color: #B7791F; }
+    #lobby-screen .tile-rpa .tile-icon { background: #E6F6F8; color: #0E93A0; }
+    #lobby-screen .tile-listenbook .tile-icon { background: #ECEFFF; color: #5560D9; }
+    #lobby-screen .tile-snake .tile-icon { background: #E8F7EE; color: #2FA36B; }
+    @media (hover: hover) and (pointer: fine) {
+      #lobby-screen .tile-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(17, 24, 39, 0.10); }
+    }
+    #lobby-screen .tile-btn:active { transform: scale(0.97); }
     #btn-enter-rpa { position: relative; }
     #rpa-alert-dot {
-      display: none; position: absolute; top: 7px; right: 7px;
-      width: 11px; height: 11px; border-radius: 50%;
-      background: #e02b3a; box-shadow: 0 0 0 2px #fff;
+      display: none; position: absolute; top: 14px; right: 14px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #E02B3A; box-shadow: 0 0 0 3px #fff;
     }
     #rpa-alert-dot.visible { display: block; }
-    #lobby-screen .tile-badge {
-      margin: 0;
-      font-size: 0.62rem;
-      font-weight: 400;
-      padding: 0;
-      background: transparent;
-      color: #718076;
+    @media (min-width: 720px) {
+      #lobby-screen.screen { padding-left: max(32px, var(--safe-left)); padding-right: max(32px, var(--safe-right)); }
+      .lobby-inner { max-width: 620px; }
+      #lobby-screen .lobby-tile-grid { grid-auto-rows: 124px; }
+      #lobby-screen .tile-title { font-size: 16px; }
+      #lobby-screen .tile-sub { font-size: 12px; }
     }
-    #lobby-screen .btn-logout-switch,
-    #lobby-screen .btn-force-refresh {
-      font-family: inherit;
-      border: 1px solid #e2eae4;
-      border-radius: 10px;
-      font-size: 0.72rem;
-      padding: 9px 12px;
-      color: #66756b;
-      background: #fff;
+    @media (max-width: 359px) {
+      #lobby-screen .tile-btn { padding: 12px; }
+      #lobby-screen .tile-icon { width: 34px; height: 34px; border-radius: 10px; }
+      #lobby-screen .tile-icon svg { width: 18px; height: 18px; }
+      #lobby-screen .tile-title { font-size: 14px; }
+      #lobby-screen .tile-sub { font-size: 10px; }
     }
-    #lobby-screen .btn-force-refresh { color: #168557; background: #eaf5ee; border-color: #d6eadc; }
-    #lobby-screen .lobby-footer {
-      flex-shrink: 0;
-      width: 100%;
-      max-width: 520px;
-      margin: 0 auto;
-      padding-top: 8px;
+    @media (max-height: 560px) {
+      .lobby-eyebrow { display: none; }
+      .lobby-inner { gap: 10px; }
+      #lobby-screen .lobby-tile-grid { grid-auto-rows: 102px; gap: 10px; }
+      #lobby-screen .tile-btn { padding: 11px; }
+      #lobby-screen .tile-icon { width: 32px; height: 32px; border-radius: 10px; }
+      #lobby-screen .tile-icon svg { width: 17px; height: 17px; }
+      #lobby-screen .tile-title { font-size: 14px; }
+      #lobby-screen .tile-sub { font-size: 10px; }
     }
-    #lobby-screen .lobby-footer .btn-logout-switch,
-    #lobby-screen .lobby-footer .btn-force-refresh {
-      margin-top: 8px;
-      width: 100%;
-      max-width: none;
+    @media (max-height: 440px) {
+      #lobby-screen.screen { padding-top: calc(var(--safe-top) + 8px); padding-bottom: calc(var(--safe-bottom) + 8px); }
+      .lobby-inner { gap: 8px; }
+      .lobby-greeting { font-size: 20px; }
+      .lobby-subtitle { margin-top: 2px; font-size: 11px; }
+      #lobby-screen .lobby-tile-grid { grid-auto-rows: 82px; gap: 8px; }
+      #lobby-screen .tile-btn { padding: 8px 10px; gap: 4px; border-radius: 14px; }
+      #lobby-screen .tile-icon { width: 26px; height: 26px; border-radius: 8px; }
+      #lobby-screen .tile-icon svg { width: 14px; height: 14px; }
+      #lobby-screen .tile-title { font-size: 13px; }
+      #lobby-screen .tile-sub { font-size: 9px; }
     }
     #rpa-screen.screen { background: #f7f8f6; color: #232b27; padding: var(--safe-top) 0 var(--safe-bottom); overflow: hidden; }
 
@@ -891,6 +962,88 @@
     .modal-root { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center;
       padding: 24px; background: rgba(0, 0, 0, 0.72); opacity: 0; visibility: hidden; transition: opacity 0.35s; }
     .modal-root.visible { opacity: 1; visibility: visible; }
+    /* 昵称登录：浅色毛玻璃卡片 */
+    #nickname-modal.modal-root {
+      background: rgba(17, 24, 39, 0.32);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    #nickname-modal .modal-pixel {
+      max-width: 340px;
+      padding: 26px 24px 24px;
+      background: #FFFFFF;
+      border: 0;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18), 0 2px 8px rgba(17, 24, 39, 0.06);
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    #nickname-modal.visible .modal-pixel { opacity: 1; transform: none; }
+    #nickname-modal .modal-pixel h2 {
+      margin: 0 0 20px;
+      color: #111827;
+      font-size: 22px;
+      line-height: 1.3;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: left;
+    }
+    #nickname-modal .modal-pixel input {
+      width: 100%;
+      height: 48px;
+      margin: 0;
+      padding: 0 14px;
+      border: 1.5px solid transparent;
+      border-radius: 12px;
+      background: #F4F6F9;
+      color: #111827;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    #nickname-modal .modal-pixel input::placeholder { color: #9AA4B2; }
+    #nickname-modal .modal-pixel input:focus {
+      border-color: #168557;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(22, 133, 87, 0.12);
+    }
+    #nickname-modal .modal-pixel input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 1000px #F4F6F9 inset;
+      -webkit-text-fill-color: #111827;
+    }
+    #nickname-modal .nick-warn {
+      margin: 10px 0 0 !important;
+      font-family: inherit !important;
+      font-size: 12px !important;
+      line-height: 1.5;
+      color: #D14343 !important;
+      text-align: left;
+    }
+    #nickname-modal .nickname-actions { margin-top: 16px; }
+    #nickname-modal .modal-pixel button {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #168557;
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(22, 133, 87, 0.22);
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+    #nickname-modal .modal-pixel button:active {
+      transform: scale(0.98);
+      background: #127046;
+      box-shadow: 0 4px 10px rgba(22, 133, 87, 0.2);
+    }
     .modal-pixel { width: 100%; max-width: 360px; padding: 24px; background: #1a1028; border: 4px solid #00ffcc;
       font-family: "Press Start 2P", monospace; }
     .modal-pixel h2 { font-size: 0.5rem; line-height: 1.9; color: #ffee55; text-align: center; margin: 0 0 16px; }
@@ -1921,7 +2074,7 @@
     .receipt-entry-category span:last-child { max-width: 100%; overflow-wrap: anywhere; }
     .receipt-entry-category.selected { color: #168557; font-weight: bold; }
     .receipt-entry-category.selected span:first-child { background: #ffe25a; }
-    .receipt-entry-note-wrap { padding: 5px 18px; flex-shrink: 0; }
+    .receipt-entry-note-wrap { padding: 5px 18px; flex-shrink: 0; margin-top: auto; }
     .receipt-entry-note-wrap button { border: 0; background: transparent; color: #168557; font-size: 14px; padding: 7px 8px 7px 0; }
     #receipt-entry-tag-delete { color: #a32020; }
     #receipt-entry-tag-delete[hidden] { display: none; }
@@ -1936,6 +2089,77 @@
     #receipt-entry-screen.keyboard-open .receipt-entry-note-wrap,
     #receipt-entry-screen.keyboard-open #receipt-entry-tag-form { flex-shrink: 0; }
     @media (max-height: 650px) { .receipt-entry-categories { max-height: 32vh; } .receipt-entry-category span:first-child { width: 42px; height: 42px; } }
+
+    /* 记账簿底部导航与新页面（仅记账簿内显示） */
+    #receipt-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: none; grid-template-columns: repeat(5, 1fr); align-items: end; background: rgba(255, 255, 255, 0.97); border-top: 1px solid #e4e9e4; padding: 6px 8px calc(6px + var(--safe-bottom)); }
+    #receipt-tabbar.visible { display: grid; }
+    #receipt-tabbar button { border: 0; background: transparent; color: #6b7a70; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; font-size: 11px; }
+    #receipt-tabbar button.active { color: #168557; font-weight: 700; }
+    #receipt-tabbar button svg { width: 23px; height: 23px; }
+    #receipt-tabbar .receipt-tab-plus { margin-top: -22px; }
+    #receipt-tabbar .receipt-tab-plus span { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: #18a367; color: #fff; font-size: 32px; font-weight: 300; line-height: 1; box-shadow: 0 6px 16px rgba(24, 163, 103, 0.35); }
+    #receipt-tabbar .receipt-tab-plus em { font-style: normal; color: #168557; font-size: 11px; margin-top: 2px; }
+    .receipt-page { background: #f7f8f6; color: #232b27; padding: calc(var(--safe-top) + 8px) 0 calc(76px + var(--safe-bottom)); gap: 0; }
+    .receipt-page-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 18px 10px; flex-shrink: 0; }
+    .receipt-page-head h1 { margin: 0; font-size: 19px; letter-spacing: 0.04em; }
+    .receipt-month-switch { display: flex; align-items: center; gap: 2px; }
+    .receipt-month-switch button { border: 0; background: transparent; color: inherit; font-size: 15px; padding: 6px 8px; }
+    .receipt-month-switch .receipt-month-label { font-size: 17px; font-weight: 700; min-width: 108px; text-align: center; }
+    .receipt-list-summary { display: flex; gap: 22px; padding: 4px 22px 12px; color: #68776d; font-size: 13px; flex-shrink: 0; }
+    .receipt-list-summary b { display: block; color: #232b27; font-size: 19px; font-variant-numeric: tabular-nums; }
+    .receipt-list-summary .income b { color: #168557; }
+    .receipt-list-days { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
+    .receipt-list-day { margin-bottom: 10px; background: #fff; border-radius: 14px; padding: 10px 14px 4px; box-shadow: 0 1px 3px rgba(30, 50, 40, 0.05); }
+    .receipt-list-day-head { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 0 8px; color: #6d7a72; font-size: 12px; }
+    .receipt-list-day-head strong { color: #232b27; font-size: 14px; }
+    .receipt-list-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #f0f3f0; }
+    .receipt-list-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #eef2ef; font-size: 18px; flex-shrink: 0; }
+    .receipt-list-main { flex: 1; min-width: 0; }
+    .receipt-list-main strong { display: block; font-size: 14px; font-weight: 600; }
+    .receipt-list-main small { display: block; color: #7b887f; font-size: 11px; overflow-wrap: anywhere; }
+    .receipt-list-amount { font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .receipt-list-amount.income { color: #168557; }
+    .receipt-list-del { border: 0; background: transparent; color: #b9c2bb; font-size: 16px; padding: 6px 2px 6px 8px; flex-shrink: 0; }
+    .receipt-list-empty { padding: 60px 20px; text-align: center; color: #93a096; font-size: 14px; }
+    .receipt-seg { display: flex; margin: 0 18px 10px; padding: 3px; border-radius: 12px; background: #e9edea; flex-shrink: 0; }
+    .receipt-seg button { flex: 1; border: 0; border-radius: 9px; background: transparent; color: #58665c; padding: 9px 0; font-size: 14px; }
+    .receipt-seg button.selected { background: #fff; color: #168557; font-weight: 700; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+    .receipt-chart-summary { display: flex; gap: 30px; padding: 6px 22px 16px; flex-shrink: 0; }
+    .receipt-chart-summary span { color: #6d7a72; font-size: 12px; }
+    .receipt-chart-summary b { display: block; margin-top: 3px; font-size: 22px; color: #232b27; font-variant-numeric: tabular-nums; }
+    .receipt-chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 190px; margin: 0 16px 8px; padding: 12px 10px 4px; background: #fff; border-radius: 14px; flex-shrink: 0; }
+    .receipt-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+    .receipt-bar { width: 100%; max-width: 26px; border-radius: 5px 5px 2px 2px; background: #b9e3cb; min-height: 2px; }
+    .receipt-bar.highlight { background: #18a367; }
+    .receipt-bar-label { font-size: 9px; color: #8b978f; white-space: nowrap; }
+    .receipt-chart-ranking { margin: 0 16px; background: #fff; border-radius: 14px; padding: 12px 14px; }
+    .receipt-chart-ranking h2 { margin: 0 0 6px; font-size: 14px; }
+    .receipt-rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #f0f3f0; font-size: 14px; }
+    .receipt-rank-row .rank { width: 18px; color: #9aa69d; font-size: 12px; }
+    .receipt-rank-row .name { flex: 1; }
+    .receipt-rank-row .amount { font-variant-numeric: tabular-nums; color: #a04e3c; }
+    .receipt-rank-empty { color: #95a198; font-size: 13px; padding: 18px 0; text-align: center; }
+    .receipt-bills-card { margin: 0 16px 12px; border-radius: 18px; padding: 18px 20px; background: linear-gradient(135deg, #18a367, #35bd82); color: #fff; flex-shrink: 0; }
+    .receipt-bills-card .balance { font-size: 13px; opacity: 0.85; }
+    .receipt-bills-card .balance b { display: block; margin: 4px 0 12px; font-size: 30px; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+    .receipt-bills-card .row { display: flex; gap: 30px; font-size: 13px; opacity: 0.92; }
+    .receipt-bills-card .row b { display: block; margin-top: 2px; font-size: 15px; }
+    .receipt-bills-table { flex: 1; min-height: 0; overflow-y: auto; margin: 0 16px; background: #fff; border-radius: 14px; padding: 6px 14px 10px; }
+    .receipt-bills-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; padding: 10px 0; border-top: 1px solid #f0f3f0; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .receipt-bills-row:first-child { border-top: 0; }
+    .receipt-bills-row.head { color: #93a096; font-size: 11px; }
+    .receipt-bills-row span:first-child { text-align: left; color: #4e5c52; }
+    .receipt-bills-row .negative { color: #b45441; }
+    .receipt-mine-card { margin: 4px 16px 12px; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, #e7f5ec, #f4faf6); border: 1px solid #d9ecdf; }
+    .receipt-mine-card strong { display: block; font-size: 20px; }
+    .receipt-mine-card small { display: block; margin-top: 6px; color: #6d7a72; font-size: 12px; }
+    .receipt-mine-actions { margin: 0 16px; background: #fff; border-radius: 14px; overflow: hidden; }
+    .receipt-mine-actions button { display: flex; width: 100%; align-items: center; justify-content: space-between; border: 0; border-top: 1px solid #f0f3f0; background: transparent; color: #29342d; font-size: 15px; padding: 15px 16px; text-align: left; }
+    .receipt-mine-actions button:first-child { border-top: 0; }
+    .receipt-mine-actions button::after { content: '›'; color: #a9b4ac; font-size: 18px; }
+    .receipt-mine-actions button.danger { color: #a32020; }
+    #receipt-mine-legacy[hidden] { display: none; }
+    .receipt-mine-tip { margin: 12px 18px 0; color: #8b978f; font-size: 12px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -1948,14 +2172,21 @@
     <button type="button" id="receipt-edit-inline-save">确定</button>
     <button type="button" id="receipt-edit-inline-cancel">取消</button>
   </div>
+  <nav id="receipt-tabbar" aria-label="记账簿导航">
+    <button type="button" data-receipt-tab="list" aria-label="明细"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9h8M8 13h8M8 17h5"></path></svg><span>明细</span></button>
+    <button type="button" data-receipt-tab="chart" aria-label="图表"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6M4 19h16"></path><path d="M7 15l4-5 3 3 5-7"></path></svg><span>图表</span></button>
+    <button type="button" data-receipt-tab="entry" class="receipt-tab-plus" aria-label="记账"><span>+</span><em>记账</em></button>
+    <button type="button" data-receipt-tab="bills" aria-label="账单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>账单</span></button>
+    <button type="button" data-receipt-tab="mine" aria-label="我的"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20c0-3.4 3.1-5.5 7-5.5s7 2.1 7 5.5"></path></svg><span>我的</span></button>
+  </nav>
 
-  <div id="nickname-modal" class="modal-root" aria-modal="true" role="dialog">
+  <div id="nickname-modal" class="modal-root" aria-modal="true" role="dialog" aria-labelledby="nickname-modal-title">
     <div class="modal-pixel">
-      <h2>昵称登录<br/><span style="font-size:0.72em;font-weight:600">已有档案则进入；没有则自动新建</span></h2>
-      <input id="nickname-input" type="text" maxlength="16" placeholder="例如 Herry / 老婆昵称" autocomplete="nickname" name="arcade_nickname" />
+      <h2 id="nickname-modal-title">登录</h2>
+      <input id="nickname-input" type="text" maxlength="16" placeholder="请输入用户名" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" name="arcade_nickname" />
       <p id="nickname-cloud-warn" class="nick-warn" hidden></p>
       <p id="nickname-dup-msg" class="nick-warn" hidden></p>
-      <div style="text-align:center"><button type="button" id="nickname-confirm">进入</button></div>
+      <div class="nickname-actions"><button type="button" id="nickname-confirm">进入</button></div>
     </div>
   </div>
 
@@ -2001,20 +2232,49 @@
   </div>
 
   <section id="lobby-screen" class="screen active">
-    <h1 class="arcade-title">ARCADE HUB</h1>
-    <p class="arcade-sub">我的私人空间</p>
-    <p class="lobby-hi-bar">Hi, <span id="lobby-display-name">——</span></p>
-    <div class="grid-menu lobby-tile-grid">
-      <button type="button" class="tile-btn" id="btn-enter-memo">备忘清单 <span class="tile-badge">Pregnancy Memo</span></button>
-      <button type="button" class="tile-btn" id="btn-enter-recipes">好孕食谱 <span class="tile-badge">营养</span></button>
-      <button type="button" class="tile-btn" id="btn-enter-receipt">记账簿 <span class="tile-badge">小票</span></button>
-      <button type="button" class="tile-btn" id="btn-enter-rpa">RPA 报错 <span class="tile-badge">异常流程</span><span id="rpa-alert-dot" aria-hidden="true"></span></button>
-      <button type="button" class="tile-btn" id="btn-enter-listenbook">听书 <span class="tile-badge">循环背诵</span></button>
-      <button type="button" class="tile-btn" id="btn-enter-snake">经典贪吃蛇 <span class="tile-badge">进入模块</span></button>
-    </div>
-    <div class="lobby-footer">
-      <button type="button" class="btn-logout-switch" id="btn-logout-switch">退出登录 / 切换账号</button>
-      <button type="button" class="btn-force-refresh" id="btn-force-refresh">强制刷新缓存并拉新代码</button>
+    <div class="lobby-inner">
+      <header class="lobby-welcome">
+        <div class="lobby-welcome-text">
+          <p class="lobby-eyebrow">MY SPACE</p>
+          <h1 class="lobby-greeting">Hi, <span id="lobby-display-name">——</span></h1>
+          <p class="lobby-subtitle">我的私人空间</p>
+        </div>
+        <div class="lobby-actions">
+          <button type="button" class="lobby-action-btn btn-force-refresh" id="btn-force-refresh" title="强制刷新缓存并拉新代码" aria-label="强制刷新缓存并拉新代码">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 6.34"></path><path d="M20 5v6h-6"></path></svg>
+          </button>
+          <button type="button" class="lobby-action-btn btn-logout-switch" id="btn-logout-switch" title="退出登录 / 切换账号" aria-label="退出登录 / 切换账号">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path></svg>
+          </button>
+        </div>
+      </header>
+      <div class="grid-menu lobby-tile-grid">
+        <button type="button" class="tile-btn tile-receipt" id="btn-enter-receipt">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 0 1 1-1z"></path><path d="M9 8h6M9 12h6"></path></svg></span>
+          <span class="tile-copy"><span class="tile-title">记账簿</span><span class="tile-sub">收支明细</span></span>
+        </button>
+        <button type="button" class="tile-btn tile-memo" id="btn-enter-memo">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8 10l1.6 1.6L12.6 8.6M8 16l1.6 1.6 3-3"></path></svg></span>
+          <span class="tile-copy"><span class="tile-title">备忘清单</span><span class="tile-sub">孕期待办</span></span>
+        </button>
+        <button type="button" class="tile-btn tile-recipe" id="btn-enter-recipes">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16a8 8 0 0 1-16 0z"></path><path d="M9 12c0-2.6.8-4.6 3-6.5 2.2 1.9 3 3.9 3 6.5"></path><path d="M4 20h16"></path></svg></span>
+          <span class="tile-copy"><span class="tile-title">好孕食谱</span><span class="tile-sub">营养搭配</span></span>
+        </button>
+        <button type="button" class="tile-btn tile-rpa" id="btn-enter-rpa">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l8.5 15H3.5L12 3.5z"></path><path d="M12 9.5v4M12 16.6v.2"></path></svg></span>
+          <span class="tile-copy"><span class="tile-title">RPA 报错</span><span class="tile-sub">异常监控</span></span>
+          <span id="rpa-alert-dot" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="tile-btn tile-listenbook" id="btn-enter-listenbook">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"></path><path d="M4 14h3v6H5a1 1 0 0 1-1-1v-5zM20 14h-3v6h2a1 1 0 0 0 1-1v-5z"></path></svg></span>
+          <span class="tile-copy"><span class="tile-title">听书</span><span class="tile-sub">循环背诵</span></span>
+        </button>
+        <button type="button" class="tile-btn tile-snake" id="btn-enter-snake">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="5"></rect><path d="M8 10v4M6 12h4"></path><circle cx="16" cy="11" r="1" fill="currentColor" stroke="none"></circle><circle cx="18.5" cy="13.5" r="1" fill="currentColor" stroke="none"></circle></svg></span>
+          <span class="tile-copy"><span class="tile-title">经典贪吃蛇</span><span class="tile-sub">休闲游戏</span></span>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -2297,10 +2557,56 @@
     </div>
   </section>
 
+  <section id="receipt-list-screen" class="screen receipt-screen receipt-page" aria-label="明细">
+    <header class="receipt-page-head">
+      <div class="receipt-month-switch">
+        <button type="button" id="receipt-list-prev" aria-label="上个月">‹</button>
+        <button type="button" class="receipt-month-label" id="receipt-list-month" aria-label="当前月份">本月</button>
+        <button type="button" id="receipt-list-next" aria-label="下个月">›</button>
+      </div>
+    </header>
+    <div class="receipt-list-summary"><span>收入<b class="income" id="receipt-list-income">0.00</b></span><span>支出<b id="receipt-list-expense">0.00</b></span></div>
+    <div id="receipt-list-days" class="receipt-list-days" aria-live="polite"></div>
+  </section>
+
+  <section id="receipt-chart-screen" class="screen receipt-screen receipt-page" aria-label="图表">
+    <header class="receipt-page-head"><h1>图表</h1></header>
+    <div class="receipt-seg" id="receipt-chart-type"><button type="button" data-chart-type="expense" class="selected">支出</button><button type="button" data-chart-type="income">收入</button></div>
+    <div class="receipt-seg" id="receipt-chart-range"><button type="button" data-chart-range="week" class="selected">周</button><button type="button" data-chart-range="month">月</button><button type="button" data-chart-range="year">年</button></div>
+    <div class="receipt-chart-summary"><span id="receipt-chart-total-label">总支出<b id="receipt-chart-total">0.00</b></span><span id="receipt-chart-average-label">平均值<b id="receipt-chart-average">0.00</b></span></div>
+    <div id="receipt-chart-bars" class="receipt-chart-bars"></div>
+    <div class="receipt-chart-ranking"><h2 id="receipt-chart-ranking-title">支出排行榜</h2><div id="receipt-chart-ranking"></div></div>
+  </section>
+
+  <section id="receipt-bills-screen" class="screen receipt-screen receipt-page" aria-label="账单">
+    <header class="receipt-page-head"><h1>账单</h1><div class="receipt-month-switch"><button type="button" id="receipt-bills-prev" aria-label="上一年">‹</button><span class="receipt-month-label" id="receipt-bills-year">本年</span><button type="button" id="receipt-bills-next" aria-label="下一年">›</button></div></header>
+    <div class="receipt-bills-card">
+      <div class="balance">结余<b id="receipt-bills-balance">0.00</b></div>
+      <div class="row"><span>收入<b id="receipt-bills-income">0.00</b></span><span>支出<b id="receipt-bills-expense">0.00</b></span></div>
+    </div>
+    <div id="receipt-bills-table" class="receipt-bills-table" aria-live="polite"></div>
+  </section>
+
+  <section id="receipt-mine-screen" class="screen receipt-screen receipt-page" aria-label="我的">
+    <header class="receipt-page-head"><h1>我的</h1></header>
+    <div class="receipt-mine-card">
+      <strong id="receipt-mine-name">未登录</strong>
+      <small>记账数据保存在本机，并同步到云端</small>
+      <small id="receipt-mine-sync">云端同步：待检查</small>
+    </div>
+    <div class="receipt-mine-actions">
+      <button type="button" id="receipt-mine-legacy" hidden>导入此浏览器的旧账单</button>
+      <button type="button" id="receipt-mine-paper">打开旧版小票视图</button>
+      <button type="button" id="receipt-mine-refresh">强制刷新缓存并拉新代码</button>
+      <button type="button" id="receipt-mine-logout" class="danger">退出登录 / 切换账号</button>
+    </div>
+    <p class="receipt-mine-tip">旧版小票视图保留原有 3D 纸张和日历编辑；日常记账使用底部“记账”。</p>
+  </section>
+
   <section id="receipt-home-screen" class="screen receipt-screen" aria-label="单日账目">
     <div id="receipt-day-entries" class="receipt-day-entries" aria-live="polite"></div>
     <div class="receipt-day-actions">
-      <button type="button" id="receipt-entry-open">返回记账</button>
+      <button type="button" id="receipt-entry-open">返回明细</button>
       <button type="button" id="receipt-open-legacy">查看 / 编辑旧小票</button>
       <button id="receipt-import-legacy" type="button" hidden>导入此浏览器的旧账单</button>
       <span id="receipt-sync-status" role="status"></span>
@@ -2412,7 +2718,7 @@
   </section>
 
   <script src="vendor/three.min.js"></script>
-  <script src="receipt.js?v=20261119-system-keyboard-2"></script>
+  <script src="receipt.js?v=20261119-tabs-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {
@@ -3329,6 +3635,8 @@
   function clearArcadeSession() {
     sessionProfilePk = '';
     pregBabyNickname = '';
+    var nickInput = document.getElementById('nickname-input');
+    if (nickInput) nickInput.value = '';
     try {
       localStorage.removeItem(STORAGE_USERID);
       localStorage.removeItem(STORAGE_NAME);
@@ -3452,6 +3760,10 @@
     recipe_home: 'recipe-home-screen',
     recipe_library: 'recipe-library-screen',
     recipe_detail: 'recipe-detail-screen',
+    receipt_list: 'receipt-list-screen',
+    receipt_chart: 'receipt-chart-screen',
+    receipt_bills: 'receipt-bills-screen',
+    receipt_mine: 'receipt-mine-screen',
     receipt_home: 'receipt-home-screen',
     receipt_calendar: 'receipt-calendar-screen',
     receipt_edit: 'receipt-edit-screen',
@@ -3461,6 +3773,17 @@
   function activateScreen(screenId) {
     document.querySelectorAll('.screen').forEach(function (el) {
       el.classList.toggle('active', el.id === screenId);
+    });
+  }
+
+  var RECEIPT_TAB_BY_VIEW = { receipt_list: 'list', receipt_chart: 'chart', receipt_bills: 'bills', receipt_mine: 'mine' };
+  function updateReceiptTabbar(view) {
+    var bar = document.getElementById('receipt-tabbar');
+    if (!bar) return;
+    bar.classList.toggle('visible', !!RECEIPT_TAB_BY_VIEW[view]);
+    var tab = RECEIPT_TAB_BY_VIEW[view] || '';
+    bar.querySelectorAll('[data-receipt-tab]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-receipt-tab') === tab);
     });
   }
 
@@ -3491,10 +3814,15 @@
         return 'recipe_home';
       case 'recipe_home':
         return 'lobby';
-      case 'receipt_entry':
+      case 'receipt_list':
         return 'lobby';
+      case 'receipt_entry':
+      case 'receipt_chart':
+      case 'receipt_bills':
+      case 'receipt_mine':
+        return 'receipt_list';
       case 'receipt_home':
-        return 'receipt_entry';
+        return 'receipt_list';
       case 'snake_game':
         return 'snake_home';
       case 'snake_shop':
@@ -3615,15 +3943,27 @@
     if (view === 'memo_screen') loadMemos();
     if (view === 'listenbook' && window.ListenbookModule) ListenbookModule.onEnter();
     if (view !== 'listenbook' && window.ListenbookModule) ListenbookModule.onLeave();
-    if (view === 'receipt_home' || view === 'receipt_calendar' || view === 'receipt_edit' || view === 'receipt_entry') {
-      supabaseKeepalive(false);
-    }
-    var receiptViews = { receipt_home: 1, receipt_calendar: 1, receipt_edit: 1, receipt_entry: 1 };
+    var receiptViews = {
+      receipt_list: 1,
+      receipt_chart: 1,
+      receipt_bills: 1,
+      receipt_mine: 1,
+      receipt_home: 1,
+      receipt_calendar: 1,
+      receipt_edit: 1,
+      receipt_entry: 1
+    };
+    if (receiptViews[view]) supabaseKeepalive(false);
     if (!receiptViews[view] && window.ReceiptModule) ReceiptModule.onLeaveAll();
+    if (view === 'receipt_list' && window.ReceiptModule) ReceiptModule.onEnterList();
+    if (view === 'receipt_chart' && window.ReceiptModule) ReceiptModule.onEnterChart();
+    if (view === 'receipt_bills' && window.ReceiptModule) ReceiptModule.onEnterBills();
+    if (view === 'receipt_mine' && window.ReceiptModule) ReceiptModule.onEnterMine();
     if (view === 'receipt_home' && window.ReceiptModule) ReceiptModule.onEnterHome();
     if (view === 'receipt_calendar' && window.ReceiptModule) ReceiptModule.onEnterCalendar();
     if (view === 'receipt_edit' && window.ReceiptModule) ReceiptModule.onEnterEdit();
     if (view === 'receipt_entry' && window.ReceiptModule) ReceiptModule.onEnterEntry();
+    updateReceiptTabbar(view);
     if (view !== 'recipe_detail') releaseRecipeWakeLock();
   }
   window.goToView = goToView;
@@ -6234,7 +6574,8 @@
     var btn = document.getElementById('btn-force-refresh');
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '正在清缓存并拉新…';
+      btn.title = '正在清缓存并拉新…';
+      btn.setAttribute('aria-label', '正在清缓存并拉新…');
     }
     try {
       if (window.caches && caches.keys) {
@@ -6309,9 +6650,20 @@
     });
   }
   document.getElementById('btn-enter-receipt').onclick = function () {
-    goToView('receipt_entry');
+    goToView('receipt_list');
   };
-  document.getElementById('receipt-entry-open').onclick = function () { goToView('receipt_entry'); };
+  document.getElementById('receipt-entry-open').onclick = function () { goToView('receipt_list'); };
+  document.querySelectorAll('#receipt-tabbar [data-receipt-tab]').forEach(function (btn) {
+    btn.onclick = function () {
+      var tab = btn.getAttribute('data-receipt-tab');
+      if (tab === 'entry') {
+        if (window.ReceiptModule) ReceiptModule.startNewEntry();
+        goToView('receipt_entry');
+        return;
+      }
+      goToView('receipt_' + tab);
+    };
+  });
   document.getElementById('receipt-open-legacy').onclick = function () { goToView('receipt_edit'); };
   document.getElementById('btn-enter-snake').onclick = function () { goToView('snake_home'); };
   document.getElementById('btn-snake-game').onclick = function () { goToView('snake_game'); };
