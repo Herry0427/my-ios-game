@@ -2394,9 +2394,8 @@
     function syncKeyboardLayout() {
       var active = document.activeElement;
       var editing = active === noteInput || active === tagInput;
-      var keyboardVisible = editing && visualViewport && visualViewport.height < global.innerHeight * 0.75;
-      form.classList.toggle('keyboard-open', !!keyboardVisible);
-      if (keyboardVisible) {
+      form.classList.toggle('keyboard-open', editing);
+      if (editing) {
         global.setTimeout(function () {
           if (active === document.activeElement) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }, 250);
