@@ -1891,6 +1891,16 @@
     #receipt-edit-inline-cancel { background: #eee; color: #333; }
 
     #receipt-entry-screen { background: #f7f8f6; color: #232b27; gap: 0; padding: calc(var(--safe-top) + 8px) 0 var(--safe-bottom); }
+    #receipt-entry-screen.keyboard-open { overflow-y: auto; overscroll-behavior: contain; }
+    #receipt-entry-screen.keyboard-open > * { flex-shrink: 0; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-header,
+    #receipt-entry-screen.keyboard-open .receipt-entry-tabs,
+    #receipt-entry-screen.keyboard-open .receipt-entry-value { position: sticky; z-index: 2; background: #f7f8f6; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-header { top: 0; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-tabs { top: 48px; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-value { top: 98px; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-keypad { display: none; }
+    #receipt-entry-screen.keyboard-open .receipt-entry-categories { max-height: min(34vh, 220px); }
     #receipt-entry-sync-status { display: block; padding: 0 22px; min-height: 20px; text-align: right; font-size: 12px; }
     #receipt-home-screen { background: #f7f8f6; color: #232b27; }
     .receipt-day-entries { flex: 1; min-height: 0; overflow-y: auto; margin: 0 14px 8px; padding: 14px; font-size: 13px; background: #fff; border-radius: 14px; }
@@ -2417,7 +2427,7 @@
   </section>
 
   <script src="vendor/three.min.js"></script>
-  <script src="receipt.js?v=20261008-day-entry-delete-1"></script>
+  <script src="receipt.js?v=20261119-keyboard-layout-1"></script>
   <script src="listenbook.js"></script>
   <script>
 (function () {

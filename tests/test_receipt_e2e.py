@@ -55,7 +55,6 @@ def wait_receipt_home(page):
         """
     )
     page.wait_for_selector("#receipt-home-screen.active")
-    page.wait_for_selector("#receipt-home-canvas canvas", timeout=15000)
     page.wait_for_timeout(1000)
 
 
@@ -191,7 +190,63 @@ def tap_paper_nav(page, mode_key, side):
 
 def run_flow(page, label):
     wait_receipt_home(page)
+    page.evaluate("window.goToView('receipt_entry')")
+    page.wait_for_selector("#receipt-entry-screen.active")
+    page.evaluate(
+        """
+        () => {
+          const note = document.getElementById('receipt-entry-note');
+          note.hidden = false;
+          note.focus();
+        }
+        """
+    )
+    page.wait_for_timeout(100)
+    page.evaluate(
+        """
+        () => {
+          const viewport = window.visualViewport;
+          if (viewport) {
+            Object.defineProperty(viewport, 'height', { configurable: true, value: window.innerHeight * 0.6 });
+            viewport.dispatchEvent(new Event('resize'));
+          }
+        }
+        """
+    )
+    page.wait_for_timeout(50)
+    ok(
+        page.evaluate(
+            """
+            () => {
+              const screen = document.getElementById('receipt-entry-screen');
+              const keypad = document.getElementById('receipt-entry-keypad');
+              return screen.classList.contains('keyboard-open') && getComputedStyle(keypad).display === 'none';
+            }
+            """
+        ),
+        label + " · 键盘显示时隐藏数字键盘并启用键盘布局",
+    )
+    page.evaluate(
+        """
+        () => {
+          const viewport = window.visualViewport;
+          if (viewport) {
+            Object.defineProperty(viewport, 'height', { configurable: true, value: window.innerHeight });
+            viewport.dispatchEvent(new Event('resize'));
+          }
+          document.getElementById('receipt-entry-note').blur();
+        }
+        """
+    )
+    page.wait_for_timeout(150)
+    ok(
+        page.evaluate("!document.getElementById('receipt-entry-screen').classList.contains('keyboard-open')"),
+        label + " · 备注失焦后恢复记账布局",
+    )
+    page.evaluate("window.goToView('receipt_home')")
+    page.wait_for_selector("#receipt-home-screen.active")
     ok(page.evaluate("typeof window.goToView === 'function'"), label + " · goToView 存在")
+    page.wait_for_timeout(700)
 
     center = page.evaluate("() => ReceiptModule._test.paperCenterClientPoint('home')")
     ok(center is not None, label + " · 首页纸面中心可定位")

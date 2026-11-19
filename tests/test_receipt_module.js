@@ -125,6 +125,7 @@ ok(receiptCode.indexOf('bindInlineEditBarChrome') >= 0, '编辑条阻止事件�
 ok(receiptCode.indexOf('startInlineEdit') >= 0, 'E2E 可测内联确定');
 ok(receiptCode.indexOf('receipt_days') >= 0, 'receipt_days 表 upsert');
 ok(/RECEIPT_TARGET_FILL_H/.test(receiptCode), '纸面目标高度占比');
+ok(html.includes('#receipt-entry-screen.keyboard-open') && receiptCode.includes("classList.toggle('keyboard-open', !!keyboardVisible)"), '键盘可见时启用紧凑布局并隐藏数字键盘');
 (function () {
   var z = t.computeReceiptCameraZ(390, 700);
   var halfTan = Math.tan((40 * Math.PI / 180) / 2);
