@@ -2210,6 +2210,608 @@
     .receipt-mine-actions button.danger { color: #a32020; }
     #receipt-mine-legacy[hidden] { display: none; }
     .receipt-mine-tip { margin: 12px 18px 0; color: #8b978f; font-size: 12px; line-height: 1.5; }
+
+    /* ========== 贪吃蛇 · 浅色卡片主题（覆盖旧霓虹样式） ========== */
+    #snake-home-screen.screen,
+    #shop-screen.screen,
+    #warehouse-screen.screen,
+    #leaderboard-screen.screen,
+    #snake-screen.screen {
+      background: #F5F7FA;
+      color: #1E293B;
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #snake-home-screen.screen,
+    #shop-screen.screen,
+    #warehouse-screen.screen,
+    #leaderboard-screen.screen {
+      padding: calc(14px + var(--safe-top)) max(18px, var(--safe-right)) calc(16px + var(--safe-bottom)) max(18px, var(--safe-left));
+    }
+    #snake-home-screen.screen { overflow-y: auto; }
+
+    /* 顶栏：圆角返回按钮 + 标题 + 数值胶囊 */
+    .snake-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto 14px;
+      flex-shrink: 0;
+    }
+    .snake-back {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      border-radius: 12px;
+      background: #FFFFFF;
+      color: #334155;
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .snake-back svg { width: 18px; height: 18px; }
+    .snake-back:active { transform: scale(0.92); background: #EEF1F6; }
+    .snake-page-title {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #1E293B;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .snake-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #FFFFFF;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.05);
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748B;
+    }
+    .snake-pill strong { font-size: 15px; font-weight: 700; color: #168557; }
+    .snake-subline {
+      width: 100%;
+      max-width: 760px;
+      margin: -4px auto 14px;
+      padding: 0 2px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #64748B;
+    }
+    .snake-subline #display-name { color: #1E293B; font-weight: 600; }
+
+    /* 模块首页：资产三卡 + 2×2 入口卡 */
+    #snake-home-screen .wallet-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto 16px;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+    #snake-home-screen .wallet-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #FFFFFF;
+      border: 1px solid rgba(17, 24, 39, 0.05);
+      box-shadow: 0 3px 12px rgba(17, 24, 39, 0.05);
+    }
+    #snake-home-screen .wallet-cell .wallet-ico {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 4px;
+      border-radius: 9px;
+      background: #FEF3C7;
+      color: #B45309;
+    }
+    #snake-home-screen .wallet-cell .wallet-ico svg { width: 17px; height: 17px; }
+    #snake-home-screen .wallet-cell:nth-child(2) .wallet-ico { background: #E8F7EE; color: #2FA36B; }
+    #snake-home-screen .wallet-cell:nth-child(3) .wallet-ico { background: #FFF1E7; color: #C2410C; }
+    #snake-home-screen .wallet-cell .wallet-label { font-size: 11px; color: #64748B; }
+    .coin-ico {
+      width: 13px;
+      height: 13px;
+      vertical-align: -2px;
+      margin-right: 2px;
+    }
+    .coin-ico--lg { width: 34px; height: 34px; vertical-align: middle; margin: 0; }
+    .snake-pill .coin-ico { width: 15px; height: 15px; vertical-align: 0; margin-right: 0; }
+    #snake-home-screen .wallet-cell strong {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #1E293B;
+      font-variant-numeric: tabular-nums;
+    }
+    #snake-home-screen .snake-menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    #snake-home-screen .snake-menu-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      min-height: 118px;
+      padding: 16px 14px;
+      text-align: left;
+      border: 1px solid rgba(17, 24, 39, 0.05);
+      border-radius: 16px;
+      background: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+      transition: transform 0.15s var(--ease-out), box-shadow 0.15s ease;
+    }
+    #snake-home-screen .snake-menu-card:active { transform: scale(0.97); }
+    #snake-home-screen .snake-menu-ico {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #E8F7EE;
+      color: #2FA36B;
+    }
+    #snake-home-screen .snake-menu-ico svg { width: 22px; height: 22px; }
+    #snake-home-screen .snake-menu-card:nth-child(2) .snake-menu-ico { background: #EEF2FF; color: #4F46E5; }
+    #snake-home-screen .snake-menu-card:nth-child(3) .snake-menu-ico { background: #FFF7ED; color: #C2410C; }
+    #snake-home-screen .snake-menu-card:nth-child(4) .snake-menu-ico { background: #FEF3C7; color: #B45309; }
+    #snake-home-screen .snake-menu-title {
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1E293B;
+      letter-spacing: -0.01em;
+    }
+    #snake-home-screen .snake-menu-sub { font-size: 12px; line-height: 1.4; color: #64748B; }
+    @media (hover: hover) and (pointer: fine) {
+      #snake-home-screen .snake-menu-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(17, 24, 39, 0.10);
+      }
+    }
+    #snake-home-screen .config-hint {
+      width: 100%;
+      max-width: 760px;
+      margin: 14px auto 0;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #94A3B8;
+      text-align: center;
+    }
+    #snake-home-screen .config-hint code { color: #64748B; }
+    #snake-home-screen .ui-swipe-hint {
+      width: 100%;
+      max-width: 760px;
+      margin: auto auto 0;
+      padding-top: 14px;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+    #shop-screen .ui-swipe-hint,
+    #warehouse-screen .ui-swipe-hint,
+    #leaderboard-screen .ui-swipe-hint {
+      margin: 10px auto 0;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+
+    /* 商店 / 仓库 */
+    #shop-screen .eco-scroll,
+    #warehouse-screen .eco-scroll {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2px;
+    }
+    #shop-screen .eco-grid,
+    #warehouse-screen .eco-grid {
+      max-width: 760px;
+      margin: 0 auto 16px;
+      gap: 12px;
+    }
+    #shop-screen .eco-card,
+    #warehouse-screen .eco-card {
+      border: 1px solid rgba(17, 24, 39, 0.05);
+      border-radius: 16px;
+      background: #FFFFFF;
+      padding: 12px;
+      box-shadow: 0 4px 14px rgba(17, 24, 39, 0.05);
+    }
+    #shop-screen .eco-card:active,
+    #warehouse-screen .eco-card:active { transform: scale(0.98); }
+    #shop-screen .eco-card .eco-title,
+    #warehouse-screen .eco-card .eco-title { color: #1E293B; font-size: 14px; font-weight: 700; }
+    #shop-screen .eco-card .eco-meta,
+    #warehouse-screen .eco-card .eco-meta { color: #64748B; font-size: 11px; }
+    #shop-screen .eco-price,
+    #warehouse-screen .eco-price { color: #168557; font-size: 13px; font-weight: 700; margin-top: 6px; }
+    #shop-screen .eco-preview-stack,
+    #warehouse-screen .eco-preview-stack,
+    #shop-screen .item-visual-wrap,
+    #warehouse-screen .item-visual-wrap {
+      border: 0;
+      border-radius: 12px;
+      background: radial-gradient(ellipse at center, #1E293B, #0F172A);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+    #shop-screen .eco-card.equipped,
+    #warehouse-screen .eco-card.equipped {
+      border-color: rgba(16, 185, 129, 0.55);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.14), 0 6px 18px rgba(16, 185, 129, 0.12);
+    }
+    #shop-screen .eco-card.locked .eco-lock-mask,
+    #warehouse-screen .eco-card.locked .eco-lock-mask {
+      border-radius: 16px;
+      background: rgba(248, 250, 252, 0.72);
+    }
+    #shop-screen .eco-card.locked .eco-title,
+    #warehouse-screen .eco-card.locked .eco-title { color: #94A3B8; }
+    #shop-screen .eco-card.locked .eco-meta,
+    #warehouse-screen .eco-card.locked .eco-meta { color: #B0BAC6; }
+    #shop-screen .eco-lock-icon,
+    #warehouse-screen .eco-lock-icon {
+      font-size: 22px;
+      opacity: 0.9;
+      text-shadow: none;
+    }
+    #shop-screen .eco-use-badge,
+    #warehouse-screen .eco-use-badge {
+      border: 0;
+      border-radius: 999px;
+      background: #168557;
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+    }
+    #shop-screen .shop-buy,
+    #warehouse-screen .shop-buy {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 10px;
+      background: #168557;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    #shop-screen .shop-buy:disabled,
+    #warehouse-screen .shop-buy:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      opacity: 1;
+    }
+    #warehouse-screen .wh-tabs {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto 12px;
+    }
+    #warehouse-screen .wh-tabs button {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(17, 24, 39, 0.08);
+      background: #FFFFFF;
+      color: #64748B;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #warehouse-screen .wh-tabs button.sel {
+      border-color: #168557;
+      background: #168557;
+      color: #FFFFFF;
+    }
+
+    /* 排行榜 */
+    #leaderboard-screen .lb-scroll { max-width: 760px; margin: 0 auto; padding: 0 0 12px; }
+    #leaderboard-screen .lb-list {
+      margin-top: 0;
+      border: 1px solid rgba(17, 24, 39, 0.05);
+      border-radius: 16px;
+      background: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(17, 24, 39, 0.05);
+    }
+    #leaderboard-screen .lb-row {
+      padding: 14px 16px;
+      border-bottom: 1px solid #F1F5F9;
+      font-size: 14px;
+      color: #1E293B;
+    }
+    #leaderboard-screen .lb-row:last-child { border-bottom: 0; }
+    #leaderboard-screen .lb-row .rank { color: #94A3B8; font-weight: 700; }
+    #leaderboard-screen .lb-row:nth-child(1) .rank { color: #D97706; }
+    #leaderboard-screen .lb-row:nth-child(2) .rank { color: #64748B; }
+    #leaderboard-screen .lb-row:nth-child(3) .rank { color: #B45309; }
+    #leaderboard-screen .lb-row .name { color: #1E293B; }
+    #leaderboard-screen .lb-row .pts { color: #168557; font-weight: 700; }
+    #leaderboard-screen .lb-empty { color: #94A3B8; font-size: 13px; }
+
+    /* 游戏页 */
+    #snake-screen.screen {
+      padding: calc(12px + var(--safe-top)) max(16px, var(--safe-right)) calc(10px + var(--safe-bottom)) max(16px, var(--safe-left));
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+    #snake-screen .snake-topbar { margin-bottom: 10px; }
+    #snake-screen .snake-page-title { font-size: 17px; }
+    #snake-screen .snake-pause {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      border-radius: 50%;
+      background: #FFFFFF;
+      color: #334155;
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+    }
+    #snake-screen .snake-pause svg { width: 15px; height: 15px; }
+    #snake-screen .snake-pause .icon-play { display: none; }
+    #snake-screen .snake-pause.is-paused .icon-pause { display: none; }
+    #snake-screen .snake-pause.is-paused .icon-play { display: block; }
+    #snake-screen .snake-play-area { padding: 0; }
+    #snake-screen .snake-canvas-box {
+      border-radius: 20px;
+      padding: 8px;
+      background: #FFFFFF;
+      box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12);
+    }
+    #snake-screen #snake-canvas { border: 0; border-radius: 13px; background: #0F172A; }
+    #snake-screen .snake-lobby,
+    #snake-screen .snake-ready,
+    #snake-screen .snake-face {
+      inset: 8px;
+      width: auto;
+      height: auto;
+      border: 0;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.97);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      color: #1E293B;
+    }
+    #snake-screen .snake-lobby {
+      align-items: stretch;
+      justify-content: center;
+      padding: 16px 14px;
+      background: #FFFFFF;
+    }
+    #snake-screen .lobby-title {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #94A3B8;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    #snake-screen .snake-loadout {
+      margin: 0 0 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #475569;
+      text-align: left;
+    }
+    #snake-screen .lobby-diff { justify-content: flex-start; gap: 8px; margin: 8px 0; }
+    #snake-screen .lobby-diff button {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    #snake-screen .lobby-diff button.sel {
+      border-color: #168557;
+      background: #168557;
+      color: #FFFFFF;
+    }
+    #snake-screen .btn-start {
+      margin-top: 16px;
+      width: 100%;
+      max-width: none;
+      padding: 13px;
+      border: 0;
+      border-radius: 14px;
+      background: #168557;
+      color: #FFFFFF;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(22, 133, 87, 0.22);
+    }
+    #snake-screen .btn-start:active { transform: scale(0.98); }
+    #snake-screen .snake-ready p { color: #475569; font-size: 12px; line-height: 1.7; }
+    #snake-screen .snake-ready strong { color: #168557; }
+    #snake-screen .dpad-grid { min-height: clamp(150px, 22vh, 230px); }
+    #snake-screen .ctrl-btn {
+      width: min(72px, 18vw);
+      border: 1px solid rgba(17, 24, 39, 0.06);
+      border-radius: 18px;
+      background: #FFFFFF;
+      color: #334155;
+      box-shadow: 0 6px 16px rgba(17, 24, 39, 0.10), inset 0 -2px 0 rgba(17, 24, 39, 0.04);
+    }
+    #snake-screen .ctrl-btn:active,
+    #snake-screen .ctrl-btn.pressed {
+      transform: translateY(3px) scale(0.97);
+      background: #F1F5F9;
+      box-shadow: 0 2px 6px rgba(17, 24, 39, 0.12);
+      filter: none;
+    }
+    #snake-screen .dpad-center {
+      border: 1px dashed #CBD5E1;
+      background: #FFFFFF;
+      color: #94A3B8;
+      box-shadow: none;
+    }
+
+    /* 局内浮层 */
+    .gameover-modal,
+    .achv-modal {
+      background: rgba(17, 24, 39, 0.36);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+    .gameover-card,
+    .achv-card {
+      max-width: 360px;
+      padding: 26px 24px;
+      border: 0;
+      border-radius: 20px;
+      background: #FFFFFF;
+      box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18), 0 2px 8px rgba(17, 24, 39, 0.06);
+      color: #1E293B;
+      text-align: center;
+    }
+    .gameover-card h3,
+    .achv-card h3 {
+      margin: 0 0 10px;
+      color: #1E293B;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .achv-card { box-shadow: 0 24px 60px rgba(22, 133, 87, 0.16), 0 2px 8px rgba(17, 24, 39, 0.06); }
+    .achv-card p { margin: 0 0 18px; color: #475569; font-size: 14px; line-height: 1.6; }
+    .go-score {
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #168557;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .go-record { margin: 8px 0 4px; font-size: 13px; font-weight: 600; color: #B45309; }
+    .go-sync-msg { margin-bottom: 4px; font-size: 12px; color: #64748B; }
+    .hub-modal-text {
+      margin: 8px 0;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+    }
+    .hub-modal-text strong { color: #1E293B; }
+    .hub-modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .hub-modal-btn {
+      width: 100%;
+      height: 46px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .hub-modal-btn:active { transform: scale(0.98); }
+    .hub-modal-btn--primary { background: #168557; color: #FFFFFF; box-shadow: 0 8px 18px rgba(22, 133, 87, 0.22); }
+    .hub-modal-btn--ghost { background: #F1F5F9; color: #475569; }
+    .hub-modal-btn--gold { background: #B45309; color: #FFFFFF; box-shadow: 0 8px 18px rgba(180, 83, 9, 0.2); }
+    .go-swipe-hint {
+      margin: 12px 0 0;
+      color: #94A3B8;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .go-swipe-hint strong { color: #64748B; }
+    .revive-card { border-color: transparent !important; }
+    .crate-modal-card { border-color: rgba(217, 119, 6, 0.3) !important; }
+    #crate-card .crate-icon-big { margin: 10px 0 4px; }
+    #crate-card .item-visual-wrap {
+      width: 96px;
+      height: 96px;
+      max-height: none;
+      margin: 0;
+      border: 0;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #FFF8E8, #FFE9B8);
+      box-shadow: inset 0 0 0 1px rgba(180, 83, 9, 0.14), 0 8px 20px rgba(180, 83, 9, 0.12);
+      font-size: 2.5rem;
+    }
+    #crate-reveal-text { min-height: 2.5em; margin: 8px 0 4px; color: #475569; font-size: 14px; line-height: 1.6; }
+
+    /* 同步提示条在浅色页面下移，避免压住顶栏数值胶囊 */
+    body:has(#snake-home-screen.active) .sync-strip,
+    body:has(#shop-screen.active) .sync-strip,
+    body:has(#warehouse-screen.active) .sync-strip,
+    body:has(#leaderboard-screen.active) .sync-strip,
+    body:has(#snake-screen.active) .sync-strip {
+      top: calc(var(--safe-top) + 62px);
+      border-color: rgba(17, 24, 39, 0.08);
+      background: #FFFFFF;
+      color: #64748B;
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.10);
+    }
+
+    /* 横屏：画布左、方向键右，避免画布被压扁 */
+    @media (orientation: landscape) and (max-height: 560px) {
+      #snake-screen.screen {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+          "top top"
+          "play dpad";
+        gap: 8px 14px;
+        padding: calc(8px + var(--safe-top)) max(14px, var(--safe-right)) calc(8px + var(--safe-bottom)) max(14px, var(--safe-left));
+      }
+      #snake-screen .snake-topbar { grid-area: top; max-width: none; margin: 0; }
+      #snake-screen .snake-play-area { grid-area: play; min-height: 0; }
+      #snake-screen .snake-dpad-wrap { grid-area: dpad; width: auto; align-items: center; }
+      #snake-screen .dpad-grid {
+        width: clamp(180px, 34vw, 300px);
+        height: 100%;
+        min-height: 0;
+        max-height: 340px;
+        padding: 0;
+        gap: clamp(6px, 1.8vh, 12px);
+      }
+      #snake-screen .ctrl-btn,
+      #snake-screen .dpad-center { width: clamp(44px, 8.6vh, 66px); }
+      #snake-screen .snake-canvas-box { padding: 6px; }
+      #snake-screen .snake-lobby,
+      #snake-screen .snake-ready,
+      #snake-screen .snake-face { inset: 6px; }
+    }
   </style>
 </head>
 <body>
@@ -2244,40 +2846,41 @@
     <div class="achv-card">
       <h3 id="achv-title">🎉 恭喜解锁</h3>
       <p id="achv-body"></p>
-      <button type="button" id="achv-ok" style="padding:12px 24px;border-radius:12px;border:2px solid var(--neon-cyan);background:rgba(15,22,35,0.95);color:var(--neon-cyan);font-weight:700;cursor:pointer;width:100%">太棒了</button>
+      <button type="button" id="achv-ok" class="hub-modal-btn hub-modal-btn--primary">太棒了</button>
     </div>
   </div>
 
   <div id="revive-modal" class="gameover-modal" aria-modal="true">
     <div class="gameover-card revive-card">
-      <h3 style="margin:0 0 8px;color:#ffd56a">金葫芦续命</h3>
-      <p style="color:#c8d8e8;font-size:0.88rem;line-height:1.6;margin:8px 0">消耗 <strong>1</strong> 个金葫芦后，蛇会移动到安全位置并暂停，等待你按键继续（分数保留）。</p>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
-        <button type="button" id="revive-yes" style="padding:14px;border-radius:12px;border:2px solid #ffd56a;background:linear-gradient(145deg,rgba(90,70,30,0.95),rgba(45,35,12,0.98));color:#fff;font-weight:700">续命</button>
-        <button type="button" id="revive-no" style="padding:14px;border-radius:12px;border:2px solid rgba(0,255,204,0.35);background:rgba(15,22,35,0.95);color:var(--neon-cyan);font-weight:700">放弃</button>
+      <h3>金葫芦续命</h3>
+      <p class="hub-modal-text">消耗 <strong>1</strong> 个金葫芦后，蛇会移动到安全位置并暂停，等待你按键继续（分数保留）。</p>
+      <div class="hub-modal-actions">
+        <button type="button" id="revive-yes" class="hub-modal-btn hub-modal-btn--gold">续命</button>
+        <button type="button" id="revive-no" class="hub-modal-btn hub-modal-btn--ghost">放弃</button>
       </div>
     </div>
   </div>
 
   <div id="crate-modal" class="gameover-modal" aria-modal="true">
     <div class="gameover-card crate-modal-card" id="crate-card">
-      <h3 style="margin:0 0 4px;color:#ffd56a">神秘宝箱</h3>
+      <h3>神秘宝箱</h3>
       <div class="crate-icon-big" id="crate-icon"><div class="item-visual-wrap" style="position:relative">🎁</div></div>
-      <p id="crate-reveal-text" style="color:#c8d8e8;font-size:0.9rem;min-height:2.5em"></p>
-      <button type="button" id="crate-ok" style="padding:12px 24px;border-radius:12px;border:2px solid #ffd56a;width:100%;font-weight:700;cursor:pointer;background:rgba(40,32,12,0.9);color:#ffe8a0">收下</button>
+      <p id="crate-reveal-text" class="hub-modal-text"></p>
+      <button type="button" id="crate-ok" class="hub-modal-btn hub-modal-btn--gold">收下</button>
     </div>
   </div>
 
   <div id="gameover-modal" class="gameover-modal" aria-modal="true">
     <div class="gameover-card">
-      <h3 style="margin:0 0 8px;color:var(--neon-red)">游戏结束</h3>
-      <div style="font-size:2rem;font-weight:800;color:var(--neon-green)" id="go-score-display">0</div>
-      <div class="go-record" id="go-record-msg" style="font-size:0.88rem;color:var(--neon-magenta);margin:8px 0"></div>
-      <div id="go-sync-msg" style="font-size:0.75rem;color:#ffb020;margin-bottom:12px"></div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button type="button" id="go-replay" style="padding:14px;border-radius:12px;border:2px solid var(--neon-magenta);background:linear-gradient(145deg,rgba(90,24,70,0.95),rgba(35,12,45,0.98));color:#fff;font-weight:700">再玩一局</button>
-        <p class="go-swipe-hint">从屏幕<strong>左边缘</strong>向右滑，返回贪吃蛇模块首页（ARCADE HUB 请再从模块返回）</p>
+      <h3>游戏结束</h3>
+      <div class="go-score" id="go-score-display">0</div>
+      <div class="go-record" id="go-record-msg"></div>
+      <div id="go-sync-msg" class="go-sync-msg"></div>
+      <div class="hub-modal-actions">
+        <button type="button" id="go-replay" class="hub-modal-btn hub-modal-btn--primary">再玩一局</button>
+        <button type="button" id="go-home" class="hub-modal-btn hub-modal-btn--ghost">返回模块首页</button>
       </div>
+      <p class="go-swipe-hint">从屏幕<strong>左边缘</strong>向右滑，返回贪吃蛇模块首页（ARCADE HUB 请再从模块返回）</p>
     </div>
   </div>
 
@@ -2409,41 +3012,74 @@
   </section>
 
   <section id="snake-home-screen" class="screen hub-screen">
-    <div class="welcome-bar">
-      <div class="hi">Hi, <span id="display-name">——</span></div>
-      <div class="cloud-line">云端最高分: <strong id="cloud-high">—</strong></div>
+    <div class="snake-topbar">
+      <button type="button" class="snake-back" id="snake-home-back" aria-label="返回大厅" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <h1 class="snake-page-title">贪吃蛇</h1>
+      <span class="snake-pill">最高 <strong id="cloud-high">—</strong></span>
     </div>
+    <p class="snake-subline">Hi, <span id="display-name">——</span> · 收集皮肤，刷新纪录</p>
     <div class="wallet-strip" id="wallet-strip">
-      <span>🪙 蛇币 <strong id="hub-coins">0</strong></span>
-      <span>🍐 金葫芦 <strong id="hub-calabash">0</strong></span>
-      <span>📦 宝箱 <strong id="hub-crates">0</strong></span>
+      <div class="wallet-cell">
+        <span class="wallet-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M12 7.2l1.3 3.5 3.5 1.3-3.5 1.3L12 16.8l-1.3-3.5L7.2 12l3.5-1.3z" fill="currentColor"></path></svg></span>
+        <span class="wallet-label">蛇币</span><strong id="hub-coins">0</strong>
+      </div>
+      <div class="wallet-cell">
+        <span class="wallet-ico"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2c1.9 0 3 1.3 3 2.8 0 1.1-.5 1.9-1.3 2.6 1.9.8 3.3 2.2 3.3 4.3 0 3-2.2 5.1-5 5.1s-5-2.1-5-5.1c0-2.1 1.4-3.5 3.3-4.3-.8-.7-1.3-1.5-1.3-2.6 0-1.5 1.1-2.8 3-2.8z"></path></svg></span>
+        <span class="wallet-label">金葫芦</span><strong id="hub-calabash">0</strong>
+      </div>
+      <div class="wallet-cell">
+        <span class="wallet-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5L12 4l8.5 4.5v7L12 20l-8.5-4.5v-7z"></path><path d="M3.5 8.5L12 13l8.5-4.5M12 13v7"></path></svg></span>
+        <span class="wallet-label">宝箱</span><strong id="hub-crates">0</strong>
+      </div>
     </div>
-    <h1 class="arcade-title">Snake Module</h1>
-    <p class="arcade-sub">模块首页：资产、商店、仓库、排行榜</p>
-    <div class="grid-menu">
-      <button type="button" class="tile-btn" id="btn-snake-game">开始游戏 <span class="tile-badge">PLAY</span></button>
-      <button type="button" class="tile-btn" id="btn-snake-warehouse">皮肤仓库 <span class="tile-badge">WAREHOUSE</span></button>
-      <button type="button" class="tile-btn" id="btn-snake-shop">道具商店 <span class="tile-badge">SHOP</span></button>
-      <button type="button" class="tile-btn" id="btn-snake-leaderboard">排行榜 <span class="tile-badge">TOP</span></button>
+    <div class="snake-menu-grid">
+      <button type="button" class="snake-menu-card" id="btn-snake-game">
+        <span class="snake-menu-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="4"></rect><path d="M8 12h3M9.5 10.5v3M15.5 11.5h.01M17.5 13.5h.01"></path></svg></span>
+        <span class="snake-menu-title">开始游戏</span>
+        <span class="snake-menu-sub">经典玩法 · 挑战最高分</span>
+      </button>
+      <button type="button" class="snake-menu-card" id="btn-snake-warehouse">
+        <span class="snake-menu-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg></span>
+        <span class="snake-menu-title">皮肤仓库</span>
+        <span class="snake-menu-sub">换肤换图 · 装备出战</span>
+      </button>
+      <button type="button" class="snake-menu-card" id="btn-snake-shop">
+        <span class="snake-menu-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.4 12.2a1 1 0 01-1 1.1H5.6a1 1 0 01-1-1.1L6 7z"></path><path d="M9 7a3 3 0 016 0"></path></svg></span>
+        <span class="snake-menu-title">道具商店</span>
+        <span class="snake-menu-sub">金葫芦 · 皮肤与地图</span>
+      </button>
+      <button type="button" class="snake-menu-card" id="btn-snake-leaderboard">
+        <span class="snake-menu-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0V4z"></path><path d="M8 6H5v2a3 3 0 003 3M16 6h3v2a3 3 0 01-3 3"></path><path d="M12 13v4M9 21h6M10 17h4"></path></svg></span>
+        <span class="snake-menu-title">排行榜</span>
+        <span class="snake-menu-sub">名人堂 · 云端 TOP 10</span>
+      </button>
     </div>
     <p class="config-hint" id="supabase-hint">请在源码中填写 <code>SB_KEY</code>（Publishable），详见注释。</p>
     <p class="ui-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回 ARCADE HUB</p>
   </section>
 
   <section id="shop-screen" class="screen hub-screen">
-    <div class="snake-topbar snake-topbar--hud-only">
-      <div class="snake-score-hud">🪙 <strong id="shop-wallet-display">0</strong></div>
+    <div class="snake-topbar">
+      <button type="button" class="snake-back" id="snake-shop-back" aria-label="返回模块首页" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <h2 class="snake-page-title">道具商店</h2>
+      <span class="snake-pill"><svg class="coin-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#FCD34D" stroke="#D9A21B" stroke-width="1.6"></circle><path d="M12 7.2l1.3 3.5 3.5 1.3-3.5 1.3L12 16.8l-1.3-3.5L7.2 12l3.5-1.3z" fill="#B45309"></path></svg><strong id="shop-wallet-display">0</strong></span>
     </div>
-    <h2 class="arcade-title" style="font-size:clamp(1rem,4vw,1.35rem);margin-top:4px;flex-shrink:0">商店</h2>
     <div class="eco-scroll" id="shop-scroll"><div class="eco-grid" id="shop-grid"></div></div>
     <p class="ui-swipe-hint">从屏幕<strong>左边缘</strong>向右滑返回模块首页</p>
   </section>
 
   <section id="warehouse-screen" class="screen hub-screen">
-    <div class="snake-topbar snake-topbar--hud-only">
-      <div class="snake-score-hud">📦 <strong id="wh-crates-h">0</strong></div>
+    <div class="snake-topbar">
+      <button type="button" class="snake-back" id="snake-warehouse-back" aria-label="返回模块首页" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <h2 class="snake-page-title">皮肤仓库</h2>
+      <span class="snake-pill">📦 <strong id="wh-crates-h">0</strong></span>
     </div>
-    <h2 class="arcade-title" style="font-size:clamp(1rem,4vw,1.35rem);margin-top:4px">仓库</h2>
     <div class="wh-tabs" id="wh-tabs">
       <button type="button" data-wh="skins" class="sel">皮肤</button>
       <button type="button" data-wh="maps">地图</button>
@@ -2458,7 +3094,13 @@
   </section>
 
   <section id="leaderboard-screen" class="screen hub-screen">
-    <h2 class="arcade-title" style="font-size:clamp(0.9rem,3.5vw,1rem);margin-top:8px;flex-shrink:0">名人堂 TOP 10</h2>
+    <div class="snake-topbar">
+      <button type="button" class="snake-back" id="snake-leaderboard-back" aria-label="返回模块首页" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <h2 class="snake-page-title">名人堂</h2>
+      <span class="snake-pill">TOP 10</span>
+    </div>
     <div class="lb-scroll">
       <div class="lb-list" id="lb-list"><div class="lb-empty">加载中…</div></div>
     </div>
@@ -2733,21 +3375,29 @@
   </div>
 
   <section id="snake-screen" class="screen">
-    <div class="snake-topbar snake-topbar--hud-only">
-      <div class="snake-score-hud">长度 <strong id="snake-live-score">3</strong></div>
+    <div class="snake-topbar">
+      <button type="button" class="snake-back" id="snake-game-back" aria-label="返回模块首页" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <h2 class="snake-page-title">贪吃蛇</h2>
+      <span class="snake-pill">长度 <strong id="snake-live-score">3</strong></span>
+      <button type="button" class="snake-pause" id="snake-pause-btn" aria-label="暂停" title="暂停">
+        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="5" width="3.5" height="14" rx="1"></rect><rect x="13.5" y="5" width="3.5" height="14" rx="1"></rect></svg>
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+      </button>
     </div>
     <div class="snake-play-area" id="snake-play-area">
       <div class="snake-canvas-box" id="snake-canvas-box">
         <canvas id="snake-canvas" width="400" height="400"></canvas>
         <div id="snake-lobby-overlay" class="snake-lobby">
-          <div class="lobby-title">当前配置（在仓库中更换）</div>
-          <div id="lobby-current-loadout" style="font-size:0.62rem;color:#b8c8d8;margin-bottom:8px;text-align:center;line-height:1.5"></div>
+          <div class="lobby-title">本局配置</div>
+          <div id="lobby-current-loadout" class="snake-loadout"></div>
           <div class="lobby-title">选择难度</div>
           <div class="lobby-diff" id="lobby-diff"></div>
           <button type="button" class="btn-start" id="snake-btn-start">开始游戏</button>
         </div>
         <div id="snake-ready-overlay" class="snake-ready">
-          <p>请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始</p>
+          <p>请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始 · 开局默认向右</p>
         </div>
       </div>
     </div>
@@ -2797,6 +3447,11 @@
   ];
   var SHOP_CALABASH_PRICE = 500;
   var SHOP_MAP_PRICE = 8000;
+  var COIN_SVG =
+    '<svg class="coin-ico" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9" fill="#FCD34D" stroke="#D9A21B" stroke-width="1.6"></circle>' +
+    '<path d="M12 7.2l1.3 3.5 3.5 1.3-3.5 1.3L12 16.8l-1.3-3.5L7.2 12l3.5-1.3z" fill="#B45309"></path>' +
+    '</svg>';
   /** 商店皮肤定价（扩展皮肤集，默认回退 2500） */
   var SHOP_SKIN_PRICES = {
     ghost: 2000, gold: 2800, rainbow: 3500, flame: 4200, cosmic: 5000,
@@ -3084,7 +3739,8 @@
     var ah = playArea.clientHeight - pad * 2;
     if (aw < 64 || ah < 64) return;
     var s = Math.floor(Math.min(aw, ah));
-    s = Math.max(200, Math.min(s, 560));
+    if (s < 64) return;
+    s = Math.max(96, Math.min(s, 560));
     boardSize = s;
     CELL = boardSize / GRID;
     canvasDpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -3841,6 +4497,7 @@
     phase = 'lobby';
     if (loopId) cancelAnimationFrame(loopId);
     loopId = null;
+    setSnakePausedUI(false);
   }
 
   function resetSwipeVisual() {
@@ -5611,7 +6268,7 @@
       '<div class="eco-meta">死后可选续命一次</div>' +
       '<div class="eco-price">' +
       SHOP_CALABASH_PRICE +
-      ' 🪙</div>';
+      COIN_SVG + '</div>';
     var calBtn = document.createElement('button');
     calBtn.type = 'button';
     calBtn.className = 'shop-buy';
@@ -5655,7 +6312,7 @@
         '</div>' +
         '<div class="eco-price">' +
         price +
-        ' 🪙</div>';
+        COIN_SVG + '</div>';
       if (has) wrap.querySelector('.eco-lock-mask').insertAdjacentHTML('afterend', '<span class="eco-lock-icon">🔒</span>');
       var sbtn = document.createElement('button');
       sbtn.type = 'button';
@@ -5698,7 +6355,7 @@
         '</div>' +
         '<div class="eco-price">' +
         SHOP_MAP_PRICE +
-        ' 🪙</div>';
+        COIN_SVG + '</div>';
       if (has) mw.querySelector('.eco-lock-mask').insertAdjacentHTML('afterend', '<span class="eco-lock-icon">🔒</span>');
       var mbtn = document.createElement('button');
       mbtn.type = 'button';
@@ -5876,7 +6533,7 @@
         if (res.kind === 'calabash') icon.innerHTML = '<div class="item-visual-wrap">' + ASSETS_LIB.items.calabash + '</div>';
         else if (res.kind === 'map') icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">🗺️</div>';
         else if (res.kind === 'skin') icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">✨</div>';
-        else icon.innerHTML = '<div class="item-visual-wrap" style="font-size:2.4rem;display:flex;align-items:center;justify-content:center">🪙</div>';
+        else icon.innerHTML = '<div class="item-visual-wrap" style="display:flex;align-items:center;justify-content:center">' + COIN_SVG.replace('class="coin-ico"', 'class="coin-ico coin-ico--lg"') + '</div>';
       }
       if (txt) txt.textContent = res.text;
     }, 520);
@@ -6010,7 +6667,7 @@
       }
       var sid = pending.shift();
       document.getElementById('achv-body').innerHTML =
-        '🎉 恭喜！你已觉醒 <strong style="color:var(--neon-magenta)">' + SKIN_META[sid].label + '</strong> ！';
+        '🎉 恭喜！你已觉醒 <strong style="color:#168557">' + SKIN_META[sid].label + '</strong> ！';
       document.getElementById('achv-modal').classList.add('visible');
       var okBtn = document.getElementById('achv-ok');
       okBtn.onclick = function () {
@@ -6034,7 +6691,43 @@
   function setReadyHint(text) {
     var p = document.querySelector('#snake-ready-overlay p');
     if (!p) return;
-    p.innerHTML = text || '请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始';
+    p.innerHTML = text || '请按<strong>方向键</strong>或<strong>点击下方控制盘</strong>开始 · 开局默认向右';
+  }
+
+  function setSnakePausedUI(paused) {
+    var b = document.getElementById('snake-pause-btn');
+    if (!b) return;
+    b.classList.toggle('is-paused', !!paused);
+    var label = paused ? '继续' : '暂停';
+    b.setAttribute('aria-label', label);
+    b.setAttribute('title', label);
+  }
+
+  function pauseSnake() {
+    if (phase !== 'playing' || !playing) return;
+    playing = false;
+    phase = 'paused';
+    if (loopId) cancelAnimationFrame(loopId);
+    loopId = null;
+    setReadyHint('已暂停 · 按<strong>方向键</strong>或<strong>控制盘</strong>继续');
+    document.getElementById('snake-ready-overlay').classList.add('visible');
+    setSnakePausedUI(true);
+  }
+
+  function resumeSnake() {
+    if (phase !== 'paused') return;
+    phase = 'playing';
+    playing = true;
+    setReadyHint('');
+    document.getElementById('snake-ready-overlay').classList.remove('visible');
+    lastTick = performance.now();
+    loopId = requestAnimationFrame(loop);
+    setSnakePausedUI(false);
+  }
+
+  function toggleSnakePause() {
+    if (phase === 'playing') pauseSnake();
+    else if (phase === 'paused') resumeSnake();
   }
 
   function rebuildSnakeForRevive() {
@@ -6071,6 +6764,7 @@
   function die(reason) {
     playing = false;
     phase = 'dead';
+    setSnakePausedUI(false);
     if (loopId) cancelAnimationFrame(loopId);
     loopId = null;
     if (reason === 'self') snake.shift();
@@ -6148,6 +6842,23 @@
       ctx.fillStyle = 'rgba(255, 215, 0, 0.18)';
       ctx.fillRect(0, 0, w, h);
     }
+    if (activeSkin === 'ghost') {
+      ghostTrail.forEach(function (g, gi) {
+        var a = ((gi + 1) / Math.max(1, ghostTrail.length)) * 0.22;
+        ctx.fillStyle = 'rgba(167, 246, 182, ' + a.toFixed(3) + ')';
+        ctx.beginPath();
+        ctx.arc(g.x * CELL + CELL / 2, g.y * CELL + CELL / 2, CELL * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    if (activeSkin === 'flame') {
+      var flick = (performance.now() / 90 | 0) % 2;
+      embers.forEach(function (em, ei) {
+        var ea = 0.18 + ((ei + flick) % 3) * 0.12;
+        ctx.fillStyle = 'rgba(255, 138, 52, ' + ea.toFixed(2) + ')';
+        ctx.fillRect(em.x * CELL + CELL * 0.35, em.y * CELL + CELL * 0.35, CELL * 0.3, CELL * 0.3);
+      });
+    }
     drawApple(ctx, food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL * 0.36);
 
     var pts = snake.map(function (seg) {
@@ -6168,7 +6879,13 @@
 
   function beginPlay(dx, dy) {
     if (phase !== 'ready') return;
+    // ready 阶段的首个输入若为反向，沿当前方向开局，避免直接撞进自己身体。
+    if (dir.x === -dx && dir.y === -dy) {
+      dx = dir.x;
+      dy = dir.y;
+    }
     phase = 'playing'; playing = true;
+    setSnakePausedUI(false);
     setReadyHint('');
     document.getElementById('snake-ready-overlay').classList.remove('visible');
     // Ready 阶段的首个输入必须无条件生效（含复活后），避免方向被吞掉。
@@ -6179,6 +6896,7 @@
   }
 
   function setDir(dx, dy) {
+    if (phase === 'paused') resumeSnake();
     if (phase === 'ready') { beginPlay(dx, dy); return; }
     if (!playing) return;
     if (dir.x === -dx && dir.y === -dy) return;
@@ -6193,6 +6911,7 @@
     document.getElementById('achv-modal').classList.remove('visible');
     phase = 'lobby'; playing = false;
     if (loopId) cancelAnimationFrame(loopId); loopId = null;
+    setSnakePausedUI(false);
     activeSkin = isSkinUnlocked(cloudCurrentSkin) ? cloudCurrentSkin : 'default';
     selDiff = 'novice';
     activeMap = unlockedMaps.indexOf(equippedMap) >= 0 ? equippedMap : 'classic';
@@ -6231,6 +6950,11 @@
 
   document.addEventListener('keydown', function (e) {
     if (!document.getElementById('snake-screen').classList.contains('active')) return;
+    if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+      e.preventDefault();
+      toggleSnakePause();
+      return;
+    }
     var map = { ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],W:[0,-1],s:[0,1],S:[0,1],a:[-1,0],A:[-1,0],d:[1,0],D:[1,0] };
     if (!map[e.key]) return;
     e.preventDefault();
@@ -6725,6 +7449,19 @@
   document.getElementById('btn-snake-warehouse').onclick = function () { goToView('snake_warehouse'); };
   document.getElementById('btn-snake-shop').onclick = function () { goToView('snake_shop'); };
   document.getElementById('btn-snake-leaderboard').onclick = function () { goToView('snake_leaderboard'); };
+  [
+    ['snake-home-back', 'lobby'],
+    ['snake-shop-back', 'snake_home'],
+    ['snake-warehouse-back', 'snake_home'],
+    ['snake-leaderboard-back', 'snake_home'],
+    ['snake-game-back', 'snake_home'],
+    ['go-home', 'snake_home']
+  ].forEach(function (pair) {
+    var el = document.getElementById(pair[0]);
+    if (el) el.onclick = function () { goToView(pair[1]); };
+  });
+  var snakePauseBtn = document.getElementById('snake-pause-btn');
+  if (snakePauseBtn) snakePauseBtn.onclick = function (e) { e.preventDefault(); toggleSnakePause(); };
   document.querySelectorAll('#wh-tabs button').forEach(function (t) {
     t.onclick = function () {
       document.querySelectorAll('#wh-tabs button').forEach(function (x) {
